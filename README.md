@@ -59,7 +59,12 @@ The app starts it with `ProcessBuilder` and talks UCI over stdin/stdout. It neve
 | App force-stop leaves no engine process; relaunch works | pass |
 | App screen shows `id name Stockfish 19` and `bestmove e2e4 ponder c7c5` | pass |
 | Offline | the app has no `INTERNET` permission |
-| 16 KB page device | see below |
+| 16 KB page device | **not verified** (tablet uses 4 KB pages) |
+
+16 KB pages: only static checks pass. The ELF LOAD segments are aligned to `0x4000`, and `zipalign -c -P 16 -v 4` passes on the APK.
+The run on a 16 KB device is **not verified**. The Android emulator hangs at start on this PC (WHPX on AMD Ryzen 7 6800HS), for both the 16 KB and the 4 KB x86_64 images.
+Ways to check: a Pixel 8/9 with "Boot with 16KB page size", Samsung Remote Test Lab 16 KB devices, or Cuttlefish in WSL2.
+Play blocks updates without 16 KB support from 2027-02-01 (see the Android page-size guide).
 
 ## Sources checked
 
