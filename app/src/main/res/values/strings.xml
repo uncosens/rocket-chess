@@ -62,4 +62,14 @@
     <string name="err_rate_limited">Too many requests. Try again in %1$d seconds.</string>
     <string name="err_server">The site had a problem (HTTP %1$d). Try again later.</string>
     <string name="err_bad_response">The site sent data this app cannot read.</string>
+    <string name="back">← Back</string>
+    <string name="about_licenses">About &amp; licenses</string>
+    <string name="licenses_title">About and licenses</string>
+    <string name="licenses_app">Rocket Chess %1$s is free software under the GNU General Public License v3.0. You may copy, change and share it under that license. It comes with no warranty.</string>
+    <string name="licenses_app_source">Source code of this build</string>
+    <string name="licenses_stockfish">Analysis uses Stockfish %1$s by the Stockfish developers, under the GNU General Public License v3.0. It runs unmodified as a separate program. Its neural network is CC0-1.0, trained on Leela Chess Zero data (ODbL).</string>
+    <string name="licenses_stockfish_source">Stockfish source code</string>
+    <string name="licenses_libraries">Other libraries (AndroidX, Kotlin, OkHttp, Okio, kotlinx, chesslib, Apache Commons Lang and others) are under the Apache License 2.0. The full list is in the notices.</string>
+    <string name="licenses_build">App commit: %1$s\nStockfish commit: %2$s\nEngine SHA-256: %3$s</string>
+    <string name="licenses_notices">Third-party notices</string>
 </resources>

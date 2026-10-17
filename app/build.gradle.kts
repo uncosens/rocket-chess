@@ -1,9 +1,21 @@
+import java.security.MessageDigest
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.devtools.ksp")
 }
+
+// Build facts shown on the licenses screen, so a release can be matched to its source.
+val sfScript = rootProject.file("scripts/build-stockfish.sh").readText()
+fun sfVar(name: String) = Regex("""^$name=(\S+)""", RegexOption.MULTILINE).find(sfScript)!!.groupValues[1]
+val engineFile = file("src/main/jniLibs/arm64-v8a/libstockfish.so")
+val engineSha = if (engineFile.exists()) {
+    MessageDigest.getInstance("SHA-256").digest(engineFile.readBytes()).joinToString("") { "%02x".format(it) }
+} else "missing"
+val gitCommit = providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()
+val gitDirty = providers.exec { commandLine("git", "status", "--porcelain") }.standardOutput.asText.get().isNotBlank()
 
 android {
     namespace = "com.uncosens.rocketchess"
@@ -18,9 +30,16 @@ android {
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters += "arm64-v8a" }
+        buildConfigField("String", "GIT_COMMIT", "\"$gitCommit${if (gitDirty) "-dirty" else ""}\"")
+        buildConfigField("String", "STOCKFISH_TAG", "\"${sfVar("SF_TAG")}\"")
+        buildConfigField("String", "STOCKFISH_COMMIT", "\"${sfVar("SF_COMMIT")}\"")
+        buildConfigField("String", "ENGINE_SHA256", "\"$engineSha\"")
     }
 
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
 
     // Extract libstockfish.so to nativeLibraryDir so it can be run as a process.
     packaging { jniLibs { useLegacyPackaging = true } }

@@ -2,7 +2,7 @@
 
 An offline chess analysis app for Android. It runs Stockfish on the device.
 Package ID: `com.uncosens.rocketchess`.
-Status: M4 (online import and saved games). Import from PGN text, a file, Chess.com or Lichess; games are saved on the device and can be analyzed.
+Status: M5 (release checks). All v1 features are in. A real 16 KB page device run and store signing are still open.
 
 ## License
 
@@ -108,10 +108,23 @@ Play blocks updates without 16 KB support from 2027-02-01 (see the Android page-
 - Not checked live: offline, timeout, 429 and 5xx (only by unit tests of the mapping).
 - Privacy notes for the store listing: [docs/PRIVACY_NOTES.md](docs/PRIVACY_NOTES.md).
 
+## M5 licenses and release checks (2026-10-17)
+
+- In-app "About & licenses" screen: app GPL-3.0 notice with a link to the source of this build, Stockfish tag and source link,
+  app commit, Stockfish commit and engine SHA-256 (from `BuildConfig`), and full GPL-3.0, Apache-2.0 and third-party notice texts.
+- `scripts/third_party_notices.py` writes the notice file from the release dependency tree (115 libraries, all Apache-2.0, 1 NOTICE file).
+- `scripts/check_apk.py` checks an APK. Release and debug APKs pass: only `arm64-v8a`, every `.so` has 16 KB LOAD alignment,
+  `zipalign -c -P 16` passes, engine hash matches, minSdk 29, targetSdk 36. Release steps: [docs/RELEASE.md](docs/RELEASE.md).
+- Sizes: release APK (unsigned) 105,570,943 bytes, release AAB 88,691,646 bytes.
+- Checked on the Galaxy Tab S7: licenses screen, each license text, back navigation.
+- Not done: signing, AAB install through Play, run on a 16 KB page device.
+
 ## Sources checked
 
 | Source | Checked | Note |
 |---|---|---|
+| https://support.google.com/googleplay/android-developer/answer/11926878 | 2026-10-17 | API 36 for new apps and updates from 2026-08-31 |
+| https://github.com/official-stockfish/networks | 2026-10-17 | CC0-1.0; Stockfish README: nets trained on Lc0 data (ODbL) |
 | https://github.com/lichess-org/api (`doc/specs`, games/user, rate limits) | 2026-10-17 | One request at a time; on 429 wait a minute |
 | https://www.chess.com/news/view/published-data-api | 2026-10-17 | Serial requests; User-Agent with contact; 404/410/429; respect Chess.com IP (pieces, colors, classification glyphs) |
 | https://github.com/bhlangonijr/chesslib (release 1.3.7, README) | 2026-10-17 | Apache-2.0, JitPack only, last push 2026-07 |

@@ -1,0 +1,144 @@
+Rocket Chess - third-party notices
+
+Rocket Chess is free software under the GNU General Public License v3.0 (see GPL-3.0).
+App source: https://github.com/uncosens/rocket-chess
+
+Stockfish
+  Copyright (C) The Stockfish developers (see AUTHORS in the Stockfish source).
+  License: GNU General Public License v3.0 (see GPL-3.0).
+  Used unmodified, built from the tag and commit shown on the licenses screen.
+  Source: https://github.com/official-stockfish/Stockfish
+  Build script: scripts/build-stockfish.sh in the app source.
+
+Stockfish NNUE network (embedded in the engine)
+  From https://github.com/official-stockfish/networks, released under CC0-1.0.
+  Stockfish's networks are trained on data from the Leela Chess Zero project,
+  which is available under the Open Database License (ODbL).
+
+Java and Kotlin libraries
+  All libraries below are under the Apache License 2.0 (see Apache-2.0).
+
+  androidx.activity:activity-compose:1.13.0
+  androidx.activity:activity-ktx:1.13.0
+  androidx.activity:activity:1.13.0
+  androidx.annotation:annotation-experimental:1.5.0
+  androidx.annotation:annotation-jvm:1.10.0
+  androidx.annotation:annotation:1.10.0
+  androidx.arch.core:core-common:2.2.0
+  androidx.arch.core:core-runtime:2.2.0
+  androidx.autofill:autofill:1.0.0
+  androidx.collection:collection-jvm:1.5.0
+  androidx.collection:collection-ktx:1.5.0
+  androidx.collection:collection:1.5.0
+  androidx.compose.animation:animation-android:1.12.1
+  androidx.compose.animation:animation-core-android:1.12.1
+  androidx.compose.animation:animation-core:1.12.1
+  androidx.compose.animation:animation:1.12.1
+  androidx.compose.foundation:foundation-android:1.12.1
+  androidx.compose.foundation:foundation-layout-android:1.12.1
+  androidx.compose.foundation:foundation-layout:1.12.1
+  androidx.compose.foundation:foundation:1.12.1
+  androidx.compose.material3:material3-android:1.4.0
+  androidx.compose.material3:material3:1.4.0
+  androidx.compose.material:material-ripple-android:1.12.1
+  androidx.compose.material:material-ripple:1.12.1
+  androidx.compose.runtime:runtime-android:1.12.1
+  androidx.compose.runtime:runtime-annotation-android:1.12.1
+  androidx.compose.runtime:runtime-annotation:1.12.1
+  androidx.compose.runtime:runtime-retain-android:1.12.1
+  androidx.compose.runtime:runtime-retain:1.12.1
+  androidx.compose.runtime:runtime-saveable-android:1.12.1
+  androidx.compose.runtime:runtime-saveable:1.12.1
+  androidx.compose.runtime:runtime:1.12.1
+  androidx.compose.ui:ui-android:1.12.1
+  androidx.compose.ui:ui-geometry-android:1.12.1
+  androidx.compose.ui:ui-geometry:1.12.1
+  androidx.compose.ui:ui-graphics-android:1.12.1
+  androidx.compose.ui:ui-graphics:1.12.1
+  androidx.compose.ui:ui-text-android:1.12.1
+  androidx.compose.ui:ui-text:1.12.1
+  androidx.compose.ui:ui-unit-android:1.12.1
+  androidx.compose.ui:ui-unit:1.12.1
+  androidx.compose.ui:ui-util-android:1.12.1
+  androidx.compose.ui:ui-util:1.12.1
+  androidx.compose.ui:ui:1.12.1
+  androidx.compose:compose-bom:2026.09.00
+  androidx.concurrent:concurrent-futures:1.1.0
+  androidx.core:core-ktx:1.18.0
+  androidx.core:core-viewtree:1.0.0
+  androidx.core:core:1.18.0
+  androidx.customview:customview-poolingcontainer:1.0.0
+  androidx.emoji2:emoji2:1.4.0
+  androidx.graphics:graphics-path:1.0.1
+  androidx.interpolator:interpolator:1.0.0
+  androidx.lifecycle:lifecycle-common-java8:2.11.0
+  androidx.lifecycle:lifecycle-common-jvm:2.11.0
+  androidx.lifecycle:lifecycle-common:2.11.0
+  androidx.lifecycle:lifecycle-livedata-core:2.11.0
+  androidx.lifecycle:lifecycle-process:2.11.0
+  androidx.lifecycle:lifecycle-runtime-android:2.11.0
+  androidx.lifecycle:lifecycle-runtime-compose-android:2.11.0
+  androidx.lifecycle:lifecycle-runtime-compose:2.11.0
+  androidx.lifecycle:lifecycle-runtime-ktx-android:2.11.0
+  androidx.lifecycle:lifecycle-runtime-ktx:2.11.0
+  androidx.lifecycle:lifecycle-runtime:2.11.0
+  androidx.lifecycle:lifecycle-viewmodel-android:2.11.0
+  androidx.lifecycle:lifecycle-viewmodel-compose-android:2.11.0
+  androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0
+  androidx.lifecycle:lifecycle-viewmodel-ktx:2.11.0
+  androidx.lifecycle:lifecycle-viewmodel-savedstate-android:2.11.0
+  androidx.lifecycle:lifecycle-viewmodel-savedstate:2.11.0
+  androidx.lifecycle:lifecycle-viewmodel:2.11.0
+  androidx.navigationevent:navigationevent-android:1.0.0
+  androidx.navigationevent:navigationevent-compose-android:1.0.0
+  androidx.navigationevent:navigationevent-compose:1.0.0
+  androidx.navigationevent:navigationevent:1.0.0
+  androidx.profileinstaller:profileinstaller:1.4.0
+  androidx.room:room-common-jvm:2.8.5
+  androidx.room:room-common:2.8.5
+  androidx.room:room-ktx:2.8.5
+  androidx.room:room-runtime-android:2.8.5
+  androidx.room:room-runtime:2.8.5
+  androidx.savedstate:savedstate-android:1.4.0
+  androidx.savedstate:savedstate-compose-android:1.4.0
+  androidx.savedstate:savedstate-compose:1.4.0
+  androidx.savedstate:savedstate-ktx:1.4.0
+  androidx.savedstate:savedstate:1.4.0
+  androidx.sqlite:sqlite-android:2.6.2
+  androidx.sqlite:sqlite-framework-android:2.6.2
+  androidx.sqlite:sqlite-framework:2.6.2
+  androidx.sqlite:sqlite:2.6.2
+  androidx.startup:startup-runtime:1.2.0
+  androidx.tracing:tracing:1.2.0
+  androidx.versionedparcelable:versionedparcelable:1.1.1
+  androidx.window:window-core-android:1.5.0
+  androidx.window:window-core:1.5.0
+  androidx.window:window:1.5.0
+  com.github.bhlangonijr:chesslib:1.3.7
+  com.google.guava:listenablefuture:1.0
+  com.squareup.okhttp3:okhttp-android:5.5.0
+  com.squareup.okhttp3:okhttp:5.5.0
+  com.squareup.okio:okio-jvm:3.18.1
+  com.squareup.okio:okio:3.18.1
+  org.apache.commons:commons-lang3:3.18.0
+  org.jetbrains.kotlin:kotlin-stdlib:2.4.21
+  org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0
+  org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.9.0
+  org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.9.0
+  org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0
+  org.jetbrains.kotlinx:kotlinx-serialization-bom:1.11.0
+  org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.11.0
+  org.jetbrains.kotlinx:kotlinx-serialization-core:1.11.0
+  org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.11.0
+  org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0
+  org.jetbrains:annotations:23.0.0
+  org.jspecify:jspecify:1.0.0
+
+NOTICE files from these libraries
+
+Apache Commons Lang
+Copyright 2001-2025 The Apache Software Foundation
+
+This product includes software developed at
+The Apache Software Foundation (https://www.apache.org/).
+

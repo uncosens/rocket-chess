@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import com.uncosens.rocketchess.ui.GameScreen
 import com.uncosens.rocketchess.ui.GameViewModel
 import com.uncosens.rocketchess.ui.LibraryScreen
+import com.uncosens.rocketchess.ui.LicensesScreen
 import com.uncosens.rocketchess.ui.LibraryViewModel
 import com.uncosens.rocketchess.ui.OnlineScreen
 
@@ -30,13 +31,14 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme(colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()) {
                 Surface(Modifier.fillMaxSize()) {
-                    // Three screens; a nav library is not worth it yet.
+                    // A few screens; a nav library is not worth it yet.
                     var screen by rememberSaveable { mutableStateOf(LIBRARY) }
                     val open = { pgn: String -> game.load(pgn); screen = GAME }
                     when (screen) {
                         GAME -> GameScreen(game, onBack = { game.stopAnalysis(); screen = LIBRARY })
                         ONLINE -> OnlineScreen(library, onOpen = open, onBack = { screen = LIBRARY })
-                        else -> LibraryScreen(library, onOpen = open, onOnline = { screen = ONLINE })
+                        LICENSES -> LicensesScreen(onBack = { screen = LIBRARY })
+                        else -> LibraryScreen(library, onOpen = open, onOnline = { screen = ONLINE }, onLicenses = { screen = LICENSES })
                     }
                 }
             }
@@ -53,5 +55,6 @@ class MainActivity : ComponentActivity() {
         const val LIBRARY = "library"
         const val ONLINE = "online"
         const val GAME = "game"
+        const val LICENSES = "licenses"
     }
 }
