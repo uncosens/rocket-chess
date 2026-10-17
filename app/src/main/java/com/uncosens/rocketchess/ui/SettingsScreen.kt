@@ -1,5 +1,6 @@
 package com.uncosens.rocketchess.ui
 
+import android.graphics.RectF
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
@@ -34,6 +35,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
@@ -78,13 +81,9 @@ fun SettingsScreen(onBack: () -> Unit) {
         }
 
         Text(stringResource(R.string.settings_pieces), style = MaterialTheme.typography.titleMedium)
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            PieceSet.entries.forEachIndexed { i, s ->
-                SegmentedButton(
-                    selected = pieces == s,
-                    onClick = { pieces = s; PieceSetStore.save(context, s) },
-                    shape = SegmentedButtonDefaults.itemShape(i, PieceSet.entries.size),
-                ) { Text(s.id, maxLines = 1) }
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            PieceSet.entries.forEach { s ->
+                PieceSwatch(s, selected = pieces == s) { pieces = s; PieceSetStore.save(context, s) }
             }
         }
         Text(stringResource(R.string.settings_board), style = MaterialTheme.typography.titleMedium)
@@ -133,6 +132,32 @@ fun SettingsScreen(onBack: () -> Unit) {
 
         Text(stringResource(R.string.settings_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         TextButton(onClick = { set(EngineOptions().clamped(EngineOptionsStore.cores)) }) { Text(stringResource(R.string.settings_reset)) }
+    }
+}
+
+/** A white pawn and a black knight from a piece set, with its name. */
+@Composable
+private fun PieceSwatch(set: PieceSet, selected: Boolean, onClick: () -> Unit) {
+    val context = LocalContext.current
+    val images = remember(set) { PieceSetStore.images(context, set) }
+    val name = set.id.replaceFirstChar { it.uppercase() }
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+        modifier = Modifier.semantics { this.selected = selected },
+    ) {
+        Column(Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Canvas(Modifier.size(width = 72.dp, height = 36.dp)) {
+                val h = size.height
+                drawIntoCanvas { canvas ->
+                    images['P']?.renderToCanvas(canvas.nativeCanvas, RectF(0f, 0f, h, h))
+                    images['n']?.renderToCanvas(canvas.nativeCanvas, RectF(h, 0f, 2 * h, h))
+                }
+            }
+            Text(name, style = MaterialTheme.typography.labelMedium)
+        }
     }
 }
 
