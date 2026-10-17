@@ -12,12 +12,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.uncosens.rocketchess.data.Sources
 import com.uncosens.rocketchess.ui.GameScreen
 import com.uncosens.rocketchess.ui.GameViewModel
+import com.uncosens.rocketchess.ui.ImportScreen
 import com.uncosens.rocketchess.ui.LibraryScreen
 import com.uncosens.rocketchess.ui.LicensesScreen
 import com.uncosens.rocketchess.ui.LibraryViewModel
-import com.uncosens.rocketchess.ui.OnlineScreen
 import com.uncosens.rocketchess.ui.RocketTheme
 import com.uncosens.rocketchess.ui.SettingsScreen
 
@@ -33,13 +34,14 @@ class MainActivity : ComponentActivity() {
                 Surface(Modifier.fillMaxSize()) {
                     // A few screens; a nav library is not worth it yet.
                     var screen by rememberSaveable { mutableStateOf(LIBRARY) }
+                    var importTab by rememberSaveable { mutableStateOf(Sources.PASTE) }
                     val open = { pgn: String -> game.load(pgn); screen = GAME }
                     when (screen) {
                         GAME -> GameScreen(game, onBack = { game.stopAnalysis(); screen = LIBRARY })
-                        ONLINE -> OnlineScreen(library, onOpen = open, onBack = { screen = LIBRARY })
+                        IMPORT -> ImportScreen(library, importTab, onOpen = open, onBack = { screen = LIBRARY })
                         LICENSES -> LicensesScreen(onBack = { screen = LIBRARY })
                         SETTINGS -> SettingsScreen(onBack = { screen = LIBRARY })
-                        else -> LibraryScreen(library, onOpen = open, onOnline = { screen = ONLINE }, onSettings = { screen = SETTINGS }, onLicenses = { screen = LICENSES })
+                        else -> LibraryScreen(library, onOpen = open, onImport = { importTab = it; screen = IMPORT }, onSettings = { screen = SETTINGS }, onLicenses = { screen = LICENSES })
                     }
                 }
             }
@@ -54,7 +56,7 @@ class MainActivity : ComponentActivity() {
 
     private companion object {
         const val LIBRARY = "library"
-        const val ONLINE = "online"
+        const val IMPORT = "import"
         const val GAME = "game"
         const val LICENSES = "licenses"
         const val SETTINGS = "settings"

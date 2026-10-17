@@ -1,5 +1,6 @@
 package com.uncosens.rocketchess.ui
 
+import android.content.ClipboardManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,10 +50,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.text.KeyboardActions
@@ -65,9 +69,8 @@ import java.util.Date
 
 /** Saved games and the ways to add one. */
 @Composable
-fun LibraryScreen(vm: LibraryViewModel, onOpen: (String) -> Unit, onOnline: () -> Unit, onSettings: () -> Unit, onLicenses: () -> Unit) {
+fun LibraryScreen(vm: LibraryViewModel, onOpen: (String) -> Unit, onImport: (String) -> Unit, onSettings: () -> Unit, onLicenses: () -> Unit) {
     val games by vm.games.collectAsState()
-    var pasting by rememberSaveable { mutableStateOf(false) }
     var confirmDelete by rememberSaveable { mutableStateOf<Long?>(null) } // -1 = delete all
     val openFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let { vm.importFile(it, onOpen) }
@@ -81,14 +84,14 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: (String) -> Unit, onOnline: () -
         }
 
         SectionLabel(stringResource(R.string.new_analysis), Modifier.padding(top = 12.dp))
-        Button(onClick = { pasting = true }, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp)) {
+        Button(onClick = { onImport(Sources.PASTE) }, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp)) {
             Icon(painterResource(R.drawable.ic_paste), null, Modifier.size(20.dp))
             Spacer(Modifier.width(10.dp))
             Text(stringResource(R.string.paste_pgn), style = MaterialTheme.typography.titleMedium)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ImportButton(R.drawable.ic_file, stringResource(R.string.open_file), Modifier.weight(1f)) { openFile.launch(arrayOf("*/*")) }
-            ImportButton(R.drawable.ic_globe, stringResource(R.string.import_online), Modifier.weight(1f), onOnline)
+            ImportButton(R.drawable.ic_globe, stringResource(R.string.import_online), Modifier.weight(1f)) { onImport(Sources.CHESS_COM) }
         }
         vm.error?.let { ErrorText(it) }
 
@@ -129,7 +132,6 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: (String) -> Unit, onOnline: () -
         }
     }
 
-    if (pasting) PasteDialog(onDismiss = { pasting = false }, onLoad = { pasting = false; vm.importText(it, Sources.PASTE, onOpen) })
     confirmDelete?.let { id ->
         AlertDialog(
             onDismissRequest = { confirmDelete = null },
@@ -173,65 +175,103 @@ private fun ImportButton(icon: Int, text: String, modifier: Modifier, onClick: (
     }
 }
 
-/** Search a Lichess or Chess.com user and pick a game. */
+/** One page to import a game: PGN text or file, Chess.com or Lichess search. [startTab] is a [Sources] value. */
 @Composable
-fun OnlineScreen(vm: LibraryViewModel, onOpen: (String) -> Unit, onBack: () -> Unit) {
-    var source by rememberSaveable { mutableStateOf(Sources.CHESS_COM) }
+fun ImportScreen(vm: LibraryViewModel, startTab: String, onOpen: (String) -> Unit, onBack: () -> Unit) {
+    var tab by rememberSaveable { mutableStateOf(startTab) }
+    // Not saveable: a big PGN would overflow the saved-state bundle.
+    var pgn by remember { mutableStateOf("") }
     var name by rememberSaveable { mutableStateOf("") }
-    BackHandler { vm.clearOnline(); onBack() }
+    val context = LocalContext.current
+    val openFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { vm.importFile(it, onOpen) }
+    }
+    val back = { vm.clearOnline(); onBack() }
+    BackHandler(onBack = back)
 
     Column(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        TopBar(stringResource(R.string.import_online), onBack = { vm.clearOnline(); onBack() })
+        TopBar(stringResource(R.string.import_game), onBack = back)
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            listOf(Sources.CHESS_COM, Sources.LICHESS).forEachIndexed { i, s ->
+            val tabs = listOf(Sources.PASTE, Sources.CHESS_COM, Sources.LICHESS)
+            tabs.forEachIndexed { i, s ->
                 SegmentedButton(
-                    selected = source == s,
-                    onClick = { source = s; vm.clearOnline() },
-                    shape = SegmentedButtonDefaults.itemShape(i, 2),
-                ) { Text(sourceLabel(s)) }
+                    selected = tab == s,
+                    onClick = { tab = s; vm.clearOnline() },
+                    shape = SegmentedButtonDefaults.itemShape(i, tabs.size),
+                ) { Text(if (s == Sources.PASTE) stringResource(R.string.tab_pgn) else sourceLabel(s)) }
             }
         }
-        val search = { if (name.isNotBlank()) vm.fetch(source, name) }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (tab == Sources.PASTE) {
             OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text(stringResource(R.string.user_name)) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { search() }),
+                value = pgn,
+                onValueChange = { pgn = it },
+                label = { Text(stringResource(R.string.pgn_hint)) },
                 shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth().weight(1f),
             )
-            Button(onClick = search, enabled = name.isNotBlank() && vm.online != OnlineState.Loading, modifier = Modifier.height(52.dp), shape = RoundedCornerShape(16.dp)) {
-                Text(stringResource(R.string.search))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                ImportButton(R.drawable.ic_paste, stringResource(R.string.paste), Modifier.weight(1f)) {
+                    context.getSystemService(ClipboardManager::class.java).primaryClip?.getItemAt(0)?.coerceToText(context)?.let { pgn = it.toString() }
+                }
+                ImportButton(R.drawable.ic_file, stringResource(R.string.open_file), Modifier.weight(1f)) { openFile.launch(arrayOf("*/*")) }
             }
+            Text(stringResource(R.string.import_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            vm.error?.let { ErrorText(it) }
+            Button(
+                onClick = { vm.importText(pgn, Sources.PASTE, onOpen) },
+                enabled = pgn.isNotBlank(),
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+            ) { Text(stringResource(R.string.load_game), style = MaterialTheme.typography.titleMedium) }
+        } else {
+            OnlineSearch(vm, tab, name, { name = it }, onOpen)
         }
-        Text(stringResource(R.string.online_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        vm.error?.let { ErrorText(it) }
-        when (val s = vm.online) {
-            OnlineState.Idle -> {}
-            OnlineState.Loading -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                CircularProgressIndicator()
-                OutlinedButton(onClick = vm::cancelFetch) { Text(stringResource(R.string.cancel)) }
-            }
-            is OnlineState.Failed -> Text(fetchErrorText(s.error), color = MaterialTheme.colorScheme.error)
-            is OnlineState.Found -> {
-                if (s.games.isEmpty()) Text(stringResource(R.string.no_public_games))
-                LazyColumn(Modifier.weight(1f)) {
-                    items(s.games, key = { it.key }) { g ->
-                        Column(
-                            Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable { vm.importRemote(g, onOpen) }.padding(vertical = 6.dp),
-                        ) {
-                            Text(stringResource(R.string.players, g.white, g.black) + "  " + (com.uncosens.rocketchess.remote.tag(g.pgn, "Result") ?: ""))
-                            Text(
-                                listOfNotNull(g.speed, DateFormat.getDateInstance().format(Date(g.endedAt))).joinToString(" · "),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        HorizontalDivider()
+    }
+}
+
+/** Search a Lichess or Chess.com user and pick a game. */
+@Composable
+private fun ColumnScope.OnlineSearch(vm: LibraryViewModel, source: String, name: String, onName: (String) -> Unit, onOpen: (String) -> Unit) {
+    val search = { if (name.isNotBlank()) vm.fetch(source, name) }
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedTextField(
+            value = name,
+            onValueChange = onName,
+            label = { Text(stringResource(R.string.user_name)) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { search() }),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.weight(1f),
+        )
+        Button(onClick = search, enabled = name.isNotBlank() && vm.online != OnlineState.Loading, modifier = Modifier.height(52.dp), shape = RoundedCornerShape(16.dp)) {
+            Text(stringResource(R.string.search))
+        }
+    }
+    Text(stringResource(R.string.online_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    vm.error?.let { ErrorText(it) }
+    when (val s = vm.online) {
+        OnlineState.Idle -> {}
+        OnlineState.Loading -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            CircularProgressIndicator()
+            OutlinedButton(onClick = vm::cancelFetch) { Text(stringResource(R.string.cancel)) }
+        }
+        is OnlineState.Failed -> Text(fetchErrorText(s.error), color = MaterialTheme.colorScheme.error)
+        is OnlineState.Found -> {
+            if (s.games.isEmpty()) Text(stringResource(R.string.no_public_games))
+            LazyColumn(Modifier.weight(1f)) {
+                items(s.games, key = { it.key }) { g ->
+                    Column(
+                        Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable { vm.importRemote(g, onOpen) }.padding(vertical = 6.dp),
+                    ) {
+                        Text(stringResource(R.string.players, g.white, g.black) + "  " + (com.uncosens.rocketchess.remote.tag(g.pgn, "Result") ?: ""))
+                        Text(
+                            listOfNotNull(g.speed, DateFormat.getDateInstance().format(Date(g.endedAt))).joinToString(" · "),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
+                    HorizontalDivider()
                 }
             }
         }

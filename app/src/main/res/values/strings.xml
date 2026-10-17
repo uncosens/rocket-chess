@@ -3,7 +3,6 @@
     <string name="paste_pgn">Paste PGN</string>
     <string name="open_file">Open file</string>
     <string name="pgn_hint">PGN text</string>
-    <string name="load">Load</string>
     <string name="cancel">Cancel</string>
     <string name="no_game">No game loaded.</string>
     <string name="players">%1$s vs %2$s</string>
@@ -38,6 +37,11 @@
     <string name="graph_description">Evaluation graph. Tap to go to a position.</string>
     <string name="move_with_class">%1$s, %2$s</string>
     <string name="import_online">Lichess / Chess.com</string>
+    <string name="import_game">Import game</string>
+    <string name="tab_pgn">PGN</string>
+    <string name="paste">Paste</string>
+    <string name="load_game">Load game</string>
+    <string name="import_note">The game is saved on this device after loading.</string>
     <string name="saved_games">Saved games (%1$d)</string>
     <string name="no_saved_games">No saved games yet. Imported games are saved here.</string>
     <string name="delete">Delete</string>
