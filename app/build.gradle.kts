@@ -54,6 +54,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
     implementation("com.github.bhlangonijr:chesslib:1.3.7")
+    implementation("com.caverock:androidsvg-aar:1.4")
     implementation("com.squareup.okhttp3:okhttp:5.5.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation("androidx.room:room-runtime:2.8.5")

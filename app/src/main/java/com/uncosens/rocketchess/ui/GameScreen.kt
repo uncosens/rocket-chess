@@ -44,7 +44,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -89,17 +88,21 @@ private fun Header(vm: GameViewModel, onBack: () -> Unit) {
     val title = tags?.let { stringResource(R.string.players, it["White"] ?: "?", it["Black"] ?: "?") } ?: ""
     val subtitle = listOfNotNull(tags?.get("Event")?.takeIf { it.isNotBlank() && it != "?" }, vm.game?.result)
         .joinToString(" · ").ifEmpty { null }
-    TopBar(title, onBack, subtitle)
+    TopBar(title, onBack, subtitle) {
+        SquareIconButton(R.drawable.ic_flip, stringResource(R.string.flip_board), { vm.flipped = !vm.flipped })
+    }
 }
 
-/** Black's name, the board, White's name. */
+/** The top player's name, the board, the bottom player's name. */
 @Composable
 private fun BoardBlock(vm: GameViewModel, modifier: Modifier) {
     val tags = vm.game?.tags
+    val black = tags?.get("Black") ?: stringResource(R.string.side_black)
+    val white = tags?.get("White") ?: stringResource(R.string.side_white)
     Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        PlayerRow(tags?.get("Black") ?: stringResource(R.string.side_black), white = false)
+        if (vm.flipped) PlayerRow(white, white = true) else PlayerRow(black, white = false)
         Board(vm, modifier.clip(RoundedCornerShape(12.dp)))
-        PlayerRow(tags?.get("White") ?: stringResource(R.string.side_white), white = true)
+        if (vm.flipped) PlayerRow(black, white = false) else PlayerRow(white, white = true)
     }
 }
 
@@ -120,6 +123,8 @@ private fun Board(vm: GameViewModel, modifier: Modifier) {
     val line = vm.line
     val position = line?.positions?.get(vm.ply)
     val last = line?.plies?.getOrNull(vm.ply - 1)
+    // Engine's best move in this position, as a UCI move like "e2e4".
+    val best = vm.evals.getOrNull(vm.ply)?.best
     ChessBoard(
         fen = position?.fen ?: GameLine.START_FEN,
         lastMove = last?.let { it.from to it.to },
@@ -128,6 +133,8 @@ private fun Board(vm: GameViewModel, modifier: Modifier) {
         else stringResource(R.string.board_after, moveLabel(line!!, vm.ply - 1)),
         modifier = modifier,
         grade = if (vm.ply > 0) vm.grade(vm.ply - 1)?.cls else null,
+        flipped = vm.flipped,
+        arrow = best?.let { it.substring(0, 2) to it.substring(2, 4) },
     )
 }
 
@@ -174,7 +181,7 @@ private fun MoveCard(vm: GameViewModel, line: GameLine) {
                 Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         if (vm.ply > 0) moveLabel(line, vm.ply - 1) else stringResource(R.string.start_position),
-                        fontFamily = FontFamily.Monospace,
+                        fontFamily = Mono,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 18.sp,
                     )
@@ -190,7 +197,7 @@ private fun MoveCard(vm: GameViewModel, line: GameLine) {
                         it.eval.text(),
                         Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
                         color = MaterialTheme.colorScheme.surface,
-                        fontFamily = FontFamily.Monospace,
+                        fontFamily = Mono,
                         fontWeight = FontWeight.SemiBold,
                     )
                 }
@@ -225,7 +232,7 @@ private fun Footer(vm: GameViewModel, onAnalyze: () -> Unit) {
             ) {
                 Row(Modifier.padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     if (cls != null) Box(Modifier.size(7.dp).clip(CircleShape).background(cls.color()))
-                    Text(label + (cls?.suffix() ?: ""), fontFamily = FontFamily.Monospace, fontSize = 13.sp)
+                    Text(label + (cls?.suffix() ?: ""), fontFamily = Mono, fontSize = 13.sp)
                 }
             }
         }

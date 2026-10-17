@@ -22,7 +22,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -41,7 +40,7 @@ fun SectionLabel(text: String, modifier: Modifier = Modifier) {
         text.uppercase(),
         modifier = modifier,
         style = MaterialTheme.typography.labelSmall,
-        fontFamily = FontFamily.Monospace,
+        fontFamily = Mono,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
@@ -68,15 +67,15 @@ fun SquareIconButton(
     }
 }
 
-/** Back button, a centered title and an optional subtitle. */
+/** Back button, a centered title, an optional subtitle and an optional button on the right. */
 @Composable
-fun TopBar(title: String, onBack: () -> Unit, subtitle: String? = null) {
+fun TopBar(title: String, onBack: () -> Unit, subtitle: String? = null, action: (@Composable () -> Unit)? = null) {
     Row(Modifier.fillMaxWidth().height(52.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         SquareIconButton(R.drawable.ic_back, stringResource(R.string.cd_back), onBack)
         Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             subtitle?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1) }
         }
-        Spacer(Modifier.size(44.dp))
+        if (action != null) action() else Spacer(Modifier.size(44.dp))
     }
 }

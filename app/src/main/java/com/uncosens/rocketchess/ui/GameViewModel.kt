@@ -46,6 +46,8 @@ class GameViewModel : ViewModel() {
     /** Index into line.positions: 0 is the start, N is after N plies. */
     var ply by mutableStateOf(0)
         private set
+    /** Board seen from Black's side. Kept across games. */
+    var flipped by mutableStateOf(false)
     var error by mutableStateOf<LoadError?>(null)
         private set
     /** Engine result per position; null until analyzed. Not saved: recomputed when needed. */

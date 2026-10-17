@@ -9,8 +9,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.uncosens.rocketchess.R
 
 /** Board square colors. [lastLight]/[lastDark] mark the last move. */
 data class BoardColors(val light: Color, val dark: Color, val lastLight: Color, val lastDark: Color)
@@ -61,11 +66,32 @@ private val Day = lightColorScheme(
     error = Color(0xFFC62828),
 )
 
+// Variable fonts in res/font; each Font picks its weight from the one file.
+private fun family(res: Int, vararg weights: Int) = FontFamily(weights.map { Font(res, FontWeight(it)) })
+
+private val Display = family(R.font.unbounded, 500, 600, 700)
+private val Sans = family(R.font.ibm_plex_sans, 400, 500, 600)
+val Mono = family(R.font.jetbrains_mono, 400, 500, 600)
+
 private val Type = Typography().run {
+    fun TextStyle.display() = copy(fontFamily = Display, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.01).em)
+    fun TextStyle.sans() = copy(fontFamily = Sans)
     copy(
-        titleLarge = titleLarge.copy(fontWeight = FontWeight.SemiBold),
-        titleMedium = titleMedium.copy(fontWeight = FontWeight.SemiBold),
-        labelSmall = labelSmall.copy(letterSpacing = 1.4.sp),
+        displayLarge = displayLarge.display(),
+        displayMedium = displayMedium.display(),
+        displaySmall = displaySmall.display(),
+        headlineLarge = headlineLarge.display(),
+        headlineMedium = headlineMedium.display(),
+        headlineSmall = headlineSmall.display(),
+        titleLarge = titleLarge.display().copy(fontSize = 20.sp),
+        titleMedium = titleMedium.sans().copy(fontWeight = FontWeight.SemiBold),
+        titleSmall = titleSmall.sans(),
+        bodyLarge = bodyLarge.sans(),
+        bodyMedium = bodyMedium.sans(),
+        bodySmall = bodySmall.sans(),
+        labelLarge = labelLarge.sans(),
+        labelMedium = labelMedium.sans(),
+        labelSmall = labelSmall.copy(fontFamily = Mono, letterSpacing = 1.4.sp),
     )
 }
 
