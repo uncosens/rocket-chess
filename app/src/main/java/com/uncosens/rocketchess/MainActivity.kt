@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
                         IMPORT -> ImportScreen(library, importTab, onOpen = open, onBack = { screen = LIBRARY })
                         LICENSES -> LicensesScreen(onBack = { screen = LIBRARY })
                         SETTINGS -> SettingsScreen(onBack = { screen = LIBRARY })
-                        else -> LibraryScreen(library, onOpen = open, onImport = { importTab = it; screen = IMPORT }, onSettings = { screen = SETTINGS }, onLicenses = { screen = LICENSES })
+                        else -> LibraryScreen(library, onOpen = open, onImport = { library.clearOnline(); importTab = it; screen = IMPORT }, onSettings = { screen = SETTINGS }, onLicenses = { screen = LICENSES })
                     }
                 }
             }
