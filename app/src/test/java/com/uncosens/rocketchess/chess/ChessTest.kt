@@ -70,6 +70,13 @@ class ChessTest {
     }
 
     @Test
+    fun sanFromUci() {
+        assertEquals("Nf3", GameLine.san(GameLine.START_FEN, "g1f3"))
+        assertEquals("a8=Q+", GameLine.san("8/P7/8/8/8/8/8/k6K w - - 0 1", "a7a8q"))
+        assertEquals("zz", GameLine.san(GameLine.START_FEN, "zz"))
+    }
+
+    @Test
     fun errorsHavePositions() {
         error("1. e4 e5\n2. Ke3 *").run {
             assertEquals("illegal move \"Ke3\"", reason)

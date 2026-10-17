@@ -1,0 +1,67 @@
+package com.uncosens.rocketchess.analysis
+
+import com.uncosens.rocketchess.chess.GameLine
+import com.uncosens.rocketchess.engine.StockfishSession
+import com.uncosens.rocketchess.engine.Uci
+
+/** Engine result for one position. [best] is PV1's first move in UCI, null if the game is over. */
+data class PositionEval(val eval: Eval, val best: String?, val second: Eval?, val depth: Int)
+
+data class MoveResult(val cls: MoveClass, val loss: Double)
+
+/** Settings used for a run, kept with the results so a run can be repeated. */
+data class AnalysisSettings(
+    val engine: String,
+    val depth: Int = AnalysisPolicy.DEPTH,
+    val multiPv: Int = AnalysisPolicy.MULTI_PV,
+    val threads: Int = AnalysisPolicy.THREADS,
+    val hashMb: Int = AnalysisPolicy.HASH_MB,
+)
+
+/** Runs a fixed-depth search on each position. Blocking; call from a background thread. */
+class Analyzer(private val sf: StockfishSession) {
+    /** Sets options and returns the engine name. */
+    fun start(): AnalysisSettings {
+        sf.send("uci")
+        val name = sf.readUntil(TIMEOUT_MS) { it == "uciok" }
+            .firstOrNull { it.startsWith("id name ") }?.removePrefix("id name ") ?: "unknown"
+        val s = AnalysisSettings(name)
+        sf.send("setoption name Threads value ${s.threads}")
+        sf.send("setoption name Hash value ${s.hashMb}")
+        sf.send("setoption name MultiPV value ${s.multiPv}")
+        sf.send("ucinewgame")
+        sf.send("isready")
+        sf.readUntil(TIMEOUT_MS) { it == "readyok" }
+        return s
+    }
+
+    fun analyze(fen: String, depth: Int): PositionEval {
+        val whiteToMove = fen.split(' ').getOrNull(1) != "b"
+        sf.send("position fen $fen")
+        sf.send("go depth $depth")
+        val lines = sf.readUntil(SEARCH_TIMEOUT_MS) { it.startsWith("bestmove") }
+        // Keep the deepest line for each multipv slot.
+        val infos = lines.mapNotNull(Uci::parseInfo).groupBy { it.multipv }.mapValues { (_, v) -> v.maxBy { it.depth } }
+        val pv1 = infos[1] ?: throw IllegalStateException("no score for position")
+        return PositionEval(
+            eval = Eval.fromUci(pv1.score, whiteToMove),
+            best = pv1.pv.firstOrNull() ?: Uci.parseBestMove(lines.last()),
+            second = infos[2]?.let { Eval.fromUci(it.score, whiteToMove) },
+            depth = pv1.depth,
+        )
+    }
+
+    companion object {
+        private const val TIMEOUT_MS = 10_000L
+        private const val SEARCH_TIMEOUT_MS = 120_000L
+
+        /** Grades ply i from the evals of positions i and i+1. Null until both are known. */
+        fun grade(line: GameLine, evals: List<PositionEval?>, ply: Int): MoveResult? {
+            val before = evals.getOrNull(ply) ?: return null
+            val after = evals.getOrNull(ply + 1) ?: return null
+            val whiteMoved = line.positions[ply].fen.split(' ')[1] == "w"
+            val loss = winLoss(before.eval, after.eval, whiteMoved)
+            return MoveResult(classify(line.plies[ply].uci, before.best, loss), loss)
+        }
+    }
+}

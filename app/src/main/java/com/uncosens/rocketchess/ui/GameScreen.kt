@@ -37,11 +37,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.uncosens.rocketchess.R
+import com.uncosens.rocketchess.analysis.MoveClass
 import com.uncosens.rocketchess.chess.GameLine
+import com.uncosens.rocketchess.engine.StockfishSession
 
 @Composable
 fun GameScreen(vm: GameViewModel = viewModel()) {
     val context = LocalContext.current
+    val exe = remember { StockfishSession.binary(context) }
     var pasting by rememberSaveable { mutableStateOf(false) }
     val openFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let { vm.loadFile(context.contentResolver, it) }
@@ -52,7 +55,13 @@ fun GameScreen(vm: GameViewModel = viewModel()) {
         val side = maxHeight
         val board = @Composable { m: Modifier -> Board(vm, m) }
         val panel = @Composable { m: Modifier ->
-            Panel(vm, onPaste = { pasting = true }, onOpen = { openFile.launch(arrayOf("*/*")) }, modifier = m)
+            Panel(
+                vm,
+                onPaste = { pasting = true },
+                onOpen = { openFile.launch(arrayOf("*/*")) },
+                onAnalyze = { vm.analyze(exe) },
+                modifier = m,
+            )
         }
         if (wide) {
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -87,7 +96,7 @@ private fun Board(vm: GameViewModel, modifier: Modifier) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun Panel(vm: GameViewModel, onPaste: () -> Unit, onOpen: () -> Unit, modifier: Modifier) {
+private fun Panel(vm: GameViewModel, onPaste: () -> Unit, onOpen: () -> Unit, onAnalyze: () -> Unit, modifier: Modifier) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = onPaste) { Text(stringResource(R.string.paste_pgn)) }
@@ -107,19 +116,30 @@ private fun Panel(vm: GameViewModel, onPaste: () -> Unit, onOpen: () -> Unit, mo
             )
         }
         NavButtons(vm, line.plies.size)
+        AnalysisControls(vm, onAnalyze)
+        EvalGraph(vm.evals, vm.ply, vm::goTo)
+        SelectedMoveInfo(vm, line)
+        if (vm.evals.isNotEmpty()) Summary(vm, line)
         FlowRow(
             Modifier.weight(1f).verticalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            line.plies.forEachIndexed { i, p ->
+            line.plies.forEachIndexed { i, _ ->
                 val selected = vm.ply == i + 1
+                val cls = vm.grade(i)?.cls
+                val label = moveLabel(line, i)
+                val desc = cls?.let { stringResource(R.string.move_with_class, label, it.label()) } ?: label
                 TextButton(
                     onClick = { vm.goTo(i + 1) },
-                    modifier = Modifier.heightIn(min = 48.dp),
+                    modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = desc },
                 ) {
                     Text(
-                        moveLabel(line, i),
-                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                        label + (cls?.suffix() ?: ""),
+                        color = when {
+                            selected -> MaterialTheme.colorScheme.primary
+                            cls != null && cls >= MoveClass.Inaccuracy -> cls.color()
+                            else -> MaterialTheme.colorScheme.onSurface
+                        },
                         style = if (selected) MaterialTheme.typography.labelLarge else MaterialTheme.typography.bodyMedium,
                     )
                 }

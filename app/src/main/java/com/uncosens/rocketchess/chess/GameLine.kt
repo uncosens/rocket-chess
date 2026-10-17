@@ -4,6 +4,7 @@ import com.github.bhlangonijr.chesslib.Board
 import com.github.bhlangonijr.chesslib.Piece
 import com.github.bhlangonijr.chesslib.PieceType
 import com.github.bhlangonijr.chesslib.move.Move
+import com.github.bhlangonijr.chesslib.move.MoveList
 
 /** One half-move. Squares are names like "e2". [uci] is the engine notation, e.g. "e7e8q". */
 data class Ply(val san: String, val uci: String, val from: String, val to: String)
@@ -28,14 +29,24 @@ class GameLine(val plies: List<Ply>, val positions: List<Position>) {
             val positions = mutableListOf(position(board))
             for (token in game.moves) {
                 val move = resolve(board, token)
-                val promo = move.promotion.takeIf { it != Piece.NONE }?.let { letter(it.pieceType).lowercaseChar() }
-                val from = move.from.value().lowercase()
-                val to = move.to.value().lowercase()
-                plies += Ply(token.text.trimEnd('+', '#', '!', '?'), "$from$to${promo ?: ""}", from, to)
+                val uci = uciOf(move)
+                plies += Ply(token.text.trimEnd('+', '#', '!', '?'), uci, uci.substring(0, 2), uci.substring(2, 4))
                 board.doMove(move)
                 positions += position(board)
             }
             return GameLine(plies, positions)
+        }
+
+        /** SAN for a UCI move in a position, e.g. "g1f3" -> "Nf3". Falls back to the UCI text. */
+        fun san(fen: String, uci: String): String = runCatching {
+            val board = Board().apply { loadFromFen(fen) }
+            val move = board.legalMoves().first { uciOf(it) == uci }
+            MoveList(fen).apply { add(move) }.toSanArray()[0]
+        }.getOrDefault(uci)
+
+        private fun uciOf(move: Move): String {
+            val promo = move.promotion.takeIf { it != Piece.NONE }?.let { letter(it.pieceType).lowercaseChar() }
+            return move.from.value().lowercase() + move.to.value().lowercase() + (promo ?: "")
         }
 
         private fun position(board: Board) = Position(

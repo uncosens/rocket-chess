@@ -2,7 +2,7 @@
 
 An offline chess analysis app for Android. It runs Stockfish on the device.
 Package ID: `com.uncosens.rocketchess`.
-Status: M2 (board and PGN). You can load a PGN and step through the game. Engine analysis is not wired to the UI yet.
+Status: M3 (analysis). Load a PGN, analyze it with Stockfish on the device, and see grades, an eval graph and a summary.
 
 ## License
 
@@ -77,6 +77,20 @@ Play blocks updates without 16 KB support from 2027-02-01 (see the Android page-
   first/previous/next/last and tapping a move work, a bad file shows `PGN error at line 2, column 4: illegal move "Ke3"`.
 - Not checked yet: portrait layout, screen rotation, light theme, TalkBack walk-through.
 - Pieces are drawn with the device font's chess symbols. A device with an odd font may draw them badly; own vector pieces would fix that.
+
+## M3 analysis (2026-10-17)
+
+- Every position (start + one per ply) gets `go depth 14` with MultiPV 2, 2 threads, 32 MB hash (`analysis/Classification.kt`, `AnalysisPolicy`).
+- Scores are stored from White's view. Mate keeps who wins and the distance. Win% uses `50 + 50 * (2 / (1 + exp(-0.00368208 * cp)) - 1)`; mate is 0 or 100.
+- Loss = mover's win% before the move minus after it. Best = the played move equals PV1's first move (UCI compare).
+  Then Excellent < 2, Good < 5, Inaccuracy < 10, Mistake < 15, Blunder >= 15 points. This is our own test policy, not Lichess grading.
+- A negative loss is graded as no loss. It happens because the next position is searched on its own and can find more.
+- Stop keeps the results so far; ungraded moves stay ungraded. Going to the background stops the run and quits the engine.
+  Each run has an id, so a stopped run cannot write results. Results are not saved; analyze again to get them back.
+- Tests: 7 JVM tests (UCI parsing, White view, mate rules, win%, class edges 2/5/10/15) and a device test that analyzes the Opera game.
+- Galaxy Tab S7 timing (Opera game, 34 positions): depth 14 took 13.2 s in the device test. Another run measured 25 positions:
+  depth 16 25.8 s, depth 18 44.8 s; depth 14 took 91.8 s in that run (first in the run, cause unknown). Depth 14 kept for heat and time.
+- Not done yet: settings screen for threads/hash/depth, eval bar, move arrows.
 
 ## Sources checked
 
