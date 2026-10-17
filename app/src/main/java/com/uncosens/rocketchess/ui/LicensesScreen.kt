@@ -43,16 +43,15 @@ fun LicensesScreen(onBack: () -> Unit) {
     val commit = BuildConfig.GIT_COMMIT.removeSuffix("-dirty")
 
     Column(
-        Modifier.fillMaxSize().safeDrawingPadding().padding(16.dp).verticalScroll(rememberScrollState()),
+        Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 16.dp, vertical = 8.dp).verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        TextButton(onClick = { if (file != null) file = null else onBack() }) { Text(stringResource(R.string.back)) }
         val shown = file
+        TopBar(shown?.removeSuffix(".txt") ?: stringResource(R.string.licenses_title), onBack = { if (file != null) file = null else onBack() })
         if (shown != null) {
             LicenseText(shown)
             return@Column
         }
-        Text(stringResource(R.string.licenses_title), style = MaterialTheme.typography.headlineSmall)
         Text(stringResource(R.string.licenses_app, BuildConfig.VERSION_NAME))
         TextButton(onClick = { uri.openUri("$APP_SOURCE/tree/$commit") }) { Text(stringResource(R.string.licenses_app_source)) }
         Text(stringResource(R.string.licenses_stockfish, BuildConfig.STOCKFISH_TAG))

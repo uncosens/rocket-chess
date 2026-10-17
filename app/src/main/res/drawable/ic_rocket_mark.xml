@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- App mark: a rocket turned 40 degrees clockwise over a 2x2 board. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="34dp"
+    android:height="34dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <path android:fillColor="#FF6B35" android:pathData="M0,0h100v100h-100z" />
+    <path android:fillColor="#D65A2D" android:pathData="M50,0h50v50h-50z M0,50h50v50h-50z" />
+    <group android:rotation="40" android:pivotX="50" android:pivotY="50" android:translateX="2" android:translateY="3">
+        <path android:fillColor="#0B1020" android:fillAlpha="0.25"
+            android:pathData="M50,14 C60,22 64,36 64,52 L64,66 L36,66 L36,52 C36,36 40,22 50,14 Z M36,50 L26,64 L26,72 L36,66 Z M64,50 L74,64 L74,72 L64,66 Z" />
+    </group>
+    <group android:rotation="40" android:pivotX="50" android:pivotY="50">
+        <path android:fillColor="#FFD166" android:pathData="M42,70 Q50,96 58,70 Z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M46,70 Q50,84 54,70 Z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M36,50 L26,64 L26,72 L36,66 Z M64,50 L74,64 L74,72 L64,66 Z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M50,14 C60,22 64,36 64,52 L64,66 L36,66 L36,52 C36,36 40,22 50,14 Z" />
+        <path android:fillColor="#D5DAE6" android:pathData="M41,66h18v5h-18z" />
+        <path android:fillColor="#0B1020" android:pathData="M43.5,40a6.5,6.5 0,1 0,13 0a6.5,6.5 0,1 0,-13 0z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M50.4,37.8a1.8,1.8 0,1 0,3.6 0a1.8,1.8 0,1 0,-3.6 0z" />
+    </group>
+</vector>

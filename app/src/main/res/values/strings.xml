@@ -23,7 +23,6 @@
     <string name="analysis_stopped">Stopped at %1$d / %2$d. Moves without both evals are not graded.</string>
     <string name="analysis_done">%1$s · depth %2$d · MultiPV %3$d · %4$d threads · %5$d MB hash</string>
     <string name="analysis_failed">Analysis failed: %1$s</string>
-    <string name="eval_line">Eval %1$s (depth %2$d)</string>
     <string name="engine_move">Engine: %1$s</string>
     <string name="class_best">Best</string>
     <string name="class_excellent">Excellent</string>
@@ -38,7 +37,6 @@
     <plurals name="blunders"><item quantity="one">%d blunder</item><item quantity="other">%d blunders</item></plurals>
     <string name="graph_description">Evaluation graph. Tap to go to a position.</string>
     <string name="move_with_class">%1$s, %2$s</string>
-    <string name="back_to_games">← Games</string>
     <string name="import_online">Lichess / Chess.com</string>
     <string name="saved_games">Saved games (%1$d)</string>
     <string name="no_saved_games">No saved games yet. Imported games are saved here.</string>
@@ -62,7 +60,6 @@
     <string name="err_rate_limited">Too many requests. Try again in %1$d seconds.</string>
     <string name="err_server">The site had a problem (HTTP %1$d). Try again later.</string>
     <string name="err_bad_response">The site sent data this app cannot read.</string>
-    <string name="back">← Back</string>
     <string name="about_licenses">About &amp; licenses</string>
     <string name="licenses_title">About and licenses</string>
     <string name="licenses_app">Rocket Chess %1$s is free software under the GNU General Public License v3.0. You may copy, change and share it under that license. It comes with no warranty.</string>
@@ -79,4 +76,10 @@
     <string name="settings_depth">Search depth: %1$d</string>
     <string name="settings_note">More threads and depth give better analysis but take longer and use more battery. Changes apply to the next analysis.</string>
     <string name="settings_reset">Reset to defaults</string>
+    <string name="cd_back">Back</string>
+    <string name="new_analysis">New analysis</string>
+    <string name="eval_title">Evaluation</string>
+    <string name="tap_to_jump">Tap to jump</string>
+    <string name="start_position">Start position</string>
+    <string name="depth">depth %1$d</string>
 </resources>

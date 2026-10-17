@@ -3,11 +3,26 @@ package com.uncosens.rocketchess.ui
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -49,7 +64,6 @@ import java.text.DateFormat
 import java.util.Date
 
 /** Saved games and the ways to add one. */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun LibraryScreen(vm: LibraryViewModel, onOpen: (String) -> Unit, onOnline: () -> Unit, onSettings: () -> Unit, onLicenses: () -> Unit) {
     val games by vm.games.collectAsState()
@@ -59,37 +73,58 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: (String) -> Unit, onOnline: () -
         uri?.let { vm.importFile(it, onOpen) }
     }
 
-    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineSmall)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { pasting = true }) { Text(stringResource(R.string.paste_pgn)) }
-            FilledTonalButton(onClick = { openFile.launch(arrayOf("*/*")) }) { Text(stringResource(R.string.open_file)) }
-            FilledTonalButton(onClick = onOnline) { Text(stringResource(R.string.import_online)) }
+    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(Modifier.fillMaxWidth().height(48.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            RocketMark(34.dp)
+            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+            SquareIconButton(R.drawable.ic_settings, stringResource(R.string.engine_settings), onSettings)
+        }
+
+        SectionLabel(stringResource(R.string.new_analysis), Modifier.padding(top = 12.dp))
+        Button(onClick = { pasting = true }, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp)) {
+            Icon(painterResource(R.drawable.ic_paste), null, Modifier.size(20.dp))
+            Spacer(Modifier.width(10.dp))
+            Text(stringResource(R.string.paste_pgn), style = MaterialTheme.typography.titleMedium)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ImportButton(R.drawable.ic_file, stringResource(R.string.open_file), Modifier.weight(1f)) { openFile.launch(arrayOf("*/*")) }
+            ImportButton(R.drawable.ic_globe, stringResource(R.string.import_online), Modifier.weight(1f), onOnline)
         }
         vm.error?.let { ErrorText(it) }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.saved_games, games.size), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+
+        Row(Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            SectionLabel(stringResource(R.string.saved_games, games.size), Modifier.weight(1f))
             if (games.isNotEmpty()) TextButton(onClick = { confirmDelete = -1 }) { Text(stringResource(R.string.delete_all)) }
         }
-        if (games.isEmpty()) Text(stringResource(R.string.no_saved_games), style = MaterialTheme.typography.bodyMedium)
+        if (games.isEmpty()) Text(stringResource(R.string.no_saved_games), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         LazyColumn(Modifier.weight(1f)) {
             items(games, key = { it.id }) { g ->
                 Row(
-                    Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable { vm.open(g.id, onOpen) },
+                    Modifier.fillMaxWidth().heightIn(min = 64.dp).clip(RoundedCornerShape(14.dp)).clickable { vm.open(g.id, onOpen) }.padding(horizontal = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.players, g.white, g.black) + "  " + g.result)
-                        Text("${sourceLabel(g.source)} · ${g.date}", style = MaterialTheme.typography.bodySmall)
+                    Box(
+                        Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceContainer),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(painterResource(sourceIcon(g.source)), null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    TextButton(onClick = { confirmDelete = g.id }) { Text(stringResource(R.string.delete)) }
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.players, g.white, g.black), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text("${sourceLabel(g.source)} · ${g.date}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(8.dp)) {
+                        Text(g.result, Modifier.padding(horizontal = 8.dp, vertical = 4.dp), fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
+                    }
+                    IconButton(onClick = { confirmDelete = g.id }) {
+                        Icon(painterResource(R.drawable.ic_delete), stringResource(R.string.delete), Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
-                HorizontalDivider()
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.storage_note), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
-            TextButton(onClick = onSettings) { Text(stringResource(R.string.engine_settings)) }
+            Text(stringResource(R.string.storage_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
             TextButton(onClick = onLicenses) { Text(stringResource(R.string.about_licenses)) }
         }
     }
@@ -117,6 +152,27 @@ private fun sourceLabel(source: String) = stringResource(
     },
 )
 
+private fun sourceIcon(source: String) = when (source) {
+    Sources.CHESS_COM, Sources.LICHESS -> R.drawable.ic_globe
+    Sources.FILE -> R.drawable.ic_file
+    else -> R.drawable.ic_paste
+}
+
+@Composable
+private fun ImportButton(icon: Int, text: String, modifier: Modifier, onClick: () -> Unit) {
+    FilledTonalButton(
+        onClick = onClick,
+        modifier = modifier.height(52.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = ButtonDefaults.filledTonalButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        contentPadding = PaddingValues(horizontal = 12.dp),
+    ) {
+        Icon(painterResource(icon), null, Modifier.size(18.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
 /** Search a Lichess or Chess.com user and pick a game. */
 @Composable
 fun OnlineScreen(vm: LibraryViewModel, onOpen: (String) -> Unit, onBack: () -> Unit) {
@@ -124,9 +180,9 @@ fun OnlineScreen(vm: LibraryViewModel, onOpen: (String) -> Unit, onBack: () -> U
     var name by rememberSaveable { mutableStateOf("") }
     BackHandler { vm.clearOnline(); onBack() }
 
-    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        TextButton(onClick = { vm.clearOnline(); onBack() }) { Text(stringResource(R.string.back_to_games)) }
-        SingleChoiceSegmentedButtonRow {
+    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        TopBar(stringResource(R.string.import_online), onBack = { vm.clearOnline(); onBack() })
+        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
             listOf(Sources.CHESS_COM, Sources.LICHESS).forEachIndexed { i, s ->
                 SegmentedButton(
                     selected = source == s,
@@ -144,11 +200,14 @@ fun OnlineScreen(vm: LibraryViewModel, onOpen: (String) -> Unit, onBack: () -> U
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { search() }),
+                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.weight(1f),
             )
-            Button(onClick = search, enabled = name.isNotBlank() && vm.online != OnlineState.Loading) { Text(stringResource(R.string.search)) }
+            Button(onClick = search, enabled = name.isNotBlank() && vm.online != OnlineState.Loading, modifier = Modifier.height(52.dp), shape = RoundedCornerShape(16.dp)) {
+                Text(stringResource(R.string.search))
+            }
         }
-        Text(stringResource(R.string.online_note), style = MaterialTheme.typography.bodySmall)
+        Text(stringResource(R.string.online_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         vm.error?.let { ErrorText(it) }
         when (val s = vm.online) {
             OnlineState.Idle -> {}
@@ -168,6 +227,7 @@ fun OnlineScreen(vm: LibraryViewModel, onOpen: (String) -> Unit, onBack: () -> U
                             Text(
                                 listOfNotNull(g.speed, DateFormat.getDateInstance().format(Date(g.endedAt))).joinToString(" · "),
                                 style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         HorizontalDivider()

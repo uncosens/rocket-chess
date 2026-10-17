@@ -3,13 +3,10 @@ package com.uncosens.rocketchess
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -21,6 +18,7 @@ import com.uncosens.rocketchess.ui.LibraryScreen
 import com.uncosens.rocketchess.ui.LicensesScreen
 import com.uncosens.rocketchess.ui.LibraryViewModel
 import com.uncosens.rocketchess.ui.OnlineScreen
+import com.uncosens.rocketchess.ui.RocketTheme
 import com.uncosens.rocketchess.ui.SettingsScreen
 
 class MainActivity : ComponentActivity() {
@@ -28,9 +26,10 @@ class MainActivity : ComponentActivity() {
     private val library: LibraryViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme(colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()) {
+            RocketTheme {
                 Surface(Modifier.fillMaxSize()) {
                     // A few screens; a nav library is not worth it yet.
                     var screen by rememberSaveable { mutableStateOf(LIBRARY) }

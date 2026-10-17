@@ -40,11 +40,10 @@ fun SettingsScreen(onBack: () -> Unit) {
     val maxThreads = EngineOptions.maxThreads(EngineOptionsStore.cores)
 
     Column(
-        Modifier.fillMaxSize().safeDrawingPadding().padding(16.dp).verticalScroll(rememberScrollState()),
+        Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 16.dp, vertical = 8.dp).verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        TextButton(onClick = onBack) { Text(stringResource(R.string.back)) }
-        Text(stringResource(R.string.engine_settings), style = MaterialTheme.typography.headlineSmall)
+        TopBar(stringResource(R.string.engine_settings), onBack)
 
         Text(stringResource(R.string.settings_threads), style = MaterialTheme.typography.titleMedium)
         SingleChoiceSegmentedButtonRow {
@@ -78,7 +77,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             modifier = Modifier.widthIn(max = 480.dp),
         )
 
-        Text(stringResource(R.string.settings_note), style = MaterialTheme.typography.bodySmall)
+        Text(stringResource(R.string.settings_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         TextButton(onClick = { set(EngineOptions().clamped(EngineOptionsStore.cores)) }) { Text(stringResource(R.string.settings_reset)) }
     }
 }

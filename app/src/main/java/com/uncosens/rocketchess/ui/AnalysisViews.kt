@@ -7,18 +7,20 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -34,13 +36,17 @@ import com.uncosens.rocketchess.chess.GameLine
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
+private val GRAPH_BG = Color(0xFF10162A)
+private val GRAPH_FILL = Color(0xFFE8ECF4)
+private val GRAPH_MID = Color(0xFF59678A)
+
 fun MoveClass.color(): Color = when (this) {
-    MoveClass.Best -> Color(0xFF2E9E6B)
-    MoveClass.Excellent -> Color(0xFF5BAE8C)
-    MoveClass.Good -> Color(0xFF8AA7B5)
-    MoveClass.Inaccuracy -> Color(0xFFE0B23A)
-    MoveClass.Mistake -> Color(0xFFE5873A)
-    MoveClass.Blunder -> Color(0xFFE5484D)
+    MoveClass.Best -> Color(0xFF1C93A8)
+    MoveClass.Excellent -> Color(0xFF4C8DF6)
+    MoveClass.Good -> Color(0xFF8C96AB)
+    MoveClass.Inaccuracy -> Color(0xFFE0A21F)
+    MoveClass.Mistake -> Color(0xFFF07B2A)
+    MoveClass.Blunder -> Color(0xFFD9363E)
 }
 
 fun MoveClass.suffix(): String = when (this) {
@@ -48,6 +54,13 @@ fun MoveClass.suffix(): String = when (this) {
     MoveClass.Mistake -> "?"
     MoveClass.Blunder -> "??"
     else -> ""
+}
+
+/** Text for the round grade badge, or null for no badge. */
+fun MoveClass.badge(): String? = when (this) {
+    MoveClass.Best -> "★"
+    MoveClass.Excellent, MoveClass.Good -> null
+    else -> suffix()
 }
 
 @Composable
@@ -68,49 +81,39 @@ fun Eval.text(): String = when (this) {
     is Eval.Mate -> if (whiteWins) "#$moves" else "#-$moves"
 }
 
-/** Start button, progress and stop, or the result line. */
+/** Analyze, or Stop while running. */
 @Composable
-fun AnalysisControls(vm: GameViewModel, onAnalyze: () -> Unit) {
+fun AnalyzeButton(vm: GameViewModel, onAnalyze: () -> Unit, modifier: Modifier = Modifier) {
+    val shape = RoundedCornerShape(16.dp)
     when (val s = vm.analysis) {
-        is AnalysisState.Running -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.analyzing, s.done, s.total))
-                OutlinedButton(onClick = vm::stopAnalysis) { Text(stringResource(R.string.stop)) }
-            }
-            LinearProgressIndicator(progress = { s.done.toFloat() / s.total }, modifier = Modifier.fillMaxWidth())
+        is AnalysisState.Running -> OutlinedButton(onClick = vm::stopAnalysis, modifier = modifier, shape = shape) {
+            Text(stringResource(R.string.stop))
         }
-        else -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = onAnalyze) {
-                Text(stringResource(if (s is AnalysisState.Idle) R.string.analyze else R.string.analyze_again))
-            }
-            when (s) {
-                is AnalysisState.Stopped -> Text(stringResource(R.string.analysis_stopped, s.done, s.total))
-                is AnalysisState.Done -> Text(
-                    stringResource(R.string.analysis_done, s.settings.engine, s.settings.depth, s.settings.multiPv, s.settings.threads, s.settings.hashMb),
-                    style = MaterialTheme.typography.bodySmall,
-                )
-                is AnalysisState.Failed -> Text(stringResource(R.string.analysis_failed, s.message), color = MaterialTheme.colorScheme.error)
-                else -> {}
-            }
+        else -> Button(onClick = onAnalyze, modifier = modifier, shape = shape) {
+            Text(stringResource(if (s is AnalysisState.Idle) R.string.analyze else R.string.analyze_again))
         }
     }
 }
 
-/** Eval and grade for the selected position and the move that led to it. */
+/** Progress while running, or the result line. Nothing before the first run. */
 @Composable
-fun SelectedMoveInfo(vm: GameViewModel, line: GameLine) {
-    val e = vm.evals.getOrNull(vm.ply) ?: return
-    val parts = mutableListOf(stringResource(R.string.eval_line, e.eval.text(), e.depth))
-    if (vm.ply > 0) {
-        vm.grade(vm.ply - 1)?.let { g ->
-            parts += g.cls.label()
-            val before = vm.evals[vm.ply - 1]
-            if (g.cls != MoveClass.Best && before?.best != null) {
-                parts += stringResource(R.string.engine_move, GameLine.san(line.positions[vm.ply - 1].fen, before.best))
-            }
+fun AnalysisStatus(vm: GameViewModel) {
+    val small = MaterialTheme.typography.bodySmall
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    when (val s = vm.analysis) {
+        is AnalysisState.Running -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(stringResource(R.string.analyzing, s.done, s.total), style = small, color = muted)
+            LinearProgressIndicator(progress = { s.done.toFloat() / s.total }, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(2.dp)))
         }
+        is AnalysisState.Stopped -> Text(stringResource(R.string.analysis_stopped, s.done, s.total), style = small, color = muted)
+        is AnalysisState.Done -> Text(
+            stringResource(R.string.analysis_done, s.settings.engine, s.settings.depth, s.settings.multiPv, s.settings.threads, s.settings.hashMb),
+            style = small,
+            color = muted,
+        )
+        is AnalysisState.Failed -> Text(stringResource(R.string.analysis_failed, s.message), style = small, color = MaterialTheme.colorScheme.error)
+        AnalysisState.Idle -> {}
     }
-    Text(parts.joinToString("  ·  "), style = MaterialTheme.typography.bodyMedium)
 }
 
 /** Counts of inaccuracies, mistakes and blunders per side. */
@@ -137,18 +140,33 @@ fun Summary(vm: GameViewModel, line: GameLine) {
                 pluralStringResource(R.plurals.blunders, c[2], c[2]),
             ).joinToString(", "),
             style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
 
-/** White's win% over the game. Tap to jump to a position. */
+/** Card with White's win% over the game and the side counts. Tap to jump to a position. */
 @Composable
-fun EvalGraph(evals: List<PositionEval?>, ply: Int, onSelect: (Int) -> Unit) {
-    if (evals.size < 2) return
-    val line = MaterialTheme.colorScheme.primary
+fun EvalCard(vm: GameViewModel, line: GameLine) {
+    if (vm.evals.size < 2) return
+    Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(18.dp)) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row {
+                Text(stringResource(R.string.eval_title), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.tap_to_jump), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            EvalGraph(vm.evals, vm.ply, vm::goTo)
+            Summary(vm, line)
+        }
+    }
+}
+
+@Composable
+private fun EvalGraph(evals: List<PositionEval?>, ply: Int, onSelect: (Int) -> Unit) {
+    val cursor = MaterialTheme.colorScheme.primary
     val desc = stringResource(R.string.graph_description)
     Canvas(
-        Modifier.fillMaxWidth().height(96.dp)
+        Modifier.fillMaxWidth().height(64.dp).clip(RoundedCornerShape(10.dp))
             .semantics { contentDescription = desc }
             .pointerInput(evals.size) {
                 detectTapGestures { onSelect((it.x / size.width * (evals.size - 1)).roundToInt()) }
@@ -156,7 +174,7 @@ fun EvalGraph(evals: List<PositionEval?>, ply: Int, onSelect: (Int) -> Unit) {
     ) {
         val step = size.width / (evals.size - 1)
         fun y(e: PositionEval) = size.height * (1 - whiteWinPercent(e.eval).toFloat() / 100f)
-        drawRect(Color(0xFF2B2B2B))
+        drawRect(GRAPH_BG)
         // Analysis runs in order, so the known part is a prefix.
         val known = evals.takeWhile { it != null }.filterNotNull()
         val fill = Path().apply {
@@ -165,9 +183,9 @@ fun EvalGraph(evals: List<PositionEval?>, ply: Int, onSelect: (Int) -> Unit) {
             lineTo((known.size - 1).coerceAtLeast(0) * step, size.height)
             close()
         }
-        drawPath(fill, Color(0xFFE8E8E8))
-        drawLine(Color.Gray, Offset(0f, size.height / 2), Offset(size.width, size.height / 2))
-        drawLine(line, Offset(ply * step, 0f), Offset(ply * step, size.height), strokeWidth = 2.dp.toPx())
-        drawRect(line, style = Stroke(1.dp.toPx()))
+        drawPath(fill, GRAPH_FILL)
+        drawLine(GRAPH_MID, Offset(0f, size.height / 2), Offset(size.width, size.height / 2))
+        drawLine(cursor, Offset(ply * step, 0f), Offset(ply * step, size.height), strokeWidth = 2.dp.toPx())
+        known.getOrNull(ply)?.let { drawCircle(cursor, 4.dp.toPx(), Offset(ply * step, y(it))) }
     }
 }
