@@ -3,16 +3,17 @@
 Check each item again before the first public release. Write the date and what you found.
 
 ## Lichess
-- [ ] API docs for user games export: https://lichess.org/api (path, `max`/`since`/`until`, `Accept` for PGN vs NDJSON)
-- [ ] Rate limits and the "one request at a time" rule
+- [x] API docs for user games export (checked 2026-10-17 in github.com/lichess-org/api `doc/specs`)
+- [x] Rate limits and the "one request at a time" rule (429: wait a minute)
 - [ ] Required `User-Agent` / contact info
 - [ ] Terms of service: https://lichess.org/terms-of-service
 - [ ] Is commercial use, caching and showing games allowed?
 - [ ] Name and logo use (trademark)
 
 ## Chess.com
-- [ ] PubAPI docs: https://www.chess.com/news/view/published-data-api (archives list, monthly games, PGN)
-- [ ] Rate limits, parallel request rules, `User-Agent` rule
+- [x] PubAPI docs: https://www.chess.com/news/view/published-data-api (checked 2026-10-17)
+- [x] Rate limits, parallel request rules, `User-Agent` rule
+- [ ] Chess.com asks apps to respect its IP (piece sets, colors, classification glyphs). We use standard `?!`/`?`/`??` marks and our own colors; confirm this is fine
 - [ ] Terms of service and PubAPI usage terms
 - [ ] Is commercial use, caching and showing games allowed?
 - [ ] Name and logo use (trademark)

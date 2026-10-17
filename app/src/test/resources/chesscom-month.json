@@ -1,0 +1,6 @@
+{"games":[
+{"url":"https://www.chess.com/game/live/111","uuid":"aaaa-1111","pgn":"[Event \"Live Chess\"]\n[Site \"Chess.com\"]\n[Date \"2026.10.01\"]\n[White \"testuser\"]\n[Black \"rival\"]\n[Result \"1-0\"]\n\n1. e4 e5 2. Qh5 Nc6 3. Bc4 Nf6 4. Qxf7# 1-0\n","time_control":"180","end_time":1790000000,"rated":true,"time_class":"blitz","rules":"chess","white":{"rating":1500,"result":"win","@id":"https://api.chess.com/pub/player/testuser","username":"testuser","uuid":"u1"},"black":{"rating":1490,"result":"checkmated","@id":"https://api.chess.com/pub/player/rival","username":"rival","uuid":"u2"}},
+{"url":"https://www.chess.com/game/live/222","uuid":"bbbb-2222","pgn":"[Event \"Live Chess\"]\n[Result \"0-1\"]\n\n1. f3 e5 2. g4 Qh4# 0-1\n","end_time":1790100000,"time_class":"bullet","rules":"chess","white":{"username":"testuser"},"black":{"username":"rival"},"new_field":{"x":1}},
+{"url":"https://www.chess.com/game/live/333","uuid":"cccc-3333","pgn":"[Event \"960\"]\n\n1. e4 *\n","end_time":1790200000,"rules":"chess960","white":{"username":"testuser"},"black":{"username":"rival"}},
+{"url":"https://www.chess.com/game/daily/444","end_time":1790300000,"rules":"chess","white":{"username":"testuser"},"black":{"username":"rival"}}
+]}

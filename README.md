@@ -2,7 +2,7 @@
 
 An offline chess analysis app for Android. It runs Stockfish on the device.
 Package ID: `com.uncosens.rocketchess`.
-Status: M3 (analysis). Load a PGN, analyze it with Stockfish on the device, and see grades, an eval graph and a summary.
+Status: M4 (online import and saved games). Import from PGN text, a file, Chess.com or Lichess; games are saved on the device and can be analyzed.
 
 ## License
 
@@ -92,10 +92,28 @@ Play blocks updates without 16 KB support from 2027-02-01 (see the Android page-
   depth 16 25.8 s, depth 18 44.8 s; depth 14 took 91.8 s in that run (first in the run, cause unknown). Depth 14 kept for heat and time.
 - Not done yet: settings screen for threads/hash/depth, eval bar, move arrows.
 
+## M4 online import and saved games (2026-10-17)
+
+- Chess.com: `GET /pub/player/{user}/games/archives`, then the newest monthly archives (at most 3) until 30 games. Only `rules == "chess"`.
+- Lichess: `GET /api/games/user/{user}?max=30&pgnInJson=true&clocks=false&evals=false&opening=false` with `Accept: application/x-ndjson`.
+  Bad lines are skipped. Only `standard` and `fromPosition` games.
+- One request at a time. User-Agent `RocketChess/0.1 (+https://github.com/uncosens/rocket-chess)`. Timeouts 15 s connect, 30 s read. Bodies over 10 MB are refused.
+- Errors shown apart: bad name, user not found (404/410), no connection, timeout, rate limited (429, uses `Retry-After` or 60 s), server error, bad data, PGN error.
+  Network and 5xx errors retry up to 3 times (1 s, 2 s). 429 is not retried automatically. Search can be cancelled.
+- Room keeps each game's raw PGN, source, players, result and date. Duplicates: one row per key (`chesscom:<uuid>`, `lichess:<id>`,
+  or `pgn:<sha256 of trimmed text>` for pasted and file games). Importing again opens the saved copy. Delete one or all, with a confirm dialog.
+- Tests: 6 JVM tests with JSON/NDJSON fixtures (shape from the docs and live responses, made-up players), a Room test on the device.
+- Checked live on the Galaxy Tab S7: Chess.com `erik`, Lichess `thibault` listed and opened; unknown user shows "User not found";
+  re-import keeps one copy; delete and delete all work. Test data was removed afterwards.
+- Not checked live: offline, timeout, 429 and 5xx (only by unit tests of the mapping).
+- Privacy notes for the store listing: [docs/PRIVACY_NOTES.md](docs/PRIVACY_NOTES.md).
+
 ## Sources checked
 
 | Source | Checked | Note |
 |---|---|---|
+| https://github.com/lichess-org/api (`doc/specs`, games/user, rate limits) | 2026-10-17 | One request at a time; on 429 wait a minute |
+| https://www.chess.com/news/view/published-data-api | 2026-10-17 | Serial requests; User-Agent with contact; 404/410/429; respect Chess.com IP (pieces, colors, classification glyphs) |
 | https://github.com/bhlangonijr/chesslib (release 1.3.7, README) | 2026-10-17 | Apache-2.0, JitPack only, last push 2026-07 |
 | https://github.com/official-stockfish/Stockfish (tag `sf_19`, `src/Makefile`) | 2026-10-17 | `COMP=ndk` supported, "NDK r27c or later", one default net `nn-1a298aa575a0.nnue` |
 

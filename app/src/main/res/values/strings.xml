@@ -5,7 +5,7 @@
     <string name="pgn_hint">PGN text</string>
     <string name="load">Load</string>
     <string name="cancel">Cancel</string>
-    <string name="no_game">Paste a PGN or open a .pgn file to see the game.</string>
+    <string name="no_game">No game loaded.</string>
     <string name="players">%1$s vs %2$s</string>
     <string name="nav_first">First move</string>
     <string name="nav_prev">Previous move</string>
@@ -38,4 +38,28 @@
     <plurals name="blunders"><item quantity="one">%d blunder</item><item quantity="other">%d blunders</item></plurals>
     <string name="graph_description">Evaluation graph. Tap to go to a position.</string>
     <string name="move_with_class">%1$s, %2$s</string>
+    <string name="back_to_games">← Games</string>
+    <string name="import_online">Lichess / Chess.com</string>
+    <string name="saved_games">Saved games (%1$d)</string>
+    <string name="no_saved_games">No saved games yet. Imported games are saved here.</string>
+    <string name="delete">Delete</string>
+    <string name="delete_all">Delete all</string>
+    <string name="confirm_delete">Delete this game from this device?</string>
+    <string name="confirm_delete_all">Delete all saved games from this device?</string>
+    <string name="storage_note">Games are saved only on this device. Analysis results are not saved.</string>
+    <string name="source_chesscom">Chess.com</string>
+    <string name="source_lichess">Lichess</string>
+    <string name="source_file">File</string>
+    <string name="source_paste">Pasted</string>
+    <string name="user_name">User name</string>
+    <string name="search">Search</string>
+    <string name="online_note">The user name is sent to the chosen site to get its public games. The game you pick is saved on this device.</string>
+    <string name="no_public_games">No public games found.</string>
+    <string name="err_bad_name">Use 2–30 letters, digits, _ or -.</string>
+    <string name="err_not_found">User not found.</string>
+    <string name="err_offline">No connection. Check the network and try again.</string>
+    <string name="err_timeout">The site took too long to answer. Try again.</string>
+    <string name="err_rate_limited">Too many requests. Try again in %1$d seconds.</string>
+    <string name="err_server">The site had a problem (HTTP %1$d). Try again later.</string>
+    <string name="err_bad_response">The site sent data this app cannot read.</string>
 </resources>

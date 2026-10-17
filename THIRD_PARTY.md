@@ -10,6 +10,6 @@ Draft. Fill in every row before a release. Each row must match the shipped binar
 
 Notes
 - Stockfish copyright: The Stockfish developers (see `AUTHORS` in the Stockfish source).
-- App libraries (from `app/build.gradle.kts`): Jetpack Compose BOM 2026.09.00 (incl. Material 3), `androidx.activity:activity-compose` 1.13.0, `androidx.lifecycle:lifecycle-viewmodel-compose` 2.11.0, Kotlin standard library 2.4.21. All Apache-2.0. Exact transitive versions and notices still need a full list before release.
+- App libraries (from `app/build.gradle.kts`): Jetpack Compose BOM 2026.09.00 (incl. Material 3), `androidx.activity:activity-compose` 1.13.0, `androidx.lifecycle:lifecycle-viewmodel-compose` 2.11.0, Room 2.8.5, OkHttp 5.5.0 (with Okio), kotlinx-serialization-json 1.11.0, Kotlin standard library 2.4.21. All Apache-2.0. Exact transitive versions and notices still need a full list before release.
 - Test only, not shipped: `androidx.test.ext:junit` 1.3.0, `androidx.test:runner` 1.7.0 (Apache-2.0), JUnit 4 (EPL-1.0).
 - License status of the NNUE net file is not confirmed yet. Check before release.

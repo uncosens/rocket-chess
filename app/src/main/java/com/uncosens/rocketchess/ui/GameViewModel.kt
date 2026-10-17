@@ -1,7 +1,5 @@
 package com.uncosens.rocketchess.ui
 
-import android.content.ContentResolver
-import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -73,22 +71,6 @@ class GameViewModel : ViewModel() {
         }
     }
 
-    fun loadFile(resolver: ContentResolver, uri: Uri) {
-        viewModelScope.launch {
-            val bytes = withContext(Dispatchers.IO) {
-                runCatching {
-                    // Read at most one byte past the limit to detect big files.
-                    resolver.openInputStream(uri)!!.use { it.readNBytesCompat(MAX_BYTES + 1) }
-                }.getOrNull()
-            }
-            when {
-                bytes == null -> error = LoadError.Unreadable
-                bytes.size > MAX_BYTES -> error = LoadError.TooLarge
-                else -> load(bytes.toString(Charsets.UTF_8))
-            }
-        }
-    }
-
     fun analyze(exe: File) {
         val l = line ?: return
         stopAnalysis()
@@ -137,20 +119,4 @@ class GameViewModel : ViewModel() {
         val last = line?.plies?.size ?: return
         ply = index.coerceIn(0, last)
     }
-
-    companion object {
-        // ponytail: whole file in memory, capped. Stream games if big databases are ever needed.
-        const val MAX_BYTES = 5 * 1024 * 1024
-    }
-}
-
-private fun java.io.InputStream.readNBytesCompat(limit: Int): ByteArray {
-    val out = java.io.ByteArrayOutputStream()
-    val buf = ByteArray(64 * 1024)
-    while (out.size() < limit) {
-        val n = read(buf, 0, minOf(buf.size, limit - out.size()))
-        if (n < 0) break
-        out.write(buf, 0, n)
-    }
-    return out.toByteArray()
 }
