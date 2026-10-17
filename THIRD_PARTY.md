@@ -9,5 +9,6 @@ Draft. Fill in every row before a release. Each row must match the shipped binar
 
 Notes
 - Stockfish copyright: The Stockfish developers (see `AUTHORS` in the Stockfish source).
-- Android, Kotlin and Jetpack libraries will be added here when the app project is created.
+- App libraries (from `app/build.gradle.kts`): Jetpack Compose BOM 2026.09.00 (incl. Material 3), `androidx.activity:activity-compose` 1.13.0, Kotlin standard library 2.4.21. All Apache-2.0. Exact transitive versions and notices still need a full list before release.
+- Test only, not shipped: `androidx.test.ext:junit` 1.3.0, `androidx.test:runner` 1.7.0 (Apache-2.0), JUnit 4 (EPL-1.0).
 - License status of the NNUE net file is not confirmed yet. Check before release.

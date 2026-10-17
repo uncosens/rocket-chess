@@ -21,6 +21,10 @@ cd src
 make net
 make -j"$(nproc)" build ARCH=armv8 COMP=ndk >"$OUT/build.log" 2>&1 || { tail -20 "$OUT/build.log"; exit 1; }
 cp stockfish "$OUT/stockfish-arm64-v8a"
+# The app ships a stripped copy as a fake .so so the APK installer extracts it.
+JNI="$ROOT/app/src/main/jniLibs/arm64-v8a"
+mkdir -p "$JNI"
+llvm-strip -o "$JNI/libstockfish.so" stockfish
 
 cd "$OUT"
 {
@@ -28,7 +32,7 @@ cd "$OUT"
   echo "ndk=$(grep Pkg.Revision "$ANDROID_NDK_HOME/source.properties")"
   echo "cmd=make build ARCH=armv8 COMP=ndk"
   echo "net=$(ls src/src/nn-*.nnue)"
-  sha256sum stockfish-arm64-v8a
+  sha256sum stockfish-arm64-v8a "$JNI/libstockfish.so"
   file stockfish-arm64-v8a
   ls -l stockfish-arm64-v8a
 } | tee build-info.txt

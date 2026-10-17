@@ -2,7 +2,7 @@
 
 An offline chess analysis app for Android. It runs Stockfish on the device.
 Package ID: `com.uncosens.rocketchess`.
-Status: early setup (M0). There is no app code yet.
+Status: M1 (engine check). The app only runs one Stockfish search and shows the result.
 
 ## License
 
@@ -23,9 +23,43 @@ ANDROID_NDK_HOME=/path/to/ndk scripts/build-stockfish.sh
 - Last build (2026-10-17): ELF 64-bit aarch64 PIE, Android 29, 104,999,448 bytes (99,641,448 after `llvm-strip`),
   sha256 `6bef3cb2e94e59d2041209f65e4cc15862f12535384c7dd4cc0d8491dece341e` (unstripped).
   NNUE net (98,511,183 bytes) found byte-for-byte inside the binary. LOAD segments aligned to 16 KB (`0x4000`).
-  Needs only `libc.so`, `libm.so`, `libdl.so`. Not run on a device yet.
+  Needs only `libc.so`, `libm.so`, `libdl.so`.
+- The script also writes a stripped copy to `app/src/main/jniLibs/arm64-v8a/libstockfish.so` (sha256 `e35bd90a…f0bb`). This file is not in git.
 - Patches, if any, go in `stockfish-patches/*.patch`.
 - The NDK build targets Android API 29 (`aarch64-linux-android29-clang++` in the Makefile).
+
+## Build the app
+
+Needs JDK 21 and an Android SDK with `platforms/android-37.0`. Set `sdk.dir` in `local.properties`. Build Stockfish first.
+
+```sh
+./gradlew assembleDebug
+./gradlew connectedDebugAndroidTest   # engine tests on a connected device
+```
+
+- AGP 9.4.1, Gradle 9.8.1, Kotlin 2.4.21, Compose BOM 2026.09.00.
+- compileSdk 37 (Compose needs it), targetSdk 36, minSdk 29, ABI `arm64-v8a` only.
+
+## How the engine runs
+
+Stockfish is a normal executable, not a library. It is packed in the APK as `lib/arm64-v8a/libstockfish.so`
+with `useLegacyPackaging = true`, so the installer extracts it to `nativeLibraryDir`.
+The app starts it with `ProcessBuilder` and talks UCI over stdin/stdout. It never calls `System.loadLibrary()`.
+
+## M1 engine check (2026-10-17)
+
+| Check | Galaxy Tab S7 (SM-T870, SM8250, Android 13, 4 KB pages) |
+|---|---|
+| APK: `libstockfish.so` stored compressed, zipalign `-P 16` check passes | pass (debug APK 110,457,591 bytes) |
+| Installed file: `-rwxr-xr-x`, 99,641,448 bytes, sha256 matches build | pass |
+| Run with `ProcessBuilder` | pass |
+| `uci`/`uciok`, `isready`/`readyok`, `ucinewgame`, `position`, `go depth 12`, `bestmove` | pass |
+| `go infinite` then `stop` gives `bestmove`, session still usable | pass |
+| `quit` ends process; `kill -9` is reported as an error; a new session works | pass |
+| App force-stop leaves no engine process; relaunch works | pass |
+| App screen shows `id name Stockfish 19` and `bestmove e2e4 ponder c7c5` | pass |
+| Offline | the app has no `INTERNET` permission |
+| 16 KB page device | see below |
 
 ## Sources checked
 

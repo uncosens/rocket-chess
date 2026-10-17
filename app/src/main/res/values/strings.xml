@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Rocket Chess</string>
+    <string name="engine_running">Starting engine…</string>
+</resources>
