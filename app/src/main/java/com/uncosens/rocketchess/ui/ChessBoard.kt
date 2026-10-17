@@ -29,10 +29,13 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.IntSize
 import com.uncosens.rocketchess.analysis.MoveClass
 import kotlin.math.hypot
+import kotlin.math.roundToInt
 
 private val CHECK = Color(0xCCE5484D)
+private val LAST = Color(0x66F6C548)
 private val ARROW = Color(0xD91C93A8)
 private const val MOVE_MS = 220
 
@@ -71,6 +74,7 @@ internal fun slides(old: Map<Int, Char>, new: Map<Int, Char>): Map<Int, Int> {
 /**
  * Draws one position. [lastMove] and [arrow] are (from, to); [grade] adds a badge on the last move's target.
  * [flipped] shows the board from Black's side. Pieces slide when [fen] changes.
+ * [pieceSet] and [boardStyle] default to the saved choices.
  */
 @Composable
 fun ChessBoard(
@@ -83,6 +87,7 @@ fun ChessBoard(
     pieceSet: PieceSet? = null,
     flipped: Boolean = false,
     arrow: Pair<String, String>? = null,
+    boardStyle: BoardStyle? = null,
 ) {
     val measurer = rememberTextMeasurer()
     val colors = LocalBoardColors.current
@@ -90,6 +95,8 @@ fun ChessBoard(
     // No set given: use the saved choice.
     val set = pieceSet ?: remember { PieceSetStore.load(context) }
     val images = remember(set) { PieceSetStore.images(context, set) }
+    val style = boardStyle ?: remember { BoardStyleStore.load(context) }
+    val texture = remember(style) { BoardStyleStore.texture(context, style) }
 
     val now = remember(fen) { pieces(fen) }
     var shown by remember { mutableStateOf(now) }
@@ -108,18 +115,22 @@ fun ChessBoard(
 
         val last = lastMove?.let { setOf(index(it.first), index(it.second)) } ?: emptySet()
         val coord = TextStyle(fontSize = (sq * 0.2f).toSp(), fontFamily = Mono, fontWeight = FontWeight.SemiBold)
+        val themed = style == BoardStyle.ROCKET
+        val lightSq = if (themed) colors.light else style.light
+        val darkSq = if (themed) colors.dark else style.dark
+        texture?.let { drawImage(it, dstSize = IntSize((sq * 8).roundToInt(), (sq * 8).roundToInt())) }
         for (i in 0 until 64) {
             val topLeft = at(i)
             val dark = (i % 8 + i / 8) % 2 == 0
-            val fill = when {
-                i in last -> if (dark) colors.lastDark else colors.lastLight
-                dark -> colors.dark
-                else -> colors.light
+            when {
+                themed -> drawRect(if (i in last) (if (dark) colors.lastDark else colors.lastLight) else if (dark) darkSq else lightSq, topLeft, Size(sq, sq))
+                texture == null -> drawRect(if (dark) darkSq else lightSq, topLeft, Size(sq, sq))
             }
-            drawRect(fill, topLeft, Size(sq, sq))
+            // Other styles mark the last move with a see-through overlay.
+            if (!themed && i in last) drawRect(LAST, topLeft, Size(sq, sq))
             if (check != null && i == index(check)) drawRect(CHECK, topLeft, Size(sq, sq))
             // Rank numbers on the left edge, file letters on the bottom edge, in the other square color.
-            val ink = if (dark) colors.light else colors.dark
+            val ink = if (dark) lightSq else darkSq
             if (i % 8 == (if (flipped) 7 else 0)) {
                 drawText(measurer, "${i / 8 + 1}", topLeft + Offset(sq * 0.06f, sq * 0.02f), coord.copy(color = ink))
             }

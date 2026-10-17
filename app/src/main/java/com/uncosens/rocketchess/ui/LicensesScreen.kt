@@ -70,6 +70,7 @@ fun LicensesScreen(onBack: () -> Unit) {
             FilledTonalButton(onClick = { file = "GPL-3.0.txt" }) { Text("GPL-3.0") }
             FilledTonalButton(onClick = { file = "Apache-2.0.txt" }) { Text("Apache-2.0") }
             FilledTonalButton(onClick = { file = "OFL-1.1.txt" }) { Text("OFL-1.1") }
+            FilledTonalButton(onClick = { file = "AGPL-3.0.txt" }) { Text("AGPL-3.0") }
             FilledTonalButton(onClick = { file = "third_party.txt" }) { Text(stringResource(R.string.licenses_notices)) }
         }
     }

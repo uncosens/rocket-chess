@@ -34,6 +34,10 @@ Piece images (assets/pieces), from the Lichess project: https://github.com/liche
   mpchess - Maxime Chupin - GNU GPL v3 or later (see GPL-3.0).
   chessnut - Alexis Luengas - Apache License 2.0 (see Apache-2.0).
 
+Board images (assets/boards), from the Lichess project: https://github.com/lichess-org/lila
+  wood4, maple, marble, blue-marble - the lila authors and pirouetti - GNU AGPL v3 or later (see AGPL-3.0).
+  Combined with this GPL v3 app as allowed by section 13 of both licenses.
+
 Fonts (res/font), under the SIL Open Font License 1.1 (see OFL-1.1)
   Unbounded - Copyright 2022 The Unbounded Project Authors (https://github.com/googlefonts/unbounded)
   IBM Plex Sans - Copyright 2017 IBM Corp. with Reserved Font Name "Plex"

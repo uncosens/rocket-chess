@@ -1,5 +1,7 @@
 package com.uncosens.rocketchess.ui
 
+import android.app.Activity
+import android.content.Context
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
@@ -7,8 +9,15 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -95,9 +104,43 @@ private val Type = Typography().run {
     )
 }
 
+enum class ThemeMode { SYSTEM, LIGHT, DARK }
+
+/** The chosen theme mode, saved in SharedPreferences. Changes apply at once. */
+object ThemeStore {
+    private const val KEY = "theme"
+    var mode by mutableStateOf(ThemeMode.SYSTEM)
+        private set
+
+    private fun prefs(c: Context) = c.getSharedPreferences("ui", Context.MODE_PRIVATE)
+
+    fun load(c: Context) {
+        mode = ThemeMode.entries.firstOrNull { it.name == prefs(c).getString(KEY, null) } ?: ThemeMode.SYSTEM
+    }
+
+    fun save(c: Context, m: ThemeMode) {
+        mode = m
+        prefs(c).edit().putString(KEY, m.name).apply()
+    }
+}
+
 @Composable
 fun RocketTheme(content: @Composable () -> Unit) {
-    val dark = isSystemInDarkTheme()
+    val view = LocalView.current
+    remember { ThemeStore.load(view.context) }
+    val dark = when (ThemeStore.mode) {
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
+    // Status and navigation bar icons follow the app theme, not the system one.
+    SideEffect {
+        val window = (view.context as Activity).window
+        WindowCompat.getInsetsController(window, view).apply {
+            isAppearanceLightStatusBars = !dark
+            isAppearanceLightNavigationBars = !dark
+        }
+    }
     CompositionLocalProvider(LocalBoardColors provides if (dark) NightBoard else DayBoard) {
         MaterialTheme(colorScheme = if (dark) Night else Day, typography = Type, content = content)
     }
