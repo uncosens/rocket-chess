@@ -24,7 +24,7 @@ enum class MoveClass { Best, Excellent, Good, Inaccuracy, Mistake, Blunder }
 object AnalysisPolicy {
     const val DEPTH = 14
     const val MULTI_PV = 2
-    // ponytail: fixed defaults; a settings screen for threads/hash comes later.
+    // Defaults for the user settings in EngineOptions.
     const val THREADS = 2
     const val HASH_MB = 32
 

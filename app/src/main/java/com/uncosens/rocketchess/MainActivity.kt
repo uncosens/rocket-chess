@@ -21,6 +21,7 @@ import com.uncosens.rocketchess.ui.LibraryScreen
 import com.uncosens.rocketchess.ui.LicensesScreen
 import com.uncosens.rocketchess.ui.LibraryViewModel
 import com.uncosens.rocketchess.ui.OnlineScreen
+import com.uncosens.rocketchess.ui.SettingsScreen
 
 class MainActivity : ComponentActivity() {
     private val game: GameViewModel by viewModels()
@@ -38,7 +39,8 @@ class MainActivity : ComponentActivity() {
                         GAME -> GameScreen(game, onBack = { game.stopAnalysis(); screen = LIBRARY })
                         ONLINE -> OnlineScreen(library, onOpen = open, onBack = { screen = LIBRARY })
                         LICENSES -> LicensesScreen(onBack = { screen = LIBRARY })
-                        else -> LibraryScreen(library, onOpen = open, onOnline = { screen = ONLINE }, onLicenses = { screen = LICENSES })
+                        SETTINGS -> SettingsScreen(onBack = { screen = LIBRARY })
+                        else -> LibraryScreen(library, onOpen = open, onOnline = { screen = ONLINE }, onSettings = { screen = SETTINGS }, onLicenses = { screen = LICENSES })
                     }
                 }
             }
@@ -56,5 +58,6 @@ class MainActivity : ComponentActivity() {
         const val ONLINE = "online"
         const val GAME = "game"
         const val LICENSES = "licenses"
+        const val SETTINGS = "settings"
     }
 }

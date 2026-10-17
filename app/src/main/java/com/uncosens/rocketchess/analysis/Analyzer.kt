@@ -20,12 +20,12 @@ data class AnalysisSettings(
 
 /** Runs a fixed-depth search on each position. Blocking; call from a background thread. */
 class Analyzer(private val sf: StockfishSession) {
-    /** Sets options and returns the engine name. */
-    fun start(): AnalysisSettings {
+    /** Sets options and returns the settings used, with the engine name. */
+    fun start(opts: EngineOptions = EngineOptions()): AnalysisSettings {
         sf.send("uci")
         val name = sf.readUntil(TIMEOUT_MS) { it == "uciok" }
             .firstOrNull { it.startsWith("id name ") }?.removePrefix("id name ") ?: "unknown"
-        val s = AnalysisSettings(name)
+        val s = AnalysisSettings(name, depth = opts.depth, threads = opts.threads, hashMb = opts.hashMb)
         sf.send("setoption name Threads value ${s.threads}")
         sf.send("setoption name Hash value ${s.hashMb}")
         sf.send("setoption name MultiPV value ${s.multiPv}")

@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import com.uncosens.rocketchess.R
 import com.uncosens.rocketchess.analysis.MoveClass
 import com.uncosens.rocketchess.chess.GameLine
+import com.uncosens.rocketchess.analysis.EngineOptionsStore
 import com.uncosens.rocketchess.engine.StockfishSession
 
 @Composable
@@ -48,7 +49,7 @@ fun GameScreen(vm: GameViewModel, onBack: () -> Unit) {
         val side = maxHeight
         val board = @Composable { m: Modifier -> Board(vm, m) }
         val panel = @Composable { m: Modifier ->
-            Panel(vm, onBack = onBack, onAnalyze = { vm.analyze(exe) }, modifier = m)
+            Panel(vm, onBack = onBack, onAnalyze = { vm.analyze(exe, EngineOptionsStore.load(context)) }, modifier = m)
         }
         if (wide) {
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {

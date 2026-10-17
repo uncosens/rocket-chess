@@ -51,7 +51,7 @@ import java.util.Date
 /** Saved games and the ways to add one. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun LibraryScreen(vm: LibraryViewModel, onOpen: (String) -> Unit, onOnline: () -> Unit, onLicenses: () -> Unit) {
+fun LibraryScreen(vm: LibraryViewModel, onOpen: (String) -> Unit, onOnline: () -> Unit, onSettings: () -> Unit, onLicenses: () -> Unit) {
     val games by vm.games.collectAsState()
     var pasting by rememberSaveable { mutableStateOf(false) }
     var confirmDelete by rememberSaveable { mutableStateOf<Long?>(null) } // -1 = delete all
@@ -89,6 +89,7 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: (String) -> Unit, onOnline: () -
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.storage_note), style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+            TextButton(onClick = onSettings) { Text(stringResource(R.string.engine_settings)) }
             TextButton(onClick = onLicenses) { Text(stringResource(R.string.about_licenses)) }
         }
     }

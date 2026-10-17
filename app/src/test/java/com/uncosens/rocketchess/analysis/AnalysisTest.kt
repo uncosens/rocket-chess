@@ -94,4 +94,16 @@ class AnalysisTest {
         assertEquals(MoveClass.Best, Analyzer.grade(line, evals, 1)!!.cls)
         assertNull(Analyzer.grade(line, evals, 2)) // position after Qh5 not analyzed yet
     }
+
+    @Test
+    fun readsAndClampsEngineOptions() {
+        // Nothing saved: the defaults.
+        assertEquals(EngineOptions(2, 32, 14), EngineOptions.read(cores = 8) { _, d -> d })
+        val saved = mapOf("threads" to 9, "hash_mb" to 100, "depth" to 3)
+        assertEquals(EngineOptions(4, 128, 10), EngineOptions.read(cores = 8) { k, d -> saved[k] ?: d })
+        // Threads stop at the core count; hash snaps to the nearest choice.
+        assertEquals(EngineOptions(1, 64, 20), EngineOptions(threads = 2, hashMb = 70, depth = 25).clamped(cores = 1))
+        assertEquals(EngineOptions(1, 16, 14), EngineOptions(threads = 0, hashMb = 1).clamped(cores = 4))
+        assertEquals(3, EngineOptions.maxThreads(3))
+    }
 }

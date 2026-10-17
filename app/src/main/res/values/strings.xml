@@ -72,4 +72,11 @@
     <string name="licenses_libraries">Other libraries (AndroidX, Kotlin, OkHttp, Okio, kotlinx, chesslib, Apache Commons Lang and others) are under the Apache License 2.0. The full list is in the notices.</string>
     <string name="licenses_build">App commit: %1$s\nStockfish commit: %2$s\nEngine SHA-256: %3$s</string>
     <string name="licenses_notices">Third-party notices</string>
+    <string name="engine_settings">Engine settings</string>
+    <string name="settings_threads">Threads</string>
+    <string name="settings_hash">Hash table</string>
+    <string name="settings_hash_mb">%1$d MB</string>
+    <string name="settings_depth">Search depth: %1$d</string>
+    <string name="settings_note">More threads and depth give better analysis but take longer and use more battery. Changes apply to the next analysis.</string>
+    <string name="settings_reset">Reset to defaults</string>
 </resources>

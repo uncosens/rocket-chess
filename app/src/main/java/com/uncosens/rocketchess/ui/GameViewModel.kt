@@ -11,6 +11,7 @@ import com.uncosens.rocketchess.chess.PgnException
 import com.uncosens.rocketchess.chess.PgnGame
 import com.uncosens.rocketchess.analysis.AnalysisSettings
 import com.uncosens.rocketchess.analysis.Analyzer
+import com.uncosens.rocketchess.analysis.EngineOptions
 import com.uncosens.rocketchess.analysis.PositionEval
 import com.uncosens.rocketchess.engine.StockfishSession
 import java.io.File
@@ -71,7 +72,7 @@ class GameViewModel : ViewModel() {
         }
     }
 
-    fun analyze(exe: File) {
+    fun analyze(exe: File, opts: EngineOptions) {
         val l = line ?: return
         stopAnalysis()
         val id = ++runId
@@ -85,7 +86,7 @@ class GameViewModel : ViewModel() {
             }
             try {
                 val analyzer = Analyzer(sf)
-                val settings = analyzer.start()
+                val settings = analyzer.start(opts)
                 l.positions.forEachIndexed { i, p ->
                     ensureActive()
                     val e = analyzer.analyze(p.fen, settings.depth)
