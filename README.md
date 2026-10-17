@@ -2,7 +2,7 @@
 
 An offline chess analysis app for Android. It runs Stockfish on the device.
 Package ID: `com.uncosens.rocketchess`.
-Status: M1 (engine check). The app only runs one Stockfish search and shows the result.
+Status: M2 (board and PGN). You can load a PGN and step through the game. Engine analysis is not wired to the UI yet.
 
 ## License
 
@@ -66,10 +66,23 @@ The run on a 16 KB device is **not verified**. The Android emulator hangs at sta
 Ways to check: a Pixel 8/9 with "Boot with 16KB page size", Samsung Remote Test Lab 16 KB devices, or Cuttlefish in WSL2.
 Play blocks updates without 16 KB support from 2027-02-01 (see the Android page-size guide).
 
+## M2 board and PGN (2026-10-17)
+
+- `chess/Pgn.kt` reads the first game of a PGN: tags, comments, `;` comments, NAGs, variations (skipped), results, missing result.
+  Errors give line, column and reason. `chess/GameLine.kt` replays the moves with chesslib and rejects illegal or ambiguous moves.
+- Import: paste text, or open a file with the system file picker (SAF). Files over 5 MB are refused. Text is read as UTF-8.
+- The raw PGN text is kept in memory with the game. Saving it (Room) comes later.
+- JVM tests: `./gradlew testDebugUnitTest` (7 tests: Opera game fixture, castling, en passant, promotion, Black to move first, disambiguation, error positions).
+- Checked on the Galaxy Tab S7: file picker opens `opera.pgn`, final position and check square match the expected FEN,
+  first/previous/next/last and tapping a move work, a bad file shows `PGN error at line 2, column 4: illegal move "Ke3"`.
+- Not checked yet: portrait layout, screen rotation, light theme, TalkBack walk-through.
+- Pieces are drawn with the device font's chess symbols. A device with an odd font may draw them badly; own vector pieces would fix that.
+
 ## Sources checked
 
 | Source | Checked | Note |
 |---|---|---|
+| https://github.com/bhlangonijr/chesslib (release 1.3.7, README) | 2026-10-17 | Apache-2.0, JitPack only, last push 2026-07 |
 | https://github.com/official-stockfish/Stockfish (tag `sf_19`, `src/Makefile`) | 2026-10-17 | `COMP=ndk` supported, "NDK r27c or later", one default net `nn-1a298aa575a0.nnue` |
 
 ## Open checks

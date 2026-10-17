@@ -1,4 +1,19 @@
 <resources>
     <string name="app_name">Rocket Chess</string>
-    <string name="engine_running">Starting engine…</string>
+    <string name="paste_pgn">Paste PGN</string>
+    <string name="open_file">Open file</string>
+    <string name="pgn_hint">PGN text</string>
+    <string name="load">Load</string>
+    <string name="cancel">Cancel</string>
+    <string name="no_game">Paste a PGN or open a .pgn file to see the game.</string>
+    <string name="players">%1$s vs %2$s</string>
+    <string name="nav_first">First move</string>
+    <string name="nav_prev">Previous move</string>
+    <string name="nav_next">Next move</string>
+    <string name="nav_last">Last move</string>
+    <string name="board_start">Chess board, start position</string>
+    <string name="board_after">Chess board after %1$s</string>
+    <string name="error_pgn">PGN error at line %1$d, column %2$d: %3$s</string>
+    <string name="error_too_large">File is too large (max %1$d MB).</string>
+    <string name="error_unreadable">Could not read the file.</string>
 </resources>
