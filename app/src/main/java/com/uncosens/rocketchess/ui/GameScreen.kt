@@ -1,6 +1,7 @@
 package com.uncosens.rocketchess.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -59,6 +60,8 @@ fun GameScreen(vm: GameViewModel, onBack: () -> Unit) {
     val exe = remember { StockfishSession.binary(context) }
     val onAnalyze = { vm.analyze(exe, EngineOptionsStore.load(context)) }
     BackHandler(onBack = onBack)
+    // Positions the user reaches on the board are analyzed right away.
+    LaunchedEffect(vm.variation, vm.ply) { vm.analyzeLive(exe, EngineOptionsStore.load(context)) }
 
     BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 16.dp, vertical = 8.dp)) {
         if (maxWidth > maxHeight) {
@@ -125,8 +128,13 @@ private fun Board(vm: GameViewModel, modifier: Modifier) {
     val last = line?.plies?.getOrNull(vm.ply - 1)
     // Engine's best move in this position, as a UCI move like "e2e4".
     val best = vm.evals.getOrNull(vm.ply)?.best
+    val fen = position?.fen ?: GameLine.START_FEN
+    // Tap a piece, then a target square, to play your own move.
+    var selected by remember(fen) { mutableStateOf<String?>(null) }
+    var promotions by remember(fen) { mutableStateOf<List<String>>(emptyList()) }
+    val legal = remember(fen, line) { if (line == null) emptyList() else GameLine.legalMoves(fen) }
     ChessBoard(
-        fen = position?.fen ?: GameLine.START_FEN,
+        fen = fen,
         lastMove = last?.let { it.from to it.to },
         check = position?.check,
         description = if (last == null) stringResource(R.string.board_start)
@@ -135,7 +143,54 @@ private fun Board(vm: GameViewModel, modifier: Modifier) {
         grade = if (vm.ply > 0) vm.grade(vm.ply - 1)?.cls else null,
         flipped = vm.flipped,
         arrow = best?.let { it.substring(0, 2) to it.substring(2, 4) },
+        selected = selected,
+        targets = selected?.let { s -> legal.filter { it.startsWith(s) }.map { it.substring(2, 4) }.toSet() } ?: emptySet(),
+        onTap = { sq ->
+            val moves = selected?.let { s -> legal.filter { it.startsWith(s + sq) } } ?: emptyList()
+            when {
+                moves.size == 1 -> vm.play(moves[0])
+                moves.size > 1 -> promotions = moves
+                sq != selected && legal.any { it.startsWith(sq) } -> selected = sq
+                else -> selected = null
+            }
+        },
     )
+    if (promotions.isNotEmpty()) PromotionDialog(promotions, onPick = { promotions = emptyList(); vm.play(it) }, onDismiss = { promotions = emptyList() })
+}
+
+/** Pick the piece a pawn becomes. [moves] are the same move with each promotion letter. */
+@Composable
+private fun PromotionDialog(moves: List<String>, onPick: (String) -> Unit, onDismiss: () -> Unit) {
+    val names = mapOf('q' to R.string.piece_queen, 'r' to R.string.piece_rook, 'b' to R.string.piece_bishop, 'n' to R.string.piece_knight)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.promote_to)) },
+        text = {
+            Column {
+                for (m in moves.sortedBy { "qrbn".indexOf(it.last()) }) {
+                    TextButton(onClick = { onPick(m) }) { Text(stringResource(names.getValue(m.last()))) }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
+}
+
+/** Shown while the user plays their own moves: status and the way back to the game. */
+@Composable
+private fun VariationBar(vm: GameViewModel) {
+    val status = vm.liveError?.let { stringResource(R.string.analysis_failed, it) }
+        ?: if (vm.evals.getOrNull(vm.ply) == null) stringResource(R.string.analyzing_position) else stringResource(R.string.variation_hint)
+    Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = RoundedCornerShape(18.dp)) {
+        Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.variation_title), style = MaterialTheme.typography.labelLarge)
+                Text(status, style = MaterialTheme.typography.bodySmall)
+            }
+            TextButton(onClick = vm::leaveVariation) { Text(stringResource(R.string.back_to_game)) }
+        }
+    }
 }
 
 /** Selected move, analysis status and the eval graph. Scrolls when space is short. */
@@ -148,6 +203,7 @@ private fun Details(vm: GameViewModel, modifier: Modifier) {
             Text(stringResource(R.string.no_game), style = MaterialTheme.typography.bodyMedium)
             return@Column
         }
+        if (vm.variation != null) VariationBar(vm)
         MoveCard(vm, line)
         AnalysisStatus(vm)
         EvalCard(vm, line)
@@ -227,6 +283,8 @@ private fun Footer(vm: GameViewModel, onAnalyze: () -> Unit) {
                 onClick = { vm.goTo(i + 1) },
                 modifier = Modifier.heightIn(min = 44.dp).semantics { contentDescription = desc },
                 shape = RoundedCornerShape(10.dp),
+                // The user's own moves get an outline.
+                border = vm.variation?.takeIf { i >= it.branch }?.let { BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) },
                 color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.surfaceContainer,
                 contentColor = if (selected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface,
             ) {

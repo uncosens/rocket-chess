@@ -89,4 +89,26 @@ class ChessTest {
         assertEquals("no game found", error("   ").reason)
         assertEquals("bad move \"e9\"", error("1. e9").reason)
     }
+
+    @Test
+    fun playsOwnMoves() {
+        val game = line("1. e4 e5 2. Nf3 *")
+        assertEquals(20, GameLine.legalMoves(GameLine.START_FEN).size)
+        // From after 1. e4, play 1... c5 instead: the rest of the game is dropped.
+        val sicilian = game.play(1, "c7c5")!!
+        assertEquals(listOf("e4", "c5"), sicilian.plies.map { it.san })
+        assertEquals(3, sicilian.positions.size)
+        assertEquals(game.positions[1], sicilian.positions[1])
+        assertTrue(sicilian.positions[2].fen.startsWith("rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w"))
+        assertNull(game.play(1, "e2e4")) // not Black's move
+        // Check and promotion come out right.
+        val promo = line("[FEN \"8/P6k/8/8/8/8/8/K7 w - - 0 1\"]\n*")
+        assertEquals(listOf("a7a8q", "a7a8r", "a7a8b", "a7a8n"), GameLine.legalMoves(promo.positions[0].fen).filter { it.startsWith("a7") }.sortedBy { "qrbn".indexOf(it.last()) })
+        val queened = promo.play(0, "a7a8q")!!
+        assertEquals("a8=Q", queened.plies[0].san)
+        assertNull(queened.positions[1].check)
+        val check = line("1. e4 e5 *").play(2, "d1h5")!!.play(3, "b8c6")!!.play(4, "h5f7")!!
+        assertEquals("Qxf7", check.plies.last().san)
+        assertEquals("e8", check.positions.last().check)
+    }
 }

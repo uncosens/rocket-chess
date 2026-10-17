@@ -5,12 +5,14 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -20,8 +22,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -37,6 +41,8 @@ import kotlin.math.roundToInt
 private val CHECK = Color(0xCCE5484D)
 private val LAST = Color(0x66F6C548)
 private val ARROW = Color(0xD91C93A8)
+private val SELECTED = Color(0x801C93A8)
+private val TARGET = Color(0x59101828)
 private const val MOVE_MS = 220
 
 /** Square name like "e4" to 0..63, a1 = 0. */
@@ -75,6 +81,7 @@ internal fun slides(old: Map<Int, Char>, new: Map<Int, Char>): Map<Int, Int> {
  * Draws one position. [lastMove] and [arrow] are (from, to); [grade] adds a badge on the last move's target.
  * [flipped] shows the board from Black's side. Pieces slide when [fen] changes.
  * [pieceSet] and [boardStyle] default to the saved choices.
+ * With [onTap], squares can be tapped; [selected] is marked and [targets] get a dot.
  */
 @Composable
 fun ChessBoard(
@@ -88,6 +95,9 @@ fun ChessBoard(
     flipped: Boolean = false,
     arrow: Pair<String, String>? = null,
     boardStyle: BoardStyle? = null,
+    selected: String? = null,
+    targets: Set<String> = emptySet(),
+    onTap: ((String) -> Unit)? = null,
 ) {
     val measurer = rememberTextMeasurer()
     val colors = LocalBoardColors.current
@@ -107,7 +117,18 @@ fun ChessBoard(
         progress.animateTo(1f, tween(MOVE_MS, easing = FastOutSlowInEasing))
     }
 
-    Canvas(modifier.aspectRatio(1f).semantics { contentDescription = description }) {
+    val tap by rememberUpdatedState(onTap)
+    val input = if (onTap == null) Modifier else Modifier.pointerInput(flipped) {
+        detectTapGestures { o ->
+            val col = (o.x / size.width * 8).toInt().coerceIn(0, 7)
+            val row = (o.y / size.height * 8).toInt().coerceIn(0, 7)
+            val file = if (flipped) 7 - col else col
+            val rank = if (flipped) row else 7 - row
+            tap?.invoke("${'a' + file}${rank + 1}")
+        }
+    }
+
+    Canvas(modifier.aspectRatio(1f).semantics { contentDescription = description }.then(input)) {
         val sq = size.minDimension / 8
         // Top-left corner of a square on screen.
         fun at(i: Int) = if (flipped) Offset((7 - i % 8) * sq, (i / 8) * sq) else Offset((i % 8) * sq, (7 - i / 8) * sq)
@@ -129,6 +150,7 @@ fun ChessBoard(
             // Other styles mark the last move with a see-through overlay.
             if (!themed && i in last) drawRect(LAST, topLeft, Size(sq, sq))
             if (check != null && i == index(check)) drawRect(CHECK, topLeft, Size(sq, sq))
+            if (selected != null && i == index(selected)) drawRect(SELECTED, topLeft, Size(sq, sq))
             // Rank numbers on the left edge, file letters on the bottom edge, in the other square color.
             val ink = if (dark) lightSq else darkSq
             if (i % 8 == (if (flipped) 7 else 0)) {
@@ -150,6 +172,12 @@ fun ChessBoard(
         }
         if (p < 1f) return@Canvas
 
+        // A dot on an empty target, a ring on a capture.
+        for (t in targets) {
+            val i = index(t)
+            if (i in now) drawCircle(TARGET, sq * 0.46f, center(i), style = Stroke(sq * 0.08f))
+            else drawCircle(TARGET, sq * 0.16f, center(i))
+        }
         if (arrow != null) drawArrow(center(index(arrow.first)), center(index(arrow.second)), sq)
         val mark = grade?.badge()
         if (grade != null && mark != null && lastMove != null) {

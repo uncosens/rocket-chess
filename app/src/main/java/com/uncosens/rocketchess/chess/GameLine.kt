@@ -14,6 +14,17 @@ data class Position(val fen: String, val check: String?)
 
 /** A game as a straight line: positions.size == plies.size + 1. */
 class GameLine(val plies: List<Ply>, val positions: List<Position>) {
+    /** This line up to position [ply], then [uci]. Null if the move is not legal there. */
+    fun play(ply: Int, uci: String): GameLine? {
+        val fen = positions[ply].fen
+        val board = Board().apply { loadFromFen(fen) }
+        val move = board.legalMoves().firstOrNull { uciOf(it) == uci } ?: return null
+        val san = MoveList(fen).apply { add(move) }.toSanArray()[0].trimEnd('+', '#')
+        board.doMove(move)
+        val next = Ply(san, uci, uci.substring(0, 2), uci.substring(2, 4))
+        return GameLine(plies.take(ply) + next, positions.take(ply + 1) + position(board))
+    }
+
     companion object {
         const val START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
@@ -43,6 +54,10 @@ class GameLine(val plies: List<Ply>, val positions: List<Position>) {
             val move = board.legalMoves().first { uciOf(it) == uci }
             MoveList(fen).apply { add(move) }.toSanArray()[0]
         }.getOrDefault(uci)
+
+        /** Legal moves in a position, in UCI. Empty if the FEN cannot be read. */
+        fun legalMoves(fen: String): List<String> =
+            runCatching { Board().apply { loadFromFen(fen) }.legalMoves().map(::uciOf) }.getOrDefault(emptyList())
 
         private fun uciOf(move: Move): String {
             val promo = move.promotion.takeIf { it != Piece.NONE }?.let { letter(it.pieceType).lowercaseChar() }

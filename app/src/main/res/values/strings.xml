@@ -91,4 +91,13 @@
     <string name="tap_to_jump">Tap to jump</string>
     <string name="start_position">Start position</string>
     <string name="depth">depth %1$d</string>
+    <string name="variation_title">Your own moves</string>
+    <string name="variation_hint">Tap a piece, then a square, to keep playing.</string>
+    <string name="analyzing_position">Analyzing this position…</string>
+    <string name="back_to_game">Back to game</string>
+    <string name="promote_to">Promote to</string>
+    <string name="piece_queen">Queen</string>
+    <string name="piece_rook">Rook</string>
+    <string name="piece_bishop">Bishop</string>
+    <string name="piece_knight">Knight</string>
 </resources>
