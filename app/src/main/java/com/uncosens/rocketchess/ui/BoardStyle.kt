@@ -7,7 +7,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 
 /**
- * Board looks. ROCKET follows the app theme. Plain ones are two colors; textured ones draw
+ * Board looks. ROCKET uses the Night board colors in every theme. Plain ones are two colors; textured ones draw
  * assets/boards/<image>.jpg (from the Lichess project). [light]/[dark] also color the coordinates.
  */
 enum class BoardStyle(val id: String, val light: Color, val dark: Color, val image: String? = null) {

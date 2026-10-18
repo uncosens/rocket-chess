@@ -31,9 +31,8 @@ data class BoardColors(val light: Color, val dark: Color, val lastLight: Color, 
 
 val LocalBoardColors = staticCompositionLocalOf { NightBoard }
 
-// "Night Launch" for dark mode, "Daylight" for light mode.
+// The Rocket board keeps its "Night Launch" colors in both dark and light mode.
 private val NightBoard = BoardColors(Color(0xFFCBD2E1), Color(0xFF59678A), Color(0xFFF2B48F), Color(0xFFC98765))
-private val DayBoard = BoardColors(Color(0xFFE8EDF4), Color(0xFF8DA2C4), Color(0xFFC3CEF7), Color(0xFF7D93E2))
 
 private val Night = darkColorScheme(
     primary = Color(0xFFFF6B35),
@@ -141,7 +140,7 @@ fun RocketTheme(content: @Composable () -> Unit) {
             isAppearanceLightNavigationBars = !dark
         }
     }
-    CompositionLocalProvider(LocalBoardColors provides if (dark) NightBoard else DayBoard) {
+    CompositionLocalProvider(LocalBoardColors provides NightBoard) {
         MaterialTheme(colorScheme = if (dark) Night else Day, typography = Type, content = content)
     }
 }
