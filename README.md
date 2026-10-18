@@ -83,11 +83,16 @@ Play blocks updates without 16 KB support from 2027-02-01 (see the Android page-
 - Every position (start + one per ply) gets `go depth 14` with MultiPV 2, 2 threads, 32 MB hash (`analysis/Classification.kt`, `AnalysisPolicy`).
 - Scores are stored from White's view. Mate keeps who wins and the distance. Win% uses `50 + 50 * (2 / (1 + exp(-0.00368208 * cp)) - 1)`; mate is 0 or 100.
 - Loss = mover's win% before the move minus after it. Best = the played move equals PV1's first move (UCI compare).
-  Then Excellent < 2, Good < 5, Inaccuracy < 10, Mistake < 15, Blunder >= 15 points. This is our own test policy, not Lichess grading.
+  Then Good < 2, Fine < 5, Weak < 10, Mistake < 20, Blunder >= 20 points (Chess.com's lines). This is our own test policy, not Lichess grading.
+- Brilliant (our own rule): a piece sacrifice that is PV1, loses under 2 points, was played when the mover's win% was below 90,
+  and leaves the mover at 50% or more.
+  A sacrifice means the opponent can win the moved piece for a net 200+ (a minor piece for a pawn, or the exchange), by a static exchange on its square (`chess/Sacrifice.kt`).
+- Accuracy is the mean of a score per grade (Best/Brilliant 100, Good 86, Fine 79, Weak 38, Mistake 11, Blunder -39), kept to 0..100.
+  The scores were fitted to Chess.com's accuracy on 79 reviewed games; about 4 points off on average. Chess.com's own formula is not public.
 - A negative loss is graded as no loss. It happens because the next position is searched on its own and can find more.
 - Stop keeps the results so far; ungraded moves stay ungraded. Going to the background stops the run and quits the engine.
   Each run has an id, so a stopped run cannot write results. Results are not saved; analyze again to get them back.
-- Tests: 7 JVM tests (UCI parsing, White view, mate rules, win%, class edges 2/5/10/15) and a device test that analyzes the Opera game.
+- Tests: 7 JVM tests (UCI parsing, White view, mate rules, win%, class edges 2/5/10/20) and a device test that analyzes the Opera game.
 - Galaxy Tab S7 timing (Opera game, 34 positions): depth 14 took 13.2 s in the device test. Another run measured 25 positions:
   depth 16 25.8 s, depth 18 44.8 s; depth 14 took 91.8 s in that run (first in the run, cause unknown). Depth 14 kept for heat and time.
 - Not done yet: settings screen for threads/hash/depth, eval bar, move arrows.

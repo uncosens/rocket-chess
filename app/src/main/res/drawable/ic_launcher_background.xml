@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher background: the 2x2 board. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="#FF6B35" android:pathData="M0,0h108v108h-108z" />
+    <path android:fillColor="#D65A2D" android:pathData="M54,0h54v54h-54z M0,54h54v54h-54z" />
+</vector>

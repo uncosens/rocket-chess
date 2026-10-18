@@ -20,12 +20,12 @@ data class AnalysisSettings(
 
 /** Runs a fixed-depth search on each position. Blocking; call from a background thread. */
 class Analyzer(private val sf: StockfishSession) {
-    /** Sets options and returns the engine name. */
-    fun start(): AnalysisSettings {
+    /** Sets options and returns the settings used, with the engine name. */
+    fun start(opts: EngineOptions = EngineOptions()): AnalysisSettings {
         sf.send("uci")
         val name = sf.readUntil(TIMEOUT_MS) { it == "uciok" }
             .firstOrNull { it.startsWith("id name ") }?.removePrefix("id name ") ?: "unknown"
-        val s = AnalysisSettings(name)
+        val s = AnalysisSettings(name, depth = opts.depth, threads = opts.threads, hashMb = opts.hashMb)
         sf.send("setoption name Threads value ${s.threads}")
         sf.send("setoption name Hash value ${s.hashMb}")
         sf.send("setoption name MultiPV value ${s.multiPv}")
@@ -35,11 +35,24 @@ class Analyzer(private val sf: StockfishSession) {
         return s
     }
 
-    fun analyze(fen: String, depth: Int): PositionEval {
+    /** Searches [fen] to [depth]. [onDepth], if given, gets a result each time a deeper depth is done. */
+    fun analyze(fen: String, depth: Int, onDepth: ((PositionEval) -> Unit)? = null): PositionEval {
         val whiteToMove = fen.split(' ').getOrNull(1) != "b"
         sf.send("position fen $fen")
         sf.send("go depth $depth")
-        val lines = sf.readUntil(SEARCH_TIMEOUT_MS) { it.startsWith("bestmove") }
+        var shown = 0
+        var second: Eval? = null
+        val lines = sf.readUntil(SEARCH_TIMEOUT_MS) { line ->
+            if (onDepth != null) Uci.parseInfo(line)?.let { info ->
+                // MultiPV 2 comes after MultiPV 1 at each depth, so the second eval is one depth behind.
+                if (info.multipv == 2) second = Eval.fromUci(info.score, whiteToMove)
+                else if (info.multipv == 1 && info.depth > shown) {
+                    shown = info.depth
+                    onDepth(PositionEval(Eval.fromUci(info.score, whiteToMove), info.pv.firstOrNull(), second, info.depth))
+                }
+            }
+            line.startsWith("bestmove")
+        }
         // Keep the deepest line for each multipv slot.
         val infos = lines.mapNotNull(Uci::parseInfo).groupBy { it.multipv }.mapValues { (_, v) -> v.maxBy { it.depth } }
         val pv1 = infos[1] ?: throw IllegalStateException("no score for position")
@@ -61,7 +74,17 @@ class Analyzer(private val sf: StockfishSession) {
             val after = evals.getOrNull(ply + 1) ?: return null
             val whiteMoved = line.positions[ply].fen.split(' ')[1] == "w"
             val loss = winLoss(before.eval, after.eval, whiteMoved)
-            return MoveResult(classify(line.plies[ply].uci, before.best, loss), loss)
+            val p = line.plies[ply]
+            val white = whiteWinPercent(before.eval)
+            val moverWin = if (whiteMoved) white else 100 - white
+            val cls = if (isBrilliant(p.uci, before.best, p.sacrifice, loss, moverWin)) MoveClass.Brilliant else classify(p.uci, before.best, loss)
+            return MoveResult(cls, loss)
         }
+
+        /** One side's accuracy: the mean grade score of its graded moves, 0 to 100; null if none are graded. */
+        fun accuracy(line: GameLine, evals: List<PositionEval?>, white: Boolean): Double? =
+            line.plies.indices.filter { (line.positions[it].fen.split(' ')[1] == "w") == white }
+                .mapNotNull { grade(line, evals, it)?.let { g -> gradeScore(g.cls) } }
+                .takeIf { it.isNotEmpty() }?.average()?.coerceIn(0.0, 100.0)
     }
 }

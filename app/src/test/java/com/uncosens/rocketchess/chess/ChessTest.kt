@@ -89,4 +89,70 @@ class ChessTest {
         assertEquals("no game found", error("   ").reason)
         assertEquals("bad move \"e9\"", error("1. e9").reason)
     }
+
+    @Test
+    fun setUpPosition() {
+        // The start position's pieces give back the start FEN.
+        val startPieces = mapOf(
+            0 to 'R', 1 to 'N', 2 to 'B', 3 to 'Q', 4 to 'K', 5 to 'B', 6 to 'N', 7 to 'R',
+            56 to 'r', 57 to 'n', 58 to 'b', 59 to 'q', 60 to 'k', 61 to 'b', 62 to 'n', 63 to 'r',
+        ) + (8..15).associateWith { 'P' } + (48..55).associateWith { 'p' }
+        assertEquals(GameLine.START_FEN, Setup.fen(startPieces, whiteToMove = true))
+        assertEquals("8/8/8/8/8/8/8/4K2k b - - 0 1", Setup.fen(mapOf(4 to 'K', 7 to 'k'), whiteToMove = false))
+
+        assertNull(Setup.error("4k3/8/8/8/8/8/8/4K3 w - - 0 1"))
+        assertEquals(SetupError.KINGS, Setup.error("8/8/8/8/8/8/8/4K3 w - - 0 1"))
+        assertEquals(SetupError.PAWNS, Setup.error("P3k3/8/8/8/8/8/8/4K3 w - - 0 1"))
+        // Black's king is attacked by the rook but it is White's turn.
+        assertEquals(SetupError.CHECK, Setup.error("4k3/8/8/8/8/8/8/4RK2 w - - 0 1"))
+        assertNull(Setup.error("4k3/8/8/8/8/8/8/4RK2 b - - 0 1"))
+
+        // The PGN replays from the set-up position with no moves.
+        val fen = "4k3/8/8/8/8/8/4P3/4K3 b - - 0 1"
+        val l = GameLine.from(Pgn.parse(Setup.pgn(fen)))
+        assertEquals(fen, l.positions.single().fen)
+    }
+
+    @Test
+    fun mateAndResignation() {
+        val mated = line("1. e4 e5 2. Qh5 Nc6 3. Bc4 Nf6 4. Qxf7# 1-0")
+        assertTrue(mated.positions.last().mate)
+        assertEquals("e8", mated.positions.last().check)
+        // Check alone is not mate.
+        val check = line("1. e4 f5 2. Qh5+ *").positions.last()
+        assertEquals("e8", check.check)
+        assertTrue(!check.mate)
+
+        fun game(termination: String?, result: String) =
+            Pgn.parse((termination?.let { "[Termination \"$it\"]\n" } ?: "") + "[Result \"$result\"]\n\n1. e4 e5 $result")
+        assertEquals(Finish.RESIGNED, game("thibault won by resignation", "0-1").finish())
+        assertEquals(Finish.RESIGNED, game("Normal", "1-0").finish()) // Lichess: mate is ruled out by the board
+        assertEquals(Finish.TIME, game("Grum000 won on time", "0-1").finish())
+        assertEquals(Finish.TIME, game("Time forfeit", "0-1").finish())
+        assertNull(game("Game drawn by timeout vs insufficient material", "1/2-1/2").finish())
+        assertNull(game("Normal", "1/2-1/2").finish())
+        assertNull(game(null, "1-0").finish())
+    }
+
+    @Test
+    fun playsOwnMoves() {
+        val game = line("1. e4 e5 2. Nf3 *")
+        assertEquals(20, GameLine.legalMoves(GameLine.START_FEN).size)
+        // From after 1. e4, play 1... c5 instead: the rest of the game is dropped.
+        val sicilian = game.play(1, "c7c5")!!
+        assertEquals(listOf("e4", "c5"), sicilian.plies.map { it.san })
+        assertEquals(3, sicilian.positions.size)
+        assertEquals(game.positions[1], sicilian.positions[1])
+        assertTrue(sicilian.positions[2].fen.startsWith("rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w"))
+        assertNull(game.play(1, "e2e4")) // not Black's move
+        // Check and promotion come out right.
+        val promo = line("[FEN \"8/P6k/8/8/8/8/8/K7 w - - 0 1\"]\n*")
+        assertEquals(listOf("a7a8q", "a7a8r", "a7a8b", "a7a8n"), GameLine.legalMoves(promo.positions[0].fen).filter { it.startsWith("a7") }.sortedBy { "qrbn".indexOf(it.last()) })
+        val queened = promo.play(0, "a7a8q")!!
+        assertEquals("a8=Q", queened.plies[0].san)
+        assertNull(queened.positions[1].check)
+        val check = line("1. e4 e5 *").play(2, "d1h5")!!.play(3, "b8c6")!!.play(4, "h5f7")!!
+        assertEquals("Qxf7", check.plies.last().san)
+        assertEquals("e8", check.positions.last().check)
+    }
 }

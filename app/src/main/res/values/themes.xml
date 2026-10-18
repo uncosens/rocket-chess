@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Window color matches the Compose background, so the splash and first frame do not flash. -->
+    <style name="Theme.RocketChess" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window</item>
+    </style>
+    <color name="window">#F5F6F8</color>
+</resources>
