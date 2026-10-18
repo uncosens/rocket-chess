@@ -178,22 +178,6 @@ private fun Board(vm: GameViewModel, modifier: Modifier) {
     )
 }
 
-/** Shown while the user plays their own moves: status and the way back to the game. */
-@Composable
-private fun VariationBar(vm: GameViewModel) {
-    val status = vm.liveError?.let { stringResource(R.string.analysis_failed, it) }
-        ?: if (vm.evals.getOrNull(vm.ply) == null) stringResource(R.string.analyzing_position) else stringResource(R.string.variation_hint)
-    Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = RoundedCornerShape(18.dp)) {
-        Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.variation_title), style = MaterialTheme.typography.labelLarge)
-                Text(status, style = MaterialTheme.typography.bodySmall)
-            }
-            TextButton(onClick = vm::leaveVariation) { Text(stringResource(R.string.back_to_game)) }
-        }
-    }
-}
-
 /** Selected move, analysis status and the eval graph. Scrolls when space is short. */
 @Composable
 private fun Details(vm: GameViewModel, modifier: Modifier) {
@@ -204,7 +188,6 @@ private fun Details(vm: GameViewModel, modifier: Modifier) {
             Text(stringResource(R.string.no_game), style = MaterialTheme.typography.bodyMedium)
             return@Column
         }
-        if (vm.variation != null) VariationBar(vm)
         MoveCard(vm, line)
         AnalysisStatus(vm)
         EvalCard(vm, line)
@@ -304,9 +287,18 @@ private fun Footer(vm: GameViewModel, onAnalyze: () -> Unit, onReanalyze: (() ->
         }
     }
     Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        SquareIconButton(R.drawable.ic_back, stringResource(R.string.nav_prev), { vm.goTo(vm.ply - 1) }, size = 44.dp)
-        SquareIconButton(R.drawable.ic_next, stringResource(R.string.nav_next), { vm.goTo(vm.ply + 1) }, size = 44.dp)
-        AnalyzeButton(vm, onAnalyze, onReanalyze, Modifier.weight(1f).height(44.dp))
+        val best = vm.evals.getOrNull(vm.ply)?.best
+        if (vm.variation != null) {
+            TextButton(onClick = vm::leaveVariation, modifier = Modifier.height(52.dp)) { Text(stringResource(R.string.back_to_game)) }
+            Box(Modifier.weight(1f))
+        } else if (vm.analysis is AnalysisState.Done && onReanalyze == null) {
+            Box(Modifier.weight(1f))
+        } else {
+            AnalyzeButton(vm, onAnalyze, onReanalyze, Modifier.weight(1f).height(52.dp))
+        }
+        SquareIconButton(R.drawable.ic_star, stringResource(R.string.follow_best), { best?.let(vm::play) }, enabled = best != null)
+        SquareIconButton(R.drawable.ic_back, stringResource(R.string.nav_prev), { vm.goTo(vm.ply - 1) }, size = 52.dp)
+        SquareIconButton(R.drawable.ic_next, stringResource(R.string.nav_next), { vm.goTo(vm.ply + 1) }, size = 52.dp)
     }
 }
 

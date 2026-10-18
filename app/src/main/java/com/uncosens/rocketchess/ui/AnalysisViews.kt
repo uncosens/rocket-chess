@@ -118,7 +118,7 @@ fun AnalysisStatus(vm: GameViewModel) {
         }
         is AnalysisState.Stopped -> Text(stringResource(R.string.analysis_stopped, s.done, s.total), style = small, color = muted)
         is AnalysisState.Done -> Text(
-            stringResource(R.string.analysis_done, s.settings.engine, s.settings.depth, s.settings.multiPv, s.settings.threads, s.settings.hashMb),
+            stringResource(R.string.analysis_done, s.settings.engine),
             style = small,
             color = muted,
         )

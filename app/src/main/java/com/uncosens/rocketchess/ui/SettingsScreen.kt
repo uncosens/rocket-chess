@@ -1,12 +1,11 @@
 package com.uncosens.rocketchess.ui
 
+import android.graphics.RectF
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -36,6 +35,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
@@ -53,7 +54,6 @@ import kotlin.math.roundToInt
 private const val START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 /** Piece set, plus threads, hash size and search depth for the next analysis. Saved on each change. */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(onBack: () -> Unit, onLicenses: () -> Unit) {
     BackHandler(onBack = onBack)
@@ -97,26 +97,30 @@ fun SettingsScreen(onBack: () -> Unit, onLicenses: () -> Unit) {
                             border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
                             modifier = Modifier.weight(1f).padding(vertical = 4.dp).semantics { this.selected = selected },
                         ) {
-                            Text(
-                                s.id.replaceFirstChar { it.uppercase() },
-                                Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
-                                style = MaterialTheme.typography.labelMedium,
-                                textAlign = TextAlign.Center,
-                                maxLines = 1,
-                            )
+                            val knight = remember(s) { PieceSetStore.images(context, s)['N'] }
+                            Column(Modifier.padding(horizontal = 4.dp, vertical = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Canvas(Modifier.size(32.dp)) {
+                                    drawIntoCanvas { knight?.renderToCanvas(it.nativeCanvas, RectF(0f, 0f, size.width, size.height)) }
+                                }
+                                Text(s.id.replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center, maxLines = 1)
+                            }
                         }
                     }
                 }
             }
         }
         Text(stringResource(R.string.settings_board), style = MaterialTheme.typography.titleMedium)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            BoardStyle.entries.forEach { s ->
-                BoardSwatch(s, selected = board == s) { board = s; BoardStyleStore.save(context, s) }
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            for (row in BoardStyle.entries.chunked((BoardStyle.entries.size + 1) / 2)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    for (s in row) {
+                        BoardSwatch(s, selected = board == s, modifier = Modifier.weight(1f)) { board = s; BoardStyleStore.save(context, s) }
+                    }
+                }
             }
         }
         ChessBoard(
-            START_FEN, null, null, stringResource(R.string.board_start), Modifier.widthIn(max = 240.dp),
+            START_FEN, null, null, stringResource(R.string.board_start), Modifier.fillMaxWidth(),
             pieceSet = pieces, boardStyle = board,
         )
 
@@ -175,7 +179,7 @@ fun SettingsScreen(onBack: () -> Unit, onLicenses: () -> Unit) {
 
 /** A 2x2 corner of a board style with its name. */
 @Composable
-private fun BoardSwatch(style: BoardStyle, selected: Boolean, onClick: () -> Unit) {
+private fun BoardSwatch(style: BoardStyle, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val context = LocalContext.current
     val texture = remember(style) { BoardStyleStore.texture(context, style) }
     val theme = LocalBoardColors.current
@@ -187,7 +191,7 @@ private fun BoardSwatch(style: BoardStyle, selected: Boolean, onClick: () -> Uni
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceContainer,
         border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
-        modifier = Modifier.semantics { this.selected = selected },
+        modifier = modifier.semantics { this.selected = selected },
     ) {
         Column(Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Canvas(Modifier.size(56.dp).clip(RoundedCornerShape(6.dp))) {

@@ -20,12 +20,12 @@
     <string name="stop">Stop</string>
     <string name="analyzing">Analyzing %1$d / %2$d</string>
     <string name="analysis_stopped">Stopped at %1$d / %2$d. Moves without both evals are not graded.</string>
-    <string name="analysis_done">%1$s · depth %2$d · MultiPV %3$d · %4$d engines · %5$d MB hash</string>
+    <string name="analysis_done">%1$s</string>
     <string name="analysis_failed">Analysis failed: %1$s</string>
     <string name="engine_move">Engine: %1$s</string>
     <string name="class_brilliant">Brilliant</string>
     <string name="class_best">Best</string>
-    <string name="class_excellent">Excellent</string>
+    <string name="class_excellent">Great</string>
     <string name="class_good">Good</string>
     <string name="class_inaccuracy">Inaccuracy</string>
     <string name="class_mistake">Mistake</string>
@@ -90,10 +90,8 @@
     <string name="tap_to_jump">Tap to jump</string>
     <string name="start_position">Start position</string>
     <string name="depth">depth %1$d</string>
-    <string name="variation_title">Your own moves</string>
-    <string name="variation_hint">Tap a piece, then a square, to keep playing.</string>
-    <string name="analyzing_position">Analyzing this position…</string>
     <string name="back_to_game">Back to game</string>
+    <string name="follow_best">Follow best move</string>
     <string name="accuracy_mine">%1$.1f%%</string>
     <string name="retry">Retry</string>
     <string name="settings_accounts">My accounts</string>

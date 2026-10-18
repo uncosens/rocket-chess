@@ -56,6 +56,7 @@ fun SetupScreen(onAnalyze: (pgn: String) -> Unit, onBack: () -> Unit) {
     var fen by rememberSaveable { mutableStateOf(GameLine.START_FEN) }
     // The piece letter to place, or ' ' to remove pieces.
     var tool by rememberSaveable { mutableStateOf('P') }
+    var flipped by rememberSaveable { mutableStateOf(false) }
     val whiteToMove = fen.split(' ')[1] == "w"
     val error = remember(fen) { Setup.error(fen) }
 
@@ -73,7 +74,7 @@ fun SetupScreen(onAnalyze: (pgn: String) -> Unit, onBack: () -> Unit) {
         fen = Setup.fen(map, whiteToMove)
     }
     val board = @Composable { m: Modifier ->
-        ChessBoard(fen, null, null, stringResource(R.string.setup_board), m.clip(RoundedCornerShape(12.dp)), onTap = place)
+        ChessBoard(fen, null, null, stringResource(R.string.setup_board), m.clip(RoundedCornerShape(12.dp)), flipped = flipped, onTap = place)
     }
     val controls = @Composable {
         Controls(
@@ -94,13 +95,17 @@ fun SetupScreen(onAnalyze: (pgn: String) -> Unit, onBack: () -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                 board(Modifier.padding(top = 8.dp).size(side))
                 Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    TopBar(stringResource(R.string.setup_board), onBack)
+                    TopBar(stringResource(R.string.setup_board), onBack) {
+                        SquareIconButton(R.drawable.ic_flip, stringResource(R.string.flip_board), { flipped = !flipped })
+                    }
                     controls()
                 }
             }
         } else {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                TopBar(stringResource(R.string.setup_board), onBack)
+                TopBar(stringResource(R.string.setup_board), onBack) {
+                    SquareIconButton(R.drawable.ic_flip, stringResource(R.string.flip_board), { flipped = !flipped })
+                }
                 board(Modifier.fillMaxWidth())
                 controls()
             }
