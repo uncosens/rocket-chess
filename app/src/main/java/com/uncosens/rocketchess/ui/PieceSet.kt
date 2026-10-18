@@ -3,10 +3,10 @@ package com.uncosens.rocketchess.ui
 import android.content.Context
 import com.caverock.androidsvg.SVG
 
-/** Piece image sets in assets/pieces/<id>/. Rocket, Classic and Orbit are our own; the rest are from the Lichess project. */
+/** Piece image sets in assets/pieces/<id>/. Rocket, Nova, Orbit and Classic are our own; the rest are from the Lichess project. */
 enum class PieceSet(val id: String) {
-    ROCKET("rocket"), ORBIT("orbit"), CBURNETT("cburnett"), CLASSIC("classic"),
-    MERIDA("merida"), CHESSNUT("chessnut"), MPCHESS("mpchess");
+    ROCKET("rocket"), NOVA("nova"), ORBIT("orbit"), CLASSIC("classic"),
+    CBURNETT("cburnett"), MERIDA("merida"), CHESSNUT("chessnut"), MPCHESS("mpchess");
 
     companion object {
         val DEFAULT = ROCKET

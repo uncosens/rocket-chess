@@ -11,6 +11,6 @@ class PieceSetTest {
     fun missingOrUnknownIdFallsBackToRocket() {
         assertEquals(PieceSet.ROCKET, PieceSet.fromId(null))
         assertEquals(PieceSet.ROCKET, PieceSet.fromId("staunty"))
-        assertEquals(listOf(PieceSet.ROCKET, PieceSet.ORBIT), PieceSet.entries.take(2))
+        assertEquals(listOf(PieceSet.ROCKET, PieceSet.NOVA, PieceSet.ORBIT, PieceSet.CLASSIC), PieceSet.entries.take(4))
     }
 }
