@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -79,14 +80,13 @@ fun GameScreen(vm: GameViewModel, onBack: () -> Unit) {
                 }
             }
         } else {
-            // The board takes what is left after the eval, graph and moves, so all fit on one screen.
+            // The board is 90% of the screen width on every phone and tablet; the details below
+            // take what is left and scroll if it is not enough.
+            val side = minOf(maxWidth, LocalConfiguration.current.screenWidthDp.dp * 0.9f)
             Column {
                 Header(vm, onBack)
-                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
-                    // Room for the two player rows above and below the board.
-                    BoardBlock(vm, Modifier.size(minOf(maxWidth, maxHeight - 68.dp)))
-                }
-                Details(vm, Modifier)
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) { BoardBlock(vm, Modifier.size(side)) }
+                Details(vm, Modifier.weight(1f))
                 Footer(vm, onAnalyze)
             }
         }
@@ -220,7 +220,7 @@ private fun VariationBar(vm: GameViewModel) {
 /** Selected move, analysis status and the eval graph. Scrolls when space is short. */
 @Composable
 private fun Details(vm: GameViewModel, modifier: Modifier) {
-    Column(modifier.padding(top = 12.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(modifier.padding(top = 6.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         vm.error?.let { ErrorText(it) }
         val line = vm.line
         if (line == null) {
@@ -247,14 +247,14 @@ private fun MoveCard(vm: GameViewModel, line: GameLine) {
     e?.let { notes += stringResource(R.string.depth, it.depth) }
 
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(18.dp)) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(
-                Modifier.size(40.dp).clip(CircleShape).background(g?.cls?.color() ?: MaterialTheme.colorScheme.surfaceContainerHigh),
+                Modifier.size(32.dp).clip(CircleShape).background(g?.cls?.color() ?: MaterialTheme.colorScheme.surfaceContainerHigh),
                 contentAlignment = Alignment.Center,
             ) {
                 when (g?.cls) {
                     null, MoveClass.Excellent, MoveClass.Good -> {}
-                    MoveClass.Best -> Icon(painterResource(R.drawable.ic_star), null, Modifier.size(20.dp), tint = Color.White)
+                    MoveClass.Best -> Icon(painterResource(R.drawable.ic_star), null, Modifier.size(16.dp), tint = Color.White)
                     else -> Text(g.cls.suffix(), color = Color.White, fontWeight = FontWeight.Bold)
                 }
             }
@@ -264,7 +264,7 @@ private fun MoveCard(vm: GameViewModel, line: GameLine) {
                         if (vm.ply > 0) moveLabel(line, vm.ply - 1) else stringResource(R.string.start_position),
                         fontFamily = Mono,
                         fontWeight = FontWeight.SemiBold,
-                        fontSize = 18.sp,
+                        fontSize = 16.sp,
                     )
                     g?.let { Text(it.cls.label(), color = it.cls.color(), style = MaterialTheme.typography.labelLarge) }
                 }
@@ -282,7 +282,7 @@ private fun MoveCard(vm: GameViewModel, line: GameLine) {
                 ) {
                     Text(
                         it.eval.text(whiteView),
-                        Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                        Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
                         color = if (whiteView) Color(0xFF14161B) else Color.White,
                         fontFamily = Mono,
                         fontWeight = FontWeight.SemiBold,
@@ -300,7 +300,7 @@ private fun Footer(vm: GameViewModel, onAnalyze: () -> Unit) {
     val list = rememberLazyListState()
     LaunchedEffect(vm.ply) { list.animateScrollToItem((vm.ply - 3).coerceAtLeast(0)) }
     LazyRow(
-        Modifier.fillMaxWidth().padding(top = 10.dp),
+        Modifier.fillMaxWidth().padding(top = 8.dp),
         state = list,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         contentPadding = PaddingValues(end = 16.dp),
@@ -312,7 +312,7 @@ private fun Footer(vm: GameViewModel, onAnalyze: () -> Unit) {
             val desc = cls?.let { stringResource(R.string.move_with_class, label, it.label()) } ?: label
             Surface(
                 onClick = { vm.goTo(i + 1) },
-                modifier = Modifier.heightIn(min = 44.dp).semantics { contentDescription = desc },
+                modifier = Modifier.heightIn(min = 36.dp).semantics { contentDescription = desc },
                 shape = RoundedCornerShape(10.dp),
                 // The user's own moves get an outline.
                 border = vm.variation?.takeIf { i >= it.branch }?.let { BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) },
@@ -326,10 +326,10 @@ private fun Footer(vm: GameViewModel, onAnalyze: () -> Unit) {
             }
         }
     }
-    Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        SquareIconButton(R.drawable.ic_back, stringResource(R.string.nav_prev), { vm.goTo(vm.ply - 1) }, size = 52.dp)
-        SquareIconButton(R.drawable.ic_next, stringResource(R.string.nav_next), { vm.goTo(vm.ply + 1) }, size = 52.dp)
-        AnalyzeButton(vm, onAnalyze, Modifier.weight(1f).height(52.dp))
+    Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        SquareIconButton(R.drawable.ic_back, stringResource(R.string.nav_prev), { vm.goTo(vm.ply - 1) }, size = 44.dp)
+        SquareIconButton(R.drawable.ic_next, stringResource(R.string.nav_next), { vm.goTo(vm.ply + 1) }, size = 44.dp)
+        AnalyzeButton(vm, onAnalyze, Modifier.weight(1f).height(44.dp))
     }
 }
 

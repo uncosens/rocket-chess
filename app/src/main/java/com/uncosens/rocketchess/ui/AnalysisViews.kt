@@ -156,7 +156,7 @@ fun Summary(vm: GameViewModel, line: GameLine) {
 fun EvalCard(vm: GameViewModel, line: GameLine) {
     if (vm.evals.size < 2) return
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(18.dp)) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row {
                 Text(stringResource(R.string.eval_title), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
                 Text(stringResource(R.string.tap_to_jump), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -172,7 +172,7 @@ private fun EvalGraph(evals: List<PositionEval?>, ply: Int, onSelect: (Int) -> U
     val cursor = MaterialTheme.colorScheme.primary
     val desc = stringResource(R.string.graph_description)
     Canvas(
-        Modifier.fillMaxWidth().height(64.dp).clip(RoundedCornerShape(10.dp))
+        Modifier.fillMaxWidth().height(32.dp).clip(RoundedCornerShape(10.dp))
             .semantics { contentDescription = desc }
             .pointerInput(evals.size) {
                 detectTapGestures { onSelect((it.x / size.width * (evals.size - 1)).roundToInt()) }
