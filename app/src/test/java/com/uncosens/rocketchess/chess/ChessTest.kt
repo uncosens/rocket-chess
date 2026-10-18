@@ -91,6 +91,29 @@ class ChessTest {
     }
 
     @Test
+    fun setUpPosition() {
+        // The start position's pieces give back the start FEN.
+        val startPieces = mapOf(
+            0 to 'R', 1 to 'N', 2 to 'B', 3 to 'Q', 4 to 'K', 5 to 'B', 6 to 'N', 7 to 'R',
+            56 to 'r', 57 to 'n', 58 to 'b', 59 to 'q', 60 to 'k', 61 to 'b', 62 to 'n', 63 to 'r',
+        ) + (8..15).associateWith { 'P' } + (48..55).associateWith { 'p' }
+        assertEquals(GameLine.START_FEN, Setup.fen(startPieces, whiteToMove = true))
+        assertEquals("8/8/8/8/8/8/8/4K2k b - - 0 1", Setup.fen(mapOf(4 to 'K', 7 to 'k'), whiteToMove = false))
+
+        assertNull(Setup.error("4k3/8/8/8/8/8/8/4K3 w - - 0 1"))
+        assertEquals(SetupError.KINGS, Setup.error("8/8/8/8/8/8/8/4K3 w - - 0 1"))
+        assertEquals(SetupError.PAWNS, Setup.error("P3k3/8/8/8/8/8/8/4K3 w - - 0 1"))
+        // Black's king is attacked by the rook but it is White's turn.
+        assertEquals(SetupError.CHECK, Setup.error("4k3/8/8/8/8/8/8/4RK2 w - - 0 1"))
+        assertNull(Setup.error("4k3/8/8/8/8/8/8/4RK2 b - - 0 1"))
+
+        // The PGN replays from the set-up position with no moves.
+        val fen = "4k3/8/8/8/8/8/4P3/4K3 b - - 0 1"
+        val l = GameLine.from(Pgn.parse(Setup.pgn(fen)))
+        assertEquals(fen, l.positions.single().fen)
+    }
+
+    @Test
     fun mateAndResignation() {
         val mated = line("1. e4 e5 2. Qh5 Nc6 3. Bc4 Nf6 4. Qxf7# 1-0")
         assertTrue(mated.positions.last().mate)

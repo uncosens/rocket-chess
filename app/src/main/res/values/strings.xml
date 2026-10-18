@@ -95,6 +95,16 @@
     <string name="accuracy_mine">%1$.1f%%</string>
     <string name="accuracy_both">W %1$.1f%% · B %2$.1f%%</string>
     <string name="retry">Retry</string>
+    <string name="setup_board">Set up board</string>
+    <string name="source_setup">Position</string>
+    <string name="white_to_move">White to move</string>
+    <string name="black_to_move">Black to move</string>
+    <string name="clear_board">Clear</string>
+    <string name="remove_piece">Remove</string>
+    <string name="setup_hint">Pick a piece below, then tap squares to place it. Tap a square again to remove it.</string>
+    <string name="setup_err_kings">Each side needs exactly one king.</string>
+    <string name="setup_err_pawns">Pawns cannot stand on the first or last rank.</string>
+    <string name="setup_err_check">The side not to move is in check.</string>
     <string name="promote_to">Promote to</string>
     <string name="piece_queen">Queen</string>
     <string name="piece_rook">Rook</string>

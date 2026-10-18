@@ -15,6 +15,7 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.uncosens.rocketchess.data.KnownUsers
+import com.uncosens.rocketchess.data.Sources
 import com.uncosens.rocketchess.ui.AnalysisState
 import com.uncosens.rocketchess.ui.GameScreen
 import com.uncosens.rocketchess.ui.GameViewModel
@@ -24,6 +25,7 @@ import com.uncosens.rocketchess.ui.LibraryViewModel
 import com.uncosens.rocketchess.ui.OnlineScreen
 import com.uncosens.rocketchess.ui.RocketTheme
 import com.uncosens.rocketchess.ui.SettingsScreen
+import com.uncosens.rocketchess.ui.SetupScreen
 
 class MainActivity : ComponentActivity() {
     private val game: GameViewModel by viewModels()
@@ -55,7 +57,10 @@ class MainActivity : ComponentActivity() {
                             ONLINE -> OnlineScreen(library, onOpen = open, onBack = { screen = LIBRARY })
                             LICENSES -> LicensesScreen(onBack = { screen = SETTINGS })
                             SETTINGS -> SettingsScreen(onBack = { screen = LIBRARY }, onLicenses = { screen = LICENSES })
-                            else -> LibraryScreen(library, onOpen = open, onOnline = { screen = ONLINE }, onSettings = { screen = SETTINGS })
+                            SETUP -> SetupScreen(onAnalyze = { library.importText(it, Sources.SETUP, open) }, onBack = { screen = LIBRARY })
+                            else -> LibraryScreen(
+                                library, onOpen = open, onOnline = { screen = ONLINE }, onSetup = { screen = SETUP }, onSettings = { screen = SETTINGS },
+                            )
                         }
                     }
                 }
@@ -75,5 +80,6 @@ class MainActivity : ComponentActivity() {
         const val GAME = "game"
         const val LICENSES = "licenses"
         const val SETTINGS = "settings"
+        const val SETUP = "setup"
     }
 }

@@ -69,7 +69,7 @@ import java.util.Date
 
 /** Saved games and the ways to add one. */
 @Composable
-fun LibraryScreen(vm: LibraryViewModel, onOpen: (String, String) -> Unit, onOnline: () -> Unit, onSettings: () -> Unit) {
+fun LibraryScreen(vm: LibraryViewModel, onOpen: (String, String) -> Unit, onOnline: () -> Unit, onSetup: () -> Unit, onSettings: () -> Unit) {
     val games by vm.games.collectAsState()
     val context = LocalContext.current
     val names = remember { KnownUsers.names(context) }
@@ -87,14 +87,15 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: (String, String) -> Unit, onOnli
         }
 
         SectionLabel(stringResource(R.string.new_analysis), Modifier.padding(top = 12.dp))
-        Button(onClick = { pasting = true }, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp)) {
-            Icon(painterResource(R.drawable.ic_paste), null, Modifier.size(20.dp))
+        Button(onClick = onOnline, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp)) {
+            Icon(painterResource(R.drawable.ic_globe), null, Modifier.size(20.dp))
             Spacer(Modifier.width(10.dp))
-            Text(stringResource(R.string.paste_pgn), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.import_online), style = MaterialTheme.typography.titleMedium)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ImportButton(R.drawable.ic_paste, stringResource(R.string.paste_pgn), Modifier.weight(1f)) { pasting = true }
             ImportButton(R.drawable.ic_file, stringResource(R.string.open_file), Modifier.weight(1f)) { openFile.launch(arrayOf("*/*")) }
-            ImportButton(R.drawable.ic_globe, stringResource(R.string.import_online), Modifier.weight(1f), onOnline)
+            ImportButton(R.drawable.ic_board, stringResource(R.string.setup_board), Modifier.weight(1f), onSetup)
         }
         vm.error?.let { ErrorText(it) }
 
@@ -152,6 +153,7 @@ private fun sourceLabel(source: String) = stringResource(
         Sources.CHESS_COM -> R.string.source_chesscom
         Sources.LICHESS -> R.string.source_lichess
         Sources.FILE -> R.string.source_file
+        Sources.SETUP -> R.string.source_setup
         else -> R.string.source_paste
     },
 )
@@ -171,6 +173,7 @@ private fun AccuracyText(white: String, black: String, whiteAcc: Double?, blackA
 private fun sourceIcon(source: String) = when (source) {
     Sources.CHESS_COM, Sources.LICHESS -> R.drawable.ic_globe
     Sources.FILE -> R.drawable.ic_file
+    Sources.SETUP -> R.drawable.ic_board
     else -> R.drawable.ic_paste
 }
 
