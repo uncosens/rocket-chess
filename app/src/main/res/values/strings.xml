@@ -16,6 +16,7 @@
     <string name="error_too_large">File is too large (max %1$d MB).</string>
     <string name="error_unreadable">Could not read the file.</string>
     <string name="analyze">Analyze</string>
+    <string name="analyze_again">Analyze again</string>
     <string name="stop">Stop</string>
     <string name="analyzing">Analyzing %1$d / %2$d</string>
     <string name="analysis_stopped">Stopped at %1$d / %2$d. Moves without both evals are not graded.</string>
@@ -43,7 +44,7 @@
     <string name="delete_all">Delete all</string>
     <string name="confirm_delete">Delete this game from this device?</string>
     <string name="confirm_delete_all">Delete all saved games from this device?</string>
-    <string name="storage_note">Games and their accuracy are saved only on this device.</string>
+    <string name="storage_note">Games, their accuracy and the analysis of the last 50 analyzed games are saved only on this device.</string>
     <string name="source_chesscom">Chess.com</string>
     <string name="source_lichess">Lichess</string>
     <string name="source_file">File</string>

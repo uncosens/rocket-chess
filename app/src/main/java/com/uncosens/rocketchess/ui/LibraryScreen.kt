@@ -68,7 +68,7 @@ import java.util.Date
 
 /** Saved games and the ways to add one. */
 @Composable
-fun LibraryScreen(vm: LibraryViewModel, onOpen: (String, String, String?) -> Unit, onOnline: () -> Unit, onSetup: () -> Unit, onPlay: () -> Unit, onSettings: () -> Unit) {
+fun LibraryScreen(vm: LibraryViewModel, onOpen: OpenGame, onOnline: () -> Unit, onSetup: () -> Unit, onPlay: () -> Unit, onSettings: () -> Unit) {
     val games by vm.games.collectAsState()
     var pasting by rememberSaveable { mutableStateOf(false) }
     var confirmDelete by rememberSaveable { mutableStateOf<Long?>(null) } // -1 = delete all
@@ -204,7 +204,7 @@ private fun ImportButton(icon: Int, text: String, modifier: Modifier, onClick: (
 
 /** Search a Lichess or Chess.com user and pick a game. */
 @Composable
-fun OnlineScreen(vm: LibraryViewModel, onOpen: (String, String, String?) -> Unit, onBack: () -> Unit) {
+fun OnlineScreen(vm: LibraryViewModel, onOpen: OpenGame, onBack: () -> Unit) {
     val context = LocalContext.current
     var source by rememberSaveable { mutableStateOf(Sources.CHESS_COM) }
     var name by rememberSaveable { mutableStateOf("") }

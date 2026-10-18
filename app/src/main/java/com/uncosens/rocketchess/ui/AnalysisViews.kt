@@ -88,15 +88,20 @@ fun Eval.text(whiteView: Boolean = true): String = when (this) {
     is Eval.Mate -> if (moves == 0) "#" else if (whiteWins == whiteView) "M$moves" else "-M$moves"
 }
 
-/** Stop while running; Analyze to start or go on after a stop. Nothing once done. */
+/**
+ * Stop while running; Analyze to start or go on after a stop. Once done, Analyze again only
+ * when [onReanalyze] is given (the engine settings changed since that run).
+ */
 @Composable
-fun AnalyzeButton(vm: GameViewModel, onAnalyze: () -> Unit, modifier: Modifier = Modifier) {
+fun AnalyzeButton(vm: GameViewModel, onAnalyze: () -> Unit, onReanalyze: (() -> Unit)?, modifier: Modifier = Modifier) {
     val shape = RoundedCornerShape(16.dp)
     when (vm.analysis) {
         is AnalysisState.Running -> OutlinedButton(onClick = vm::stopAnalysis, modifier = modifier, shape = shape) {
             Text(stringResource(R.string.stop))
         }
-        is AnalysisState.Done -> {}
+        is AnalysisState.Done -> if (onReanalyze != null) {
+            OutlinedButton(onClick = onReanalyze, modifier = modifier, shape = shape) { Text(stringResource(R.string.analyze_again)) }
+        }
         else -> Button(onClick = onAnalyze, modifier = modifier, shape = shape) { Text(stringResource(R.string.analyze)) }
     }
 }

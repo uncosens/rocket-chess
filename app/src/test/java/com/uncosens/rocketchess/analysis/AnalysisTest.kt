@@ -108,6 +108,21 @@ class AnalysisTest {
     }
 
     @Test
+    fun savedAnalysisRoundTrip() {
+        val settings = AnalysisSettings("Stockfish 19", depth = 15, multiPv = 2, threads = 3, hashMb = 64)
+        val evals = listOf(
+            PositionEval(Eval.Cp(35), "e2e4", Eval.Cp(-20), 15),
+            null,
+            PositionEval(Eval.Mate(whiteWins = false, moves = 3), "e7e8q", null, 14),
+            PositionEval(Eval.Mate(whiteWins = true, moves = 0), null, null, 0),
+        )
+        val text = SavedAnalysis.encode(settings, evals)
+        assertEquals("Stockfish 19\t15\t2\t3\t64\nc35,e2e4,c-20,15;;m-3,e7e8q,,14;m+0,,,0", text)
+        assertEquals(settings to evals, SavedAnalysis.decode(text))
+        assertNull(SavedAnalysis.decode("broken"))
+    }
+
+    @Test
     fun brilliantLikeEnCroissant() {
         // Greek gift: Bxh7+ gives a bishop for a pawn after Kxh7.
         val fen = "r1bq1rk1/pppn1ppp/4p3/3pP3/1b1P4/2NB1N2/PPP2PPP/R1BQK2R w KQ - 0 1"

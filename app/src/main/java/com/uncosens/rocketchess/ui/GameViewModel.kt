@@ -15,6 +15,7 @@ import com.uncosens.rocketchess.analysis.AnalysisSettings
 import com.uncosens.rocketchess.analysis.Analyzer
 import com.uncosens.rocketchess.analysis.EngineOptions
 import com.uncosens.rocketchess.analysis.PositionEval
+import com.uncosens.rocketchess.analysis.SavedAnalysis
 import com.uncosens.rocketchess.engine.StockfishSession
 import java.io.File
 import kotlinx.coroutines.Dispatchers
@@ -85,14 +86,20 @@ class GameViewModel : ViewModel() {
     var liveError by mutableStateOf<String?>(null)
         private set
     private var job: Job? = null
+    /** Settings of the run that made [mainEvals], and whether those have new results not yet saved. */
+    private var runSettings: AnalysisSettings? = null
+    private var unsaved = false
     /** Identifies the current run so a cancelled run can never write its results. */
     private var runId = 0
     private var liveJob: Job? = null
     /** Latest positions to analyze live. Older requests are dropped. */
     private val liveQueue = Channel<List<String>>(Channel.CONFLATED)
 
-    /** Loads a game. If [owner] played it, the board shows that side at the bottom. */
-    fun load(text: String, gameKey: String, owner: String?) {
+    /**
+     * Loads a game. If [owner] played it, the board shows that side at the bottom.
+     * A [saved] analysis shows at once; a partial one goes on when analysis starts.
+     */
+    fun load(text: String, gameKey: String, owner: String?, saved: String? = null) {
         viewModelScope.launch {
             val result = withContext(Dispatchers.Default) {
                 runCatching { Pgn.parse(text).let { it to GameLine.from(it) } }
@@ -101,20 +108,22 @@ class GameViewModel : ViewModel() {
                 stopAnalysis()
                 raw = text; game = g; key = gameKey; mainLine = l; variation = null; ply = 0; error = null
                 userSide(g.tags["White"] ?: "", g.tags["Black"] ?: "", owner)?.let { flipped = !it }
-                mainEvals = emptyList(); liveEvals = emptyMap(); analysis = AnalysisState.Idle
+                val restored = saved?.let(SavedAnalysis::decode)?.takeIf { it.second.size == l.positions.size }
+                mainEvals = restored?.second ?: emptyList(); liveEvals = emptyMap(); runSettings = restored?.first; unsaved = false
+                analysis = if (restored != null && restored.second.all { it != null }) AnalysisState.Done(restored.first) else AnalysisState.Idle
             }.onFailure {
                 error = if (it is PgnException) LoadError.Parse(it) else LoadError.Unreadable
             }
         }
     }
 
-    /** Analyzes the game. After a stop it goes on from where it stopped. */
-    fun analyze(exe: File, opts: EngineOptions) {
+    /** Analyzes the game. After a stop it goes on from where it stopped; [fresh] starts over. */
+    fun analyze(exe: File, opts: EngineOptions, fresh: Boolean = false) {
         val l = mainLine ?: return
         stopAnalysis()
         val id = ++runId
         val total = l.positions.size
-        if (mainEvals.size != total) mainEvals = List(total) { null }
+        if (fresh || mainEvals.size != total) mainEvals = List(total) { null }
         analysis = AnalysisState.Running(mainEvals.count { it != null }, total)
         job = viewModelScope.launch(Dispatchers.IO) {
             val sf = runCatching { StockfishSession(exe) }.getOrElse {
@@ -124,6 +133,7 @@ class GameViewModel : ViewModel() {
             try {
                 val analyzer = Analyzer(sf)
                 val settings = analyzer.start(opts)
+                withContext(Dispatchers.Main) { if (id == runId) runSettings = settings }
                 l.positions.forEachIndexed { i, p ->
                     ensureActive()
                     if (mainEvals[i] != null) return@forEachIndexed
@@ -131,6 +141,7 @@ class GameViewModel : ViewModel() {
                     withContext(Dispatchers.Main) {
                         if (id != runId) return@withContext
                         mainEvals = mainEvals.toMutableList().also { it[i] = e }
+                        unsaved = true
                         analysis = AnalysisState.Running(i + 1, total)
                     }
                 }
@@ -203,6 +214,14 @@ class GameViewModel : ViewModel() {
     }
 
     fun grade(plyIndex: Int) = line?.let { Analyzer.grade(it, evals, plyIndex) }
+
+    /** The game's analysis as SavedAnalysis text if it has new results since the last save; marks it saved. */
+    fun takeAnalysisToSave(): String? {
+        val s = runSettings ?: return null
+        if (!unsaved) return null
+        unsaved = false
+        return SavedAnalysis.encode(s, mainEvals)
+    }
 
     /** Mean move accuracy of the game for White or Black. */
     fun accuracy(white: Boolean) = mainLine?.let { Analyzer.accuracy(it, mainEvals, white) }

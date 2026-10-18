@@ -38,6 +38,9 @@ sealed interface OnlineState {
     data class Failed(val error: FetchError) : OnlineState
 }
 
+/** Opens a game: PGN, source key, owner (searched user) and saved analysis text. */
+typealias OpenGame = (pgn: String, key: String, owner: String?, analysis: String?) -> Unit
+
 class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     private val dao = AppDatabase.get(app).games()
 
@@ -65,8 +68,8 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Checks the PGN, saves it (or finds the saved copy) and passes its text, key and [owner] to [open]. */
-    private suspend fun save(pgn: String, source: String, key: String, open: (String, String, String?) -> Unit, owner: String? = null) {
+    /** Checks the PGN, saves it (or finds the saved copy) and passes its text, key, [owner] and saved analysis to [open]. */
+    private suspend fun save(pgn: String, source: String, key: String, open: OpenGame, owner: String? = null) {
         val game = withContext(Dispatchers.Default) {
             runCatching { Pgn.parse(pgn).also { GameLine.from(it) } }
         }.getOrElse {
@@ -84,14 +87,14 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         // A copy saved earlier without an owner gets one now.
         owner?.let { dao.setOwnerIfMissing(key, it) }
         error = null
-        open(pgn, key, owner)
+        open(pgn, key, owner, dao.analysisFor(key))
     }
 
-    fun importText(text: String, source: String, open: (String, String, String?) -> Unit) {
+    fun importText(text: String, source: String, open: OpenGame) {
         viewModelScope.launch { save(text, source, Sources.textKey(text), open) }
     }
 
-    fun importFile(uri: Uri, open: (String, String, String?) -> Unit) {
+    fun importFile(uri: Uri, open: OpenGame) {
         viewModelScope.launch {
             val bytes = withContext(Dispatchers.IO) {
                 runCatching {
@@ -106,13 +109,19 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun importRemote(game: RemoteGame, open: (String, String, String?) -> Unit) {
+    fun importRemote(game: RemoteGame, open: OpenGame) {
         val source = if (game.key.startsWith("lichess:")) Sources.LICHESS else Sources.CHESS_COM
         viewModelScope.launch { save(game.pgn, source, game.key, open, searched) }
     }
 
-    fun open(id: Long, open: (String, String, String?) -> Unit) {
-        viewModelScope.launch { dao.get(id)?.let { open(it.pgn, it.sourceKey, it.owner) } }
+    fun open(id: Long, open: OpenGame) {
+        viewModelScope.launch { dao.get(id)?.let { open(it.pgn, it.sourceKey, it.owner, it.analysis) } }
+    }
+
+    /** Saves a game's analysis and drops the oldest ones past [KEEP_ANALYSES]. */
+    fun saveAnalysis(key: String, text: String) = viewModelScope.launch {
+        dao.setAnalysis(key, text, System.currentTimeMillis())
+        dao.pruneAnalyses(KEEP_ANALYSES)
     }
 
     fun saveAccuracy(key: String, white: Double?, black: Double?) = viewModelScope.launch { dao.setAccuracy(key, white, black) }
@@ -178,6 +187,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     companion object {
         // ponytail: whole file in memory, capped. Stream games if big databases are ever needed.
         const val MAX_FILE_BYTES = 5 * 1024 * 1024
+        const val KEEP_ANALYSES = 50
     }
 }
 

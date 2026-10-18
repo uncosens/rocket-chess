@@ -32,6 +32,9 @@ data class SavedGame(
     val blackAccuracy: Double? = null,
     /** The user name searched when the game was imported; their side is the user's side. */
     val owner: String? = null,
+    /** The last analysis as SavedAnalysis text; kept for the latest analyzed games only. */
+    val analysis: String? = null,
+    val analyzedAt: Long? = null,
 )
 
 /** List row without the PGN text. */
@@ -67,6 +70,19 @@ interface GameDao {
     @Query("UPDATE games SET whiteAccuracy = :white, blackAccuracy = :black WHERE sourceKey = :key")
     suspend fun setAccuracy(key: String, white: Double?, black: Double?)
 
+    @Query("SELECT analysis FROM games WHERE sourceKey = :key")
+    suspend fun analysisFor(key: String): String?
+
+    @Query("UPDATE games SET analysis = :text, analyzedAt = :at WHERE sourceKey = :key")
+    suspend fun setAnalysis(key: String, text: String, at: Long)
+
+    /** Keeps the saved analysis of only the [keep] most recently analyzed games. */
+    @Query(
+        "UPDATE games SET analysis = NULL, analyzedAt = NULL WHERE analysis IS NOT NULL AND id NOT IN " +
+            "(SELECT id FROM games WHERE analysis IS NOT NULL ORDER BY analyzedAt DESC LIMIT :keep)",
+    )
+    suspend fun pruneAnalyses(keep: Int)
+
     /** Makes [name] the owner of every saved game it played that has no owner yet. */
     @Query("UPDATE games SET owner = :name WHERE owner IS NULL AND (lower(white) = lower(:name) OR lower(black) = lower(:name))")
     suspend fun claimOwner(name: String)
@@ -85,7 +101,7 @@ interface GameDao {
     suspend fun deleteAll()
 }
 
-@Database(entities = [SavedGame::class], version = 3, autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)])
+@Database(entities = [SavedGame::class], version = 4, autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4)])
 abstract class AppDatabase : RoomDatabase() {
     abstract fun games(): GameDao
 

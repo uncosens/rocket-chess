@@ -61,6 +61,11 @@ fun GameScreen(vm: GameViewModel, onBack: () -> Unit) {
     val context = LocalContext.current
     val exe = remember { StockfishSession.binary(context) }
     val onAnalyze = { vm.analyze(exe, EngineOptionsStore.load(context)) }
+    // A finished run can be redone only once the engine settings differ from the ones it used.
+    val opts = EngineOptionsStore.load(context)
+    val ran = (vm.analysis as? AnalysisState.Done)?.settings
+    val changed = ran != null && (ran.depth != opts.depth || ran.threads != opts.threads || ran.hashMb != opts.hashMb)
+    val onReanalyze = if (changed) ({ vm.analyze(exe, opts, fresh = true) }) else null
     BackHandler(onBack = onBack)
     // A newly opened game is analyzed right away. Keyed on the state too: reopening the same
     // game after a stop gives an equal game but resets the state to Idle.
@@ -76,7 +81,7 @@ fun GameScreen(vm: GameViewModel, onBack: () -> Unit) {
                 Column(Modifier.weight(1f)) {
                     Header(vm, onBack)
                     Details(vm, Modifier.weight(1f))
-                    Footer(vm, onAnalyze)
+                    Footer(vm, onAnalyze, onReanalyze)
                 }
             }
         } else {
@@ -87,7 +92,7 @@ fun GameScreen(vm: GameViewModel, onBack: () -> Unit) {
                 Header(vm, onBack)
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) { BoardBlock(vm, Modifier.size(side)) }
                 Details(vm, Modifier.weight(1f))
-                Footer(vm, onAnalyze)
+                Footer(vm, onAnalyze, onReanalyze)
             }
         }
     }
@@ -265,7 +270,7 @@ private fun MoveCard(vm: GameViewModel, line: GameLine) {
 
 /** Move chips in a row that follows the selected move, then nav buttons and Analyze. */
 @Composable
-private fun Footer(vm: GameViewModel, onAnalyze: () -> Unit) {
+private fun Footer(vm: GameViewModel, onAnalyze: () -> Unit, onReanalyze: (() -> Unit)?) {
     val line = vm.line ?: return
     val list = rememberLazyListState()
     LaunchedEffect(vm.ply) { list.animateScrollToItem((vm.ply - 3).coerceAtLeast(0)) }
@@ -299,7 +304,7 @@ private fun Footer(vm: GameViewModel, onAnalyze: () -> Unit) {
     Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         SquareIconButton(R.drawable.ic_back, stringResource(R.string.nav_prev), { vm.goTo(vm.ply - 1) }, size = 44.dp)
         SquareIconButton(R.drawable.ic_next, stringResource(R.string.nav_next), { vm.goTo(vm.ply + 1) }, size = 44.dp)
-        AnalyzeButton(vm, onAnalyze, Modifier.weight(1f).height(44.dp))
+        AnalyzeButton(vm, onAnalyze, onReanalyze, Modifier.weight(1f).height(44.dp))
     }
 }
 

@@ -20,6 +20,7 @@ import com.uncosens.rocketchess.ui.GameScreen
 import com.uncosens.rocketchess.ui.GameViewModel
 import com.uncosens.rocketchess.ui.LibraryScreen
 import com.uncosens.rocketchess.ui.LicensesScreen
+import com.uncosens.rocketchess.ui.OpenGame
 import com.uncosens.rocketchess.ui.PlayScreen
 import com.uncosens.rocketchess.ui.PlayViewModel
 import com.uncosens.rocketchess.ui.LibraryViewModel
@@ -43,13 +44,15 @@ class MainActivity : ComponentActivity() {
                     var screen by rememberSaveable { mutableStateOf(LIBRARY) }
                     // The screen a game was opened from, so Back returns there.
                     var from by rememberSaveable { mutableStateOf(LIBRARY) }
-                    val open = { pgn: String, key: String, owner: String? ->
-                        game.load(pgn, key, owner); from = screen; screen = GAME
+                    val open: OpenGame = { pgn, key, owner, analysis ->
+                        game.load(pgn, key, owner, analysis); from = screen; screen = GAME
                     }
-                    // A finished analysis stores the game's accuracy for the lists.
+                    // A finished or stopped run saves its results; a finished one also stores the accuracy for the lists.
                     LaunchedEffect(game.analysis) {
-                        val key = game.key
-                        if (game.analysis is AnalysisState.Done && key != null) library.saveAccuracy(key, game.accuracy(true), game.accuracy(false))
+                        val key = game.key ?: return@LaunchedEffect
+                        val a = game.analysis
+                        if (a is AnalysisState.Done || a is AnalysisState.Stopped) game.takeAnalysisToSave()?.let { library.saveAnalysis(key, it) }
+                        if (a is AnalysisState.Done) library.saveAccuracy(key, game.accuracy(true), game.accuracy(false))
                     }
                     // Keeps each screen's own state, like the search results' scroll, while another is shown.
                     val saved = rememberSaveableStateHolder()
@@ -60,9 +63,9 @@ class MainActivity : ComponentActivity() {
                             LICENSES -> LicensesScreen(onBack = { screen = SETTINGS })
                             SETTINGS -> SettingsScreen(onBack = { screen = LIBRARY }, onLicenses = { screen = LICENSES })
                             // Set-up positions open without being saved.
-                            SETUP -> SetupScreen(onAnalyze = { open(it, Sources.textKey(it), null) }, onBack = { screen = LIBRARY })
+                            SETUP -> SetupScreen(onAnalyze = { open(it, Sources.textKey(it), null, null) }, onBack = { screen = LIBRARY })
                             // Games against the engine open without being saved; "You" is the owner.
-                            PLAY -> PlayScreen(play, onAnalyze = { open(it, Sources.textKey(it), getString(R.string.you)) }, onBack = { screen = LIBRARY })
+                            PLAY -> PlayScreen(play, onAnalyze = { open(it, Sources.textKey(it), getString(R.string.you), null) }, onBack = { screen = LIBRARY })
                             else -> LibraryScreen(
                                 library, onOpen = open, onOnline = { screen = ONLINE }, onSetup = { screen = SETUP }, onPlay = { screen = PLAY },
                                 onSettings = { screen = SETTINGS },
