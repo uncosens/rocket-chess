@@ -3,6 +3,7 @@ package com.uncosens.rocketchess.remote
 import com.uncosens.rocketchess.chess.GameLine
 import com.uncosens.rocketchess.chess.Pgn
 import com.uncosens.rocketchess.data.Sources
+import com.uncosens.rocketchess.data.userSide
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertThrows
@@ -67,5 +68,20 @@ class RemoteTest {
     fun textKeysIgnoreOuterSpaceOnly() {
         assertEquals(Sources.textKey("1. e4 *"), Sources.textKey("\n1. e4 *  \n"))
         assertNotEquals(Sources.textKey("1. e4 *"), Sources.textKey("1. d4 *"))
+    }
+
+    @Test
+    fun ratingsAndUserSide() {
+        val chessCom = ChessCom.parseMonth(fixture("chesscom-month.json"))
+        assertEquals(1500 to 1490, chessCom[0].whiteElo to chessCom[0].blackElo)
+        assertEquals(null to null, chessCom[1].whiteElo to chessCom[1].blackElo)
+        val lichess = Lichess.parseNdjson(fixture("lichess-games.ndjson"))
+        assertEquals(1600 to 1580, lichess[0].whiteElo to lichess[0].blackElo)
+        assertEquals(null, lichess[1].whiteElo) // Stockfish has no rating
+
+        val names = setOf("testuser")
+        assertEquals(true, userSide("TestUser", "Rival", names))
+        assertEquals(false, userSide("Stockfish level 3", "testuser", names))
+        assertEquals(null, userSide("a", "b", names))
     }
 }

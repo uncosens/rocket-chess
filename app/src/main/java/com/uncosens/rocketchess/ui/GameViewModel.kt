@@ -10,6 +10,7 @@ import com.uncosens.rocketchess.chess.GameLine
 import com.uncosens.rocketchess.chess.Pgn
 import com.uncosens.rocketchess.chess.PgnException
 import com.uncosens.rocketchess.chess.PgnGame
+import com.uncosens.rocketchess.data.userSide
 import com.uncosens.rocketchess.analysis.AnalysisSettings
 import com.uncosens.rocketchess.analysis.Analyzer
 import com.uncosens.rocketchess.analysis.EngineOptions
@@ -54,6 +55,9 @@ class GameViewModel : ViewModel() {
         private set
     var game by mutableStateOf<PgnGame?>(null)
         private set
+    /** The saved game's source key, used to store its accuracy. */
+    var key by mutableStateOf<String?>(null)
+        private set
     /** The game as imported. */
     private var mainLine by mutableStateOf<GameLine?>(null)
     var variation by mutableStateOf<Variation?>(null)
@@ -87,14 +91,16 @@ class GameViewModel : ViewModel() {
     /** Latest positions to analyze live. Older requests are dropped. */
     private val liveQueue = Channel<List<String>>(Channel.CONFLATED)
 
-    fun load(text: String) {
+    /** Loads a game. If a [names] entry played it, the board shows that side at the bottom. */
+    fun load(text: String, gameKey: String, names: Set<String>) {
         viewModelScope.launch {
             val result = withContext(Dispatchers.Default) {
                 runCatching { Pgn.parse(text).let { it to GameLine.from(it) } }
             }
             result.onSuccess { (g, l) ->
                 stopAnalysis()
-                raw = text; game = g; mainLine = l; variation = null; ply = 0; error = null
+                raw = text; game = g; key = gameKey; mainLine = l; variation = null; ply = 0; error = null
+                userSide(g.tags["White"] ?: "", g.tags["Black"] ?: "", names)?.let { flipped = !it }
                 mainEvals = emptyList(); liveEvals = emptyMap(); analysis = AnalysisState.Idle
             }.onFailure {
                 error = if (it is PgnException) LoadError.Parse(it) else LoadError.Unreadable
@@ -102,13 +108,14 @@ class GameViewModel : ViewModel() {
         }
     }
 
+    /** Analyzes the game. After a stop it goes on from where it stopped. */
     fun analyze(exe: File, opts: EngineOptions) {
         val l = mainLine ?: return
         stopAnalysis()
         val id = ++runId
         val total = l.positions.size
-        mainEvals = List(total) { null }
-        analysis = AnalysisState.Running(0, total)
+        if (mainEvals.size != total) mainEvals = List(total) { null }
+        analysis = AnalysisState.Running(mainEvals.count { it != null }, total)
         job = viewModelScope.launch(Dispatchers.IO) {
             val sf = runCatching { StockfishSession(exe) }.getOrElse {
                 withContext(Dispatchers.Main) { if (id == runId) analysis = AnalysisState.Failed(it.message ?: "start failed") }
@@ -119,6 +126,7 @@ class GameViewModel : ViewModel() {
                 val settings = analyzer.start(opts)
                 l.positions.forEachIndexed { i, p ->
                     ensureActive()
+                    if (mainEvals[i] != null) return@forEachIndexed
                     val e = analyzer.analyze(p.fen, settings.depth)
                     withContext(Dispatchers.Main) {
                         if (id != runId) return@withContext
@@ -195,6 +203,9 @@ class GameViewModel : ViewModel() {
     }
 
     fun grade(plyIndex: Int) = line?.let { Analyzer.grade(it, evals, plyIndex) }
+
+    /** Mean move accuracy of the game for White or Black. */
+    fun accuracy(white: Boolean) = mainLine?.let { Analyzer.accuracy(it, mainEvals, white) }
 
     fun goTo(index: Int) {
         val last = line?.plies?.size ?: return

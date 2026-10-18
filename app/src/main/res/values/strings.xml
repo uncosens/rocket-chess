@@ -7,17 +7,14 @@
     <string name="cancel">Cancel</string>
     <string name="no_game">No game loaded.</string>
     <string name="players">%1$s vs %2$s</string>
-    <string name="nav_first">First move</string>
     <string name="nav_prev">Previous move</string>
     <string name="nav_next">Next move</string>
-    <string name="nav_last">Last move</string>
     <string name="board_start">Chess board, start position</string>
     <string name="board_after">Chess board after %1$s</string>
     <string name="error_pgn">PGN error at line %1$d, column %2$d: %3$s</string>
     <string name="error_too_large">File is too large (max %1$d MB).</string>
     <string name="error_unreadable">Could not read the file.</string>
     <string name="analyze">Analyze</string>
-    <string name="analyze_again">Analyze again</string>
     <string name="stop">Stop</string>
     <string name="analyzing">Analyzing %1$d / %2$d</string>
     <string name="analysis_stopped">Stopped at %1$d / %2$d. Moves without both evals are not graded.</string>
@@ -44,7 +41,7 @@
     <string name="delete_all">Delete all</string>
     <string name="confirm_delete">Delete this game from this device?</string>
     <string name="confirm_delete_all">Delete all saved games from this device?</string>
-    <string name="storage_note">Games are saved only on this device. Analysis results are not saved.</string>
+    <string name="storage_note">Games and their accuracy are saved only on this device.</string>
     <string name="source_chesscom">Chess.com</string>
     <string name="source_lichess">Lichess</string>
     <string name="source_file">File</string>
@@ -95,6 +92,9 @@
     <string name="variation_hint">Tap a piece, then a square, to keep playing.</string>
     <string name="analyzing_position">Analyzing this position…</string>
     <string name="back_to_game">Back to game</string>
+    <string name="accuracy_mine">%1$.1f%%</string>
+    <string name="accuracy_both">W %1$.1f%% · B %2$.1f%%</string>
+    <string name="retry">Retry</string>
     <string name="promote_to">Promote to</string>
     <string name="piece_queen">Queen</string>
     <string name="piece_rook">Rook</string>

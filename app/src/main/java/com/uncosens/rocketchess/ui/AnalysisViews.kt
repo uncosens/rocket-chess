@@ -75,23 +75,25 @@ fun MoveClass.label(): String = stringResource(
     },
 )
 
-/** "+0.35" or "#3" / "#-3", from White's view. */
-fun Eval.text(): String = when (this) {
-    is Eval.Cp -> (if (cp >= 0) "+" else "-") + "%.2f".format(abs(cp) / 100.0)
-    is Eval.Mate -> if (whiteWins) "#$moves" else "#-$moves"
+/** "+0.35" or "#3" / "#-3", from White's view, or Black's when [whiteView] is false. */
+fun Eval.text(whiteView: Boolean = true): String = when (this) {
+    is Eval.Cp -> {
+        val v = if (whiteView) cp else -cp
+        (if (v >= 0) "+" else "-") + "%.2f".format(abs(v) / 100.0)
+    }
+    is Eval.Mate -> if (whiteWins == whiteView) "#$moves" else "#-$moves"
 }
 
-/** Analyze, or Stop while running. */
+/** Stop while running; Analyze to start or go on after a stop. Nothing once done. */
 @Composable
 fun AnalyzeButton(vm: GameViewModel, onAnalyze: () -> Unit, modifier: Modifier = Modifier) {
     val shape = RoundedCornerShape(16.dp)
-    when (val s = vm.analysis) {
+    when (vm.analysis) {
         is AnalysisState.Running -> OutlinedButton(onClick = vm::stopAnalysis, modifier = modifier, shape = shape) {
             Text(stringResource(R.string.stop))
         }
-        else -> Button(onClick = onAnalyze, modifier = modifier, shape = shape) {
-            Text(stringResource(if (s is AnalysisState.Idle) R.string.analyze else R.string.analyze_again))
-        }
+        is AnalysisState.Done -> {}
+        else -> Button(onClick = onAnalyze, modifier = modifier, shape = shape) { Text(stringResource(R.string.analyze)) }
     }
 }
 
@@ -155,14 +157,14 @@ fun EvalCard(vm: GameViewModel, line: GameLine) {
                 Text(stringResource(R.string.eval_title), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
                 Text(stringResource(R.string.tap_to_jump), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            EvalGraph(vm.evals, vm.ply, vm::goTo)
+            EvalGraph(vm.evals, vm.ply, vm::goTo, whiteView = !vm.flipped)
             Summary(vm, line)
         }
     }
 }
 
 @Composable
-private fun EvalGraph(evals: List<PositionEval?>, ply: Int, onSelect: (Int) -> Unit) {
+private fun EvalGraph(evals: List<PositionEval?>, ply: Int, onSelect: (Int) -> Unit, whiteView: Boolean) {
     val cursor = MaterialTheme.colorScheme.primary
     val desc = stringResource(R.string.graph_description)
     Canvas(
@@ -173,8 +175,9 @@ private fun EvalGraph(evals: List<PositionEval?>, ply: Int, onSelect: (Int) -> U
             },
     ) {
         val step = size.width / (evals.size - 1)
-        fun y(e: PositionEval) = size.height * (1 - whiteWinPercent(e.eval).toFloat() / 100f)
-        drawRect(GRAPH_BG)
+        // The bottom side's winning chance rises; its area is drawn in its own color.
+        fun y(e: PositionEval) = whiteWinPercent(e.eval).toFloat().let { w -> size.height * (1 - (if (whiteView) w else 100 - w) / 100f) }
+        drawRect(if (whiteView) GRAPH_BG else GRAPH_FILL)
         // Analysis runs in order, so the known part is a prefix.
         val known = evals.takeWhile { it != null }.filterNotNull()
         val fill = Path().apply {
@@ -183,7 +186,7 @@ private fun EvalGraph(evals: List<PositionEval?>, ply: Int, onSelect: (Int) -> U
             lineTo((known.size - 1).coerceAtLeast(0) * step, size.height)
             close()
         }
-        drawPath(fill, GRAPH_FILL)
+        drawPath(fill, if (whiteView) GRAPH_FILL else GRAPH_BG)
         drawLine(GRAPH_MID, Offset(0f, size.height / 2), Offset(size.width, size.height / 2))
         drawLine(cursor, Offset(ply * step, 0f), Offset(ply * step, size.height), strokeWidth = 2.dp.toPx())
         known.getOrNull(ply)?.let { drawCircle(cursor, 4.dp.toPx(), Offset(ply * step, y(it))) }

@@ -48,6 +48,9 @@ fun winLoss(before: Eval, after: Eval, whiteMoved: Boolean): Double {
     return if (whiteMoved) b - a else a - b
 }
 
+/** Lichess-style accuracy of one move from its win% loss: 100 means nothing was lost. */
+fun moveAccuracy(loss: Double): Double = (103.1668 * exp(-0.04354 * loss.coerceAtLeast(0.0)) - 3.1669).coerceIn(0.0, 100.0)
+
 /**
  * Best when the played move is the engine's first choice (PV1). Otherwise by win% loss.
  * A negative loss (the position after looks better than before) happens when the deeper look

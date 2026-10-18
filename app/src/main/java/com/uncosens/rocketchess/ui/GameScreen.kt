@@ -60,6 +60,8 @@ fun GameScreen(vm: GameViewModel, onBack: () -> Unit) {
     val exe = remember { StockfishSession.binary(context) }
     val onAnalyze = { vm.analyze(exe, EngineOptionsStore.load(context)) }
     BackHandler(onBack = onBack)
+    // A newly opened game is analyzed right away.
+    LaunchedEffect(vm.game) { if (vm.game != null && vm.analysis == AnalysisState.Idle) onAnalyze() }
     // Positions the user reaches on the board are analyzed right away.
     LaunchedEffect(vm.variation, vm.ply) { vm.analyzeLive(exe, EngineOptionsStore.load(context)) }
 
@@ -102,15 +104,18 @@ private fun BoardBlock(vm: GameViewModel, modifier: Modifier) {
     val tags = vm.game?.tags
     val black = tags?.get("Black") ?: stringResource(R.string.side_black)
     val white = tags?.get("White") ?: stringResource(R.string.side_white)
+    val fen = vm.line?.positions?.getOrNull(vm.ply)?.fen ?: GameLine.START_FEN
+    val (whiteEdge, blackEdge) = remember(fen) { materialEdge(fen) }
     Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        if (vm.flipped) PlayerRow(white, white = true) else PlayerRow(black, white = false)
+        if (vm.flipped) PlayerRow(white, true, whiteEdge) else PlayerRow(black, false, blackEdge)
         Board(vm, modifier.clip(RoundedCornerShape(12.dp)))
-        if (vm.flipped) PlayerRow(black, white = false) else PlayerRow(white, white = true)
+        if (vm.flipped) PlayerRow(black, false, blackEdge) else PlayerRow(white, true, whiteEdge)
     }
 }
 
+/** Color dot, name, then the pieces this side is up and its point lead. */
 @Composable
-private fun PlayerRow(name: String, white: Boolean) {
+private fun PlayerRow(name: String, white: Boolean, edge: MaterialEdge) {
     Row(Modifier.height(24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Box(
             Modifier.size(12.dp).clip(RoundedCornerShape(4.dp))
@@ -118,8 +123,14 @@ private fun PlayerRow(name: String, white: Boolean) {
                 .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(4.dp)),
         )
         Text(name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, maxLines = 1)
+        val muted = MaterialTheme.colorScheme.onSurfaceVariant
+        // U+FE0E asks for the text form of the chess symbols, not emoji.
+        if (edge.pieces.isNotEmpty()) Text(edge.pieces.map { GLYPHS.getValue(it) + "\uFE0E" }.joinToString(""), color = muted, fontSize = 16.sp)
+        if (edge.points > 0) Text("+${edge.points}", color = muted, style = MaterialTheme.typography.bodySmall, fontFamily = Mono)
     }
 }
+
+private val GLYPHS = mapOf('q' to "\u265B", 'r' to "\u265C", 'b' to "\u265D", 'n' to "\u265E", 'p' to "\u265F")
 
 @Composable
 private fun Board(vm: GameViewModel, modifier: Modifier) {
@@ -248,11 +259,17 @@ private fun MoveCard(vm: GameViewModel, line: GameLine) {
                 }
             }
             e?.let {
-                Surface(color = MaterialTheme.colorScheme.onSurface, shape = RoundedCornerShape(10.dp)) {
+                // The score is from the bottom side's view, on a chip of that side's color.
+                val whiteView = !vm.flipped
+                Surface(
+                    color = if (whiteView) Color.White else Color(0xFF14161B),
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                ) {
                     Text(
-                        it.eval.text(),
+                        it.eval.text(whiteView),
                         Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                        color = MaterialTheme.colorScheme.surface,
+                        color = if (whiteView) Color(0xFF14161B) else Color.White,
                         fontFamily = Mono,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -296,10 +313,8 @@ private fun Footer(vm: GameViewModel, onAnalyze: () -> Unit) {
         }
     }
     Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        SquareIconButton(R.drawable.ic_first, stringResource(R.string.nav_first), { vm.goTo(0) }, size = 52.dp)
         SquareIconButton(R.drawable.ic_back, stringResource(R.string.nav_prev), { vm.goTo(vm.ply - 1) }, size = 52.dp)
         SquareIconButton(R.drawable.ic_next, stringResource(R.string.nav_next), { vm.goTo(vm.ply + 1) }, size = 52.dp)
-        SquareIconButton(R.drawable.ic_last, stringResource(R.string.nav_last), { vm.goTo(line.plies.size) }, size = 52.dp)
         AnalyzeButton(vm, onAnalyze, Modifier.weight(1f).height(52.dp))
     }
 }

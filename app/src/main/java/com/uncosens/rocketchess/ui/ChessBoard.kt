@@ -48,6 +48,24 @@ private const val MOVE_MS = 220
 /** Square name like "e4" to 0..63, a1 = 0. */
 private fun index(square: String) = (square[0] - 'a') + (square[1] - '1') * 8
 
+/** Pieces one side has more of than the other, as letters like "rp", and its point lead (0 if behind). */
+data class MaterialEdge(val pieces: String, val points: Int)
+
+/** White's and Black's material edge in a position. A promoted piece counts as that piece. */
+internal fun materialEdge(fen: String): Pair<MaterialEdge, MaterialEdge> {
+    val counts = pieces(fen).values.groupingBy { it }.eachCount()
+    val values = mapOf('q' to 9, 'r' to 5, 'b' to 3, 'n' to 3, 'p' to 1)
+    var white = ""
+    var black = ""
+    var lead = 0
+    for ((p, v) in values) {
+        val d = (counts[p.uppercaseChar()] ?: 0) - (counts[p] ?: 0)
+        if (d > 0) white += p.toString().repeat(d) else black += p.toString().repeat(-d)
+        lead += d * v
+    }
+    return MaterialEdge(white, lead.coerceAtLeast(0)) to MaterialEdge(black, (-lead).coerceAtLeast(0))
+}
+
 /** Piece letters by square index, from the FEN board field. */
 internal fun pieces(fen: String): Map<Int, Char> {
     val map = HashMap<Int, Char>()
@@ -78,7 +96,8 @@ internal fun slides(old: Map<Int, Char>, new: Map<Int, Char>): Map<Int, Int> {
 }
 
 /**
- * Draws one position. [lastMove] and [arrow] are (from, to); [grade] adds a badge on the last move's target.
+ * Draws one position. [lastMove] and [arrow] are (from, to); [grade] adds a badge on the last move's target
+ * and tints the last move's squares in the grade's color.
  * [flipped] shows the board from Black's side. Pieces slide when [fen] changes.
  * [pieceSet] and [boardStyle] default to the saved choices.
  * With [onTap], squares can be tapped; [selected] is marked and [targets] get a dot.
@@ -135,6 +154,7 @@ fun ChessBoard(
         fun center(i: Int) = at(i) + Offset(sq / 2, sq / 2)
 
         val last = lastMove?.let { setOf(index(it.first), index(it.second)) } ?: emptySet()
+        val tint = grade?.color()?.copy(alpha = 0.5f)
         val coord = TextStyle(fontSize = (sq * 0.2f).toSp(), fontFamily = Mono, fontWeight = FontWeight.SemiBold)
         val themed = style == BoardStyle.ROCKET
         val lightSq = if (themed) colors.light else style.light
@@ -144,11 +164,12 @@ fun ChessBoard(
             val topLeft = at(i)
             val dark = (i % 8 + i / 8) % 2 == 0
             when {
-                themed -> drawRect(if (i in last) (if (dark) colors.lastDark else colors.lastLight) else if (dark) darkSq else lightSq, topLeft, Size(sq, sq))
+                themed -> drawRect(if (i in last && tint == null) (if (dark) colors.lastDark else colors.lastLight) else if (dark) darkSq else lightSq, topLeft, Size(sq, sq))
                 texture == null -> drawRect(if (dark) darkSq else lightSq, topLeft, Size(sq, sq))
             }
-            // Other styles mark the last move with a see-through overlay.
-            if (!themed && i in last) drawRect(LAST, topLeft, Size(sq, sq))
+            // A graded move gets its grade's color; otherwise other styles use a see-through overlay.
+            if (i in last && tint != null) drawRect(tint, topLeft, Size(sq, sq))
+            else if (!themed && i in last) drawRect(LAST, topLeft, Size(sq, sq))
             if (check != null && i == index(check)) drawRect(CHECK, topLeft, Size(sq, sq))
             if (selected != null && i == index(selected)) drawRect(SELECTED, topLeft, Size(sq, sq))
             // Rank numbers on the left edge, file letters on the bottom edge, in the other square color.

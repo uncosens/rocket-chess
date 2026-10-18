@@ -106,4 +106,24 @@ class AnalysisTest {
         assertEquals(EngineOptions(1, 16, 14), EngineOptions(threads = 0, hashMb = 1).clamped(cores = 4))
         assertEquals(3, EngineOptions.maxThreads(3))
     }
+
+    @Test
+    fun accuracyFromWinLoss() {
+        assertEquals(100.0, moveAccuracy(0.0), 0.01)
+        assertEquals(100.0, moveAccuracy(-5.0), 0.01) // a gain counts as no loss
+        assertEquals(63.6, moveAccuracy(10.0), 0.1)
+        assertEquals(0.0, moveAccuracy(100.0), 0.01)
+        // White's two moves lose 0 and about 10 win%; Black's one move loses nothing.
+        val line = GameLine.from(Pgn.parse("1. e4 e5 2. Qh5 *"))
+        val evals = listOf(
+            PositionEval(Eval.Cp(30), "e2e4", null, 14),
+            PositionEval(Eval.Cp(30), "e7e5", null, 14),
+            PositionEval(Eval.Cp(30), "g1f3", null, 14),
+            PositionEval(Eval.Cp(-81), "b8c6", null, 14),
+        )
+        val loss = winLoss(Eval.Cp(30), Eval.Cp(-81), whiteMoved = true)
+        assertEquals((100.0 + moveAccuracy(loss)) / 2, Analyzer.accuracy(line, evals, white = true)!!, 0.001)
+        assertEquals(100.0, Analyzer.accuracy(line, evals, white = false)!!, 0.001)
+        assertNull(Analyzer.accuracy(line, listOf(evals[0]), white = true))
+    }
 }

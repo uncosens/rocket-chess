@@ -1,6 +1,7 @@
 package com.uncosens.rocketchess.data
 
 import android.content.Context
+import androidx.room.AutoMigration
 import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Entity
@@ -26,10 +27,24 @@ data class SavedGame(
     val date: String,
     val pgn: String,
     val importedAt: Long,
+    /** Mean move accuracy per side, set once a full analysis finishes. */
+    val whiteAccuracy: Double? = null,
+    val blackAccuracy: Double? = null,
 )
 
 /** List row without the PGN text. */
-data class GameSummary(val id: Long, val source: String, val white: String, val black: String, val result: String, val date: String)
+data class GameSummary(
+    val id: Long,
+    val source: String,
+    val white: String,
+    val black: String,
+    val result: String,
+    val date: String,
+    val whiteAccuracy: Double?,
+    val blackAccuracy: Double?,
+)
+
+data class KeyAccuracy(val sourceKey: String, val whiteAccuracy: Double?, val blackAccuracy: Double?)
 
 @Dao
 interface GameDao {
@@ -40,8 +55,14 @@ interface GameDao {
     @Query("SELECT id FROM games WHERE sourceKey = :key")
     suspend fun idFor(key: String): Long?
 
-    @Query("SELECT id, source, white, black, result, date FROM games ORDER BY importedAt DESC, id DESC")
+    @Query("SELECT id, source, white, black, result, date, whiteAccuracy, blackAccuracy FROM games ORDER BY importedAt DESC, id DESC")
     fun summaries(): Flow<List<GameSummary>>
+
+    @Query("SELECT sourceKey, whiteAccuracy, blackAccuracy FROM games WHERE whiteAccuracy IS NOT NULL OR blackAccuracy IS NOT NULL")
+    fun accuracies(): Flow<List<KeyAccuracy>>
+
+    @Query("UPDATE games SET whiteAccuracy = :white, blackAccuracy = :black WHERE sourceKey = :key")
+    suspend fun setAccuracy(key: String, white: Double?, black: Double?)
 
     @Query("SELECT * FROM games WHERE id = :id")
     suspend fun get(id: Long): SavedGame?
@@ -53,7 +74,7 @@ interface GameDao {
     suspend fun deleteAll()
 }
 
-@Database(entities = [SavedGame::class], version = 1)
+@Database(entities = [SavedGame::class], version = 2, autoMigrations = [AutoMigration(from = 1, to = 2)])
 abstract class AppDatabase : RoomDatabase() {
     abstract fun games(): GameDao
 

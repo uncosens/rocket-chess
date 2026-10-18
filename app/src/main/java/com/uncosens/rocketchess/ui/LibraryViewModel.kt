@@ -12,17 +12,20 @@ import com.uncosens.rocketchess.chess.Pgn
 import com.uncosens.rocketchess.chess.PgnException
 import com.uncosens.rocketchess.data.AppDatabase
 import com.uncosens.rocketchess.data.GameSummary
+import com.uncosens.rocketchess.data.KnownUsers
 import com.uncosens.rocketchess.data.SavedGame
 import com.uncosens.rocketchess.data.Sources
 import com.uncosens.rocketchess.data.saveOrFind
 import com.uncosens.rocketchess.remote.ChessCom
 import com.uncosens.rocketchess.remote.FetchError
+import com.uncosens.rocketchess.remote.GamePager
 import com.uncosens.rocketchess.remote.Lichess
 import com.uncosens.rocketchess.remote.RemoteGame
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -30,7 +33,8 @@ import kotlinx.coroutines.withContext
 sealed interface OnlineState {
     data object Idle : OnlineState
     data object Loading : OnlineState
-    data class Found(val games: List<RemoteGame>) : OnlineState
+    /** [loading] while the next page is on its way; [moreError] if it failed. */
+    data class Found(val games: List<RemoteGame>, val done: Boolean, val loading: Boolean = false, val moreError: FetchError? = null) : OnlineState
     data class Failed(val error: FetchError) : OnlineState
 }
 
@@ -38,15 +42,19 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     private val dao = AppDatabase.get(app).games()
 
     val games = dao.summaries().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList<GameSummary>())
+    /** Saved accuracy by source key, to mark analyzed games in the online list. */
+    val accuracies = dao.accuracies().map { list -> list.associateBy { it.sourceKey } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     var error by mutableStateOf<LoadError?>(null)
         private set
     var online by mutableStateOf<OnlineState>(OnlineState.Idle)
         private set
     private var fetchJob: Job? = null
+    private var pager: GamePager? = null
 
-    /** Checks the PGN, saves it (or finds the saved copy) and passes its text to [open]. */
-    private suspend fun save(pgn: String, source: String, key: String, open: (String) -> Unit) {
+    /** Checks the PGN, saves it (or finds the saved copy) and passes its text and key to [open]. */
+    private suspend fun save(pgn: String, source: String, key: String, open: (String, String) -> Unit) {
         val game = withContext(Dispatchers.Default) {
             runCatching { Pgn.parse(pgn).also { GameLine.from(it) } }
         }.getOrElse {
@@ -61,14 +69,14 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             ),
         )
         error = null
-        open(pgn)
+        open(pgn, key)
     }
 
-    fun importText(text: String, source: String, open: (String) -> Unit) {
+    fun importText(text: String, source: String, open: (String, String) -> Unit) {
         viewModelScope.launch { save(text, source, Sources.textKey(text), open) }
     }
 
-    fun importFile(uri: Uri, open: (String) -> Unit) {
+    fun importFile(uri: Uri, open: (String, String) -> Unit) {
         viewModelScope.launch {
             val bytes = withContext(Dispatchers.IO) {
                 runCatching {
@@ -83,26 +91,32 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun importRemote(game: RemoteGame, open: (String) -> Unit) {
+    fun importRemote(game: RemoteGame, open: (String, String) -> Unit) {
         val source = if (game.key.startsWith("lichess:")) Sources.LICHESS else Sources.CHESS_COM
         viewModelScope.launch { save(game.pgn, source, game.key, open) }
     }
 
-    fun open(id: Long, open: (String) -> Unit) {
-        viewModelScope.launch { dao.get(id)?.let { open(it.pgn) } }
+    fun open(id: Long, open: (String, String) -> Unit) {
+        viewModelScope.launch { dao.get(id)?.let { open(it.pgn, it.sourceKey) } }
     }
+
+    fun saveAccuracy(key: String, white: Double?, black: Double?) = viewModelScope.launch { dao.setAccuracy(key, white, black) }
 
     fun delete(id: Long) = viewModelScope.launch { dao.delete(id) }
 
     fun deleteAll() = viewModelScope.launch { dao.deleteAll() }
 
+    /** Loads the first page of [name]'s games and remembers the name as the user's. */
     fun fetch(source: String, name: String) {
         cancelFetch()
         online = OnlineState.Loading
         fetchJob = viewModelScope.launch {
             online = try {
-                val games = if (source == Sources.LICHESS) Lichess.recentGames(name) else ChessCom.recentGames(name)
-                OnlineState.Found(games)
+                val p = if (source == Sources.LICHESS) Lichess.Pager(name) else ChessCom.Pager(name)
+                pager = p
+                val games = p.next()
+                KnownUsers.add(getApplication(), source, name)
+                OnlineState.Found(games, p.done)
             } catch (e: FetchError) {
                 OnlineState.Failed(e)
             } catch (e: CancellationException) {
@@ -111,10 +125,32 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** Appends the next page; called when the list is scrolled to its end. */
+    fun loadMore() {
+        val s = online as? OnlineState.Found ?: return
+        val p = pager ?: return
+        if (s.done || s.loading) return
+        online = s.copy(loading = true, moreError = null)
+        fetchJob = viewModelScope.launch {
+            online = try {
+                val more = p.next()
+                // A game can show up again if it is played while paging; keep keys unique.
+                val seen = s.games.mapTo(HashSet()) { it.key }
+                s.copy(games = s.games + more.filter { it.key !in seen }, done = p.done, loading = false)
+            } catch (e: FetchError) {
+                s.copy(loading = false, moreError = e)
+            }
+        }
+    }
+
     fun cancelFetch() {
         fetchJob?.cancel()
         fetchJob = null
-        if (online == OnlineState.Loading) online = OnlineState.Idle
+        when (val s = online) {
+            OnlineState.Loading -> online = OnlineState.Idle
+            is OnlineState.Found -> if (s.loading) online = s.copy(loading = false)
+            else -> {}
+        }
     }
 
     fun clearOnline() {

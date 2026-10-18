@@ -50,7 +50,7 @@ private const val START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQk
 /** Piece set, plus threads, hash size and search depth for the next analysis. Saved on each change. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(onBack: () -> Unit, onLicenses: () -> Unit) {
     BackHandler(onBack = onBack)
     val context = LocalContext.current
     var opts by remember { mutableStateOf(EngineOptionsStore.load(context)) }
@@ -133,6 +133,7 @@ fun SettingsScreen(onBack: () -> Unit) {
 
         Text(stringResource(R.string.settings_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         TextButton(onClick = { set(EngineOptions().clamped(EngineOptionsStore.cores)) }) { Text(stringResource(R.string.settings_reset)) }
+        TextButton(onClick = onLicenses) { Text(stringResource(R.string.about_licenses)) }
     }
 }
 
