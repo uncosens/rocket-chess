@@ -187,7 +187,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     companion object {
         // ponytail: whole file in memory, capped. Stream games if big databases are ever needed.
         const val MAX_FILE_BYTES = 5 * 1024 * 1024
-        const val KEEP_ANALYSES = 50
+        const val KEEP_ANALYSES = 100
     }
 }
 
