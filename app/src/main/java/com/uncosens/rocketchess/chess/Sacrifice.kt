@@ -3,73 +3,61 @@ package com.uncosens.rocketchess.chess
 import com.github.bhlangonijr.chesslib.Board
 import com.github.bhlangonijr.chesslib.Piece
 import com.github.bhlangonijr.chesslib.PieceType
+import com.github.bhlangonijr.chesslib.Square
 import com.github.bhlangonijr.chesslib.move.Move
 
 /**
- * En Croissant's sacrifice test (src-tauri/src/chess.rs): a move is a sacrifice when a captures-only
- * material search says it gives up more than 100 (a pawn is 90) against the mover's best option.
+ * A move is a piece sacrifice when the opponent can win the moved piece back for a net gain of at
+ * least [MIN_LOSS]: a static exchange on its landing square, minus what the move itself took.
  */
 object Sacrifice {
+    /** A minor piece for a pawn, or the exchange. Losing only a pawn does not count. */
+    private const val MIN_LOSS = 200
+
     /** True if [move], legal on [board], is a sacrifice. [board] is left as it was. */
     fun of(board: Board, move: Move): Boolean {
-        val before = naiveEval(board)
+        val taken = takenBy(board, move)
         board.doMove(move)
-        val over = board.legalMoves().isEmpty() || board.isInsufficientMaterial
-        val after = if (over) 0 else -naiveEval(board)
+        val lost = exchange(board, move.to)
         board.undoMove()
-        return !over && before > after + 100
+        return lost - taken >= MIN_LOSS
     }
 
     private fun value(type: PieceType?) = when (type) {
-        PieceType.PAWN -> 90
+        PieceType.PAWN -> 100
         PieceType.KNIGHT, PieceType.BISHOP -> 300
         PieceType.ROOK -> 500
-        PieceType.QUEEN -> 1000
+        PieceType.QUEEN -> 900
         else -> 0
     }
 
-    /** Material for the side to move; being mated is -10000. */
-    private fun material(board: Board): Int {
-        if (board.isMated) return -10000
-        var own = 0
-        var other = 0
-        for (p in board.boardToArray()) {
-            if (p == Piece.NONE) continue
-            if (p.pieceSide == board.sideToMove) own += value(p.pieceType) else other += value(p.pieceType)
-        }
-        return own - other
-    }
+    // The king captures last: it may only take a piece nobody defends.
+    private fun attackerOrder(type: PieceType?) = if (type == PieceType.KING) Int.MAX_VALUE else value(type)
 
-    /** Value of the piece [m] takes, or null if it takes nothing. En passant takes a pawn. */
-    private fun captured(board: Board, m: Move): Int? {
+    /** Material [m] gains on [board]: what it captures (en passant takes a pawn), plus any promotion. */
+    private fun takenBy(board: Board, m: Move): Int {
         val target = board.getPiece(m.to)
-        if (target != Piece.NONE) return value(target.pieceType)
         val pawn = board.getPiece(m.from).pieceType == PieceType.PAWN
-        return if (pawn && m.from.file != m.to.file) value(PieceType.PAWN) else null
-    }
-
-    /** Fail-hard alpha-beta over captures only, biggest capture first. */
-    private fun qsearch(board: Board, alphaIn: Int, beta: Int): Int {
-        var alpha = alphaIn
-        val standPat = material(board)
-        if (standPat >= beta) return beta
-        if (alpha < standPat) alpha = standPat
-        val captures = board.legalMoves().mapNotNull { m -> captured(board, m)?.let { m to it } }.sortedByDescending { it.second }
-        for ((m, _) in captures) {
-            board.doMove(m)
-            val score = -qsearch(board, -beta, -alpha)
-            board.undoMove()
-            if (score >= beta) return beta
-            if (score > alpha) alpha = score
+        val captured = when {
+            target != Piece.NONE -> value(target.pieceType)
+            pawn && m.from.file != m.to.file -> value(PieceType.PAWN)
+            else -> 0
         }
-        return alpha
+        val promoted = if (m.promotion != Piece.NONE) value(m.promotion.pieceType) - value(PieceType.PAWN) else 0
+        return captured + promoted
     }
 
-    /** Best material the side to move can reach: one move, then captures. */
-    private fun naiveEval(board: Board): Int = board.legalMoves().maxOfOrNull { m ->
-        board.doMove(m)
-        val v = -qsearch(board, Int.MIN_VALUE, Int.MAX_VALUE)
+    /**
+     * Net material the side to move can win by capturing on [square], cheapest piece first, and
+     * stopping as soon as going on would lose. Only legal moves, so pins and checks count.
+     */
+    private fun exchange(board: Board, square: Square): Int {
+        val capture = board.legalMoves().filter { it.to == square }
+            .minByOrNull { attackerOrder(board.getPiece(it.from).pieceType) } ?: return 0
+        val gain = value(board.getPiece(square).pieceType)
+        board.doMove(capture)
+        val net = gain - exchange(board, square)
         board.undoMove()
-        v
-    } ?: Int.MIN_VALUE
+        return maxOf(0, net)
+    }
 }

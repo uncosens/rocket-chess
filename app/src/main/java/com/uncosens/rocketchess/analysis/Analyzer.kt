@@ -75,7 +75,9 @@ class Analyzer(private val sf: StockfishSession) {
             val whiteMoved = line.positions[ply].fen.split(' ')[1] == "w"
             val loss = winLoss(before.eval, after.eval, whiteMoved)
             val p = line.plies[ply]
-            val cls = if (isBrilliant(before, after.eval, p.uci, p.sacrifice, whiteMoved)) MoveClass.Brilliant else classify(p.uci, before.best, loss)
+            val white = whiteWinPercent(before.eval)
+            val moverWin = if (whiteMoved) white else 100 - white
+            val cls = if (isBrilliant(p.uci, before.best, p.sacrifice, loss, moverWin)) MoveClass.Brilliant else classify(p.uci, before.best, loss)
             return MoveResult(cls, loss)
         }
 

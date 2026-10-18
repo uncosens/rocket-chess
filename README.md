@@ -84,6 +84,9 @@ Play blocks updates without 16 KB support from 2027-02-01 (see the Android page-
 - Scores are stored from White's view. Mate keeps who wins and the distance. Win% uses `50 + 50 * (2 / (1 + exp(-0.00368208 * cp)) - 1)`; mate is 0 or 100.
 - Loss = mover's win% before the move minus after it. Best = the played move equals PV1's first move (UCI compare).
   Then Good < 2, Fine < 5, Weak < 10, Mistake < 20, Blunder >= 20 points (Chess.com's lines). This is our own test policy, not Lichess grading.
+- Brilliant (our own rule): a piece sacrifice that is PV1, loses under 2 points, was played when the mover's win% was below 90,
+  and leaves the mover at 50% or more.
+  A sacrifice means the opponent can win the moved piece for a net 200+ (a minor piece for a pawn, or the exchange), by a static exchange on its square (`chess/Sacrifice.kt`).
 - Accuracy is the mean of a score per grade (Best/Brilliant 100, Good 86, Fine 79, Weak 38, Mistake 11, Blunder -39), kept to 0..100.
   The scores were fitted to Chess.com's accuracy on 79 reviewed games; about 4 points off on average. Chess.com's own formula is not public.
 - A negative loss is graded as no loss. It happens because the next position is searched on its own and can find more.

@@ -6,6 +6,7 @@ import com.uncosens.rocketchess.engine.Uci
 import com.uncosens.rocketchess.engine.UciInfo
 import com.uncosens.rocketchess.engine.UciScore
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -136,23 +137,43 @@ class AnalysisTest {
         assertNull(SavedAnalysis.decode("broken"))
     }
 
+    private fun sacrifice(pgn: String) = GameLine.from(Pgn.parse(pgn)).plies.last().sacrifice
+
     @Test
-    fun brilliantLikeEnCroissant() {
-        // Greek gift: Bxh7+ gives a bishop for a pawn after Kxh7.
+    fun sacrificeIsLosingAPieceOnItsSquare() {
+        // Greek gift: Bxh7+ Kxh7 gives a bishop for a pawn.
+        val greek = "[FEN \"r1bq1rk1/pppn1ppp/4p3/3pP3/1b1P4/2NB1N2/PPP2PPP/R1BQK2R w KQ - 0 1\"]\n\n1. Bxh7+ *"
+        assertTrue(sacrifice(greek))
+        assertFalse(sacrifice("1. e4 *"))
+        // King's Gambit gives only a pawn.
+        assertFalse(sacrifice("1. e4 e5 2. f4 *"))
+        // Nd5 hangs the knight to cxd5, unless Ba4 pins that pawn to its king.
+        assertTrue(sacrifice("[FEN \"4k3/8/2p5/8/8/4N3/8/4K3 w - - 0 1\"]\n\n1. Nd5 *"))
+        assertFalse(sacrifice("[FEN \"4k3/8/2p5/8/B7/4N3/8/4K3 w - - 0 1\"]\n\n1. Nd5 *"))
+        // Exchange sacrifice: Rxc6 bxc6 gives a rook for a knight.
+        assertTrue(sacrifice("[FEN \"4k3/1p6/2n5/8/8/8/8/2R1K3 w - - 0 1\"]\n\n1. Rxc6 *"))
+        // A defended pawn taken by a pawn is a fair trade.
+        assertFalse(sacrifice("1. e4 d5 2. exd5 *"))
+    }
+
+    @Test
+    fun brilliantIsASoundSacrificeWhenNotAlreadyWinning() {
         val fen = "r1bq1rk1/pppn1ppp/4p3/3pP3/1b1P4/2NB1N2/PPP2PPP/R1BQK2R w KQ - 0 1"
         val line = GameLine.from(Pgn.parse("[FEN \"$fen\"]\n\n1. Bxh7+ *"))
-        assertTrue(line.plies[0].sacrifice)
-        assertTrue(!GameLine.from(Pgn.parse("1. e4 *")).plies[0].sacrifice)
-
-        fun grade(second: Eval) = Analyzer.grade(
-            line,
-            listOf(PositionEval(Eval.Cp(150), "d3h7", second, 14), PositionEval(Eval.Cp(140), "g8h7", null, 14)),
-            0,
+        fun grade(before: Int, after: Int, best: String = "d3h7") = Analyzer.grade(
+            line, listOf(PositionEval(Eval.Cp(before), best, null, 14), PositionEval(Eval.Cp(after), "g8h7", null, 14)), 0,
         )!!.cls
-        // The only good move (PV2 far worse), played, and a sacrifice: brilliant.
-        assertEquals(MoveClass.Brilliant, grade(Eval.Cp(-200)))
-        // PV2 nearly as good: just the best move.
-        assertEquals(MoveClass.Best, grade(Eval.Cp(120)))
+        assertEquals(MoveClass.Brilliant, grade(150, 140))
+        // About 93% to win already: just Best.
+        assertEquals(MoveClass.Best, grade(700, 690))
+        // Still losing after it (about 25%): just Best.
+        assertEquals(MoveClass.Best, grade(-290, -300))
+        // Just above even after it: Brilliant.
+        assertEquals(MoveClass.Brilliant, grade(15, 5))
+        // Not the engine's choice.
+        assertEquals(MoveClass.Good, grade(150, 140, best = "f3g5"))
+        // The engine's choice, but the next position looks 2+ points worse: no Brilliant.
+        assertEquals(MoveClass.Best, grade(150, 100))
     }
 
     @Test
