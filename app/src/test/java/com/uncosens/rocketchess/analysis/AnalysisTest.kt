@@ -177,8 +177,18 @@ class AnalysisTest {
     }
 
     @Test
-    fun accuracyIsMeanGradeScore() {
-        // White plays the best move, then loses about 10 win% (a Mistake); Black plays the best move.
+    fun moveScoreFallsWithLoss() {
+        assertEquals(100.0, moveScore(0.0), 1e-9)
+        // A negative loss counts as no loss.
+        assertEquals(100.0, moveScore(-3.0), 1e-9)
+        assertEquals(46.9, moveScore(5.0), 0.1)
+        assertEquals(7.3, moveScore(10.0), 0.1)
+        assertEquals(-44.1, moveScore(20.0), 0.1)
+    }
+
+    @Test
+    fun accuracyIsMeanMoveScore() {
+        // White keeps the eval, then drops from +0.30 to -0.81 (4.9 win% on the accuracy curve); Black keeps it.
         val line = GameLine.from(Pgn.parse("1. e4 e5 2. Qh5 *"))
         val evals = listOf(
             PositionEval(Eval.Cp(30), "e2e4", null, 14),
@@ -186,8 +196,8 @@ class AnalysisTest {
             PositionEval(Eval.Cp(30), "g1f3", null, 14),
             PositionEval(Eval.Cp(-81), "b8c6", null, 14),
         )
-        assertEquals(MoveClass.Mistake, Analyzer.grade(line, evals, 2)!!.cls)
-        assertEquals((100.0 + 11.0) / 2, Analyzer.accuracy(line, evals, white = true)!!, 0.001)
+        assertEquals(4.9, winLoss(Eval.Cp(30), Eval.Cp(-81), whiteMoved = true, AnalysisPolicy.ACCURACY_SLOPE), 0.01)
+        assertEquals((100.0 + 47.7) / 2, Analyzer.accuracy(line, evals, white = true)!!, 0.05)
         assertEquals(100.0, Analyzer.accuracy(line, evals, white = false)!!, 0.001)
         assertNull(Analyzer.accuracy(line, listOf(evals[0]), white = true))
         // A Blunder scores below 0, but a side's accuracy stops at 0.

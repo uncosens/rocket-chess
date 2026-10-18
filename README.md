@@ -87,8 +87,11 @@ Play blocks updates without 16 KB support from 2027-02-01 (see the Android page-
 - Brilliant (our own rule): a piece sacrifice that is PV1, loses under 2 points, was played when the mover's win% was below 90,
   and leaves the mover at 50% or more.
   A sacrifice means the opponent can win the moved piece for a net 200+ (a minor piece for a pawn, or the exchange), by a static exchange on its square (`chess/Sacrifice.kt`).
-- Accuracy is the mean of a score per grade (Best/Brilliant 100, Good 86, Fine 79, Weak 38, Mistake 11, Blunder -39), kept to 0..100.
-  The scores were fitted to Chess.com's accuracy on 79 reviewed games; about 4 points off on average. Chess.com's own formula is not public.
+- Accuracy is the mean of a score per move, kept to 0..100. Move score = `100 - 208 * (1 - exp(-0.059 * loss))`, where loss is win% lost
+  on a flatter curve (`0.00177` instead of `0.00368208`); a negative loss counts as 0. Grades still use the normal curve.
+  Fitted to Chess.com's accuracy on 500 random rapid games of `t4ph3s` (1,000 sides, Stockfish 19, depth 14 like the app):
+  2.9 points off on average in 5-fold cross-check (84% within 5 points). The old score per grade was 4.4 off (66% within 5).
+  Chess.com's own formula is not public.
 - A negative loss is graded as no loss. It happens because the next position is searched on its own and can find more.
 - Stop keeps the results so far; ungraded moves stay ungraded. Going to the background stops the run and quits the engine.
   Each run has an id, so a stopped run cannot write results. Results are not saved; analyze again to get them back.

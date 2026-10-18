@@ -81,10 +81,14 @@ class Analyzer(private val sf: StockfishSession) {
             return MoveResult(cls, loss)
         }
 
-        /** One side's accuracy: the mean grade score of its graded moves, 0 to 100; null if none are graded. */
+        /** One side's accuracy: the mean move score of its graded moves, 0 to 100; null if none are graded. */
         fun accuracy(line: GameLine, evals: List<PositionEval?>, white: Boolean): Double? =
             line.plies.indices.filter { (line.positions[it].fen.split(' ')[1] == "w") == white }
-                .mapNotNull { grade(line, evals, it)?.let { g -> gradeScore(g.cls) } }
+                .mapNotNull { i ->
+                    val before = evals.getOrNull(i) ?: return@mapNotNull null
+                    val after = evals.getOrNull(i + 1) ?: return@mapNotNull null
+                    moveScore(winLoss(before.eval, after.eval, white, AnalysisPolicy.ACCURACY_SLOPE))
+                }
                 .takeIf { it.isNotEmpty() }?.average()?.coerceIn(0.0, 100.0)
     }
 }
