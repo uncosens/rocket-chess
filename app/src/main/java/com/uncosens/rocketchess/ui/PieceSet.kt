@@ -5,11 +5,11 @@ import com.caverock.androidsvg.SVG
 
 /** Piece image sets in assets/pieces/<id>/. Rocket, Classic and Orbit are our own; the rest are from the Lichess project. */
 enum class PieceSet(val id: String) {
-    CBURNETT("cburnett"), ROCKET("rocket"), CLASSIC("classic"), ORBIT("orbit"),
+    ROCKET("rocket"), ORBIT("orbit"), CBURNETT("cburnett"), CLASSIC("classic"),
     MERIDA("merida"), CHESSNUT("chessnut"), MPCHESS("mpchess");
 
     companion object {
-        val DEFAULT = CBURNETT
+        val DEFAULT = ROCKET
         fun fromId(id: String?) = entries.firstOrNull { it.id == id } ?: DEFAULT
     }
 }

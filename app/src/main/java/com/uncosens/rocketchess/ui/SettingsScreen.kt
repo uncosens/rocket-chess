@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -78,13 +79,14 @@ fun SettingsScreen(onBack: () -> Unit, onLicenses: () -> Unit) {
         }
 
         Text(stringResource(R.string.settings_pieces), style = MaterialTheme.typography.titleMedium)
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            PieceSet.entries.forEachIndexed { i, s ->
-                SegmentedButton(
+        // Chips wrap onto more lines, so every name stays readable.
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            PieceSet.entries.forEach { s ->
+                FilterChip(
                     selected = pieces == s,
                     onClick = { pieces = s; PieceSetStore.save(context, s) },
-                    shape = SegmentedButtonDefaults.itemShape(i, PieceSet.entries.size),
-                ) { Text(s.id, maxLines = 1) }
+                    label = { Text(s.id.replaceFirstChar { it.uppercase() }) },
+                )
             }
         }
         Text(stringResource(R.string.settings_board), style = MaterialTheme.typography.titleMedium)
