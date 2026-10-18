@@ -25,6 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
@@ -81,10 +82,12 @@ class GameViewModel : ViewModel() {
     private var mainEvals by mutableStateOf<List<PositionEval?>>(emptyList())
     /** Engine results for positions the user reached on the board, by FEN. */
     private var liveEvals by mutableStateOf<Map<String, PositionEval>>(emptyMap())
+    /** Shallower results of positions still being searched live, shown until the full depth is done. */
+    private var livePartial by mutableStateOf<Map<String, PositionEval>>(emptyMap())
     /** Engine result per position of [line]. */
     val evals: List<PositionEval?> by derivedStateOf {
         val v = variation ?: return@derivedStateOf mainEvals
-        v.line.positions.mapIndexed { i, p -> (if (i <= v.branch) mainEvals.getOrNull(i) else null) ?: liveEvals[p.fen] }
+        v.line.positions.mapIndexed { i, p -> (if (i <= v.branch) mainEvals.getOrNull(i) else null) ?: liveEvals[p.fen] ?: livePartial[p.fen] }
     }
     var analysis by mutableStateOf<AnalysisState>(AnalysisState.Idle)
         private set
@@ -103,6 +106,8 @@ class GameViewModel : ViewModel() {
     private val liveQueue = Channel<List<String>>(Channel.CONFLATED)
     /** Set when the live engine has gone idle and is quitting; a new request then starts another. */
     @Volatile private var liveQuitting = false
+    /** True while the live engine searches; the full analysis then waits before its next position. */
+    @Volatile private var liveSearching = false
 
     /**
      * Loads a game. If [owner] played it, the board shows that side at the bottom.
@@ -153,6 +158,8 @@ class GameViewModel : ViewModel() {
                                 withContext(Dispatchers.Main) { if (id == runId) runSettings = settings }
                                 while (true) {
                                     ensureActive()
+                                    // The user's own move comes first: wait while it is searched.
+                                    while (liveSearching) delay(LIVE_WAIT_MS)
                                     val i = todo.poll() ?: break
                                     val e = analyzer.analyze(l.positions[i].fen, s.depth)
                                     withContext(Dispatchers.Main) {
@@ -212,8 +219,12 @@ class GameViewModel : ViewModel() {
      * One engine stays open for this until [stopAnalysis].
      */
     fun analyzeLive(exe: File, opts: EngineOptions) {
-        val l = variation?.line ?: return
-        val fens = listOf(ply - 1, ply).filter { it >= 0 && evals.getOrNull(it) == null }.map { l.positions[it].fen }
+        val v = variation ?: return
+        val l = v.line
+        // The shown position first, then the one before it (needed for the move's grade).
+        val fens = listOf(ply, ply - 1).filter { it >= 0 }
+            .filter { i -> (if (i <= v.branch) mainEvals.getOrNull(i) else null) == null && l.positions[i].fen !in liveEvals }
+            .map { l.positions[it].fen }
         if (fens.isEmpty()) return
         liveQueue.trySend(fens)
         if (liveJob?.isActive == true && !liveQuitting) return
@@ -237,8 +248,16 @@ class GameViewModel : ViewModel() {
                     }
                     for (fen in batch) {
                         if (fen in liveEvals) continue
-                        val e = analyzer.analyze(fen, settings.depth)
-                        withContext(Dispatchers.Main) { liveEvals = liveEvals + (fen to e) }
+                        liveSearching = true
+                        val e = try {
+                            // Each finished depth shows at once, so even a slow search gives an eval quickly.
+                            analyzer.analyze(fen, settings.depth) { partial ->
+                                viewModelScope.launch(Dispatchers.Main) { if (fen !in liveEvals) livePartial = livePartial + (fen to partial) }
+                            }
+                        } finally {
+                            liveSearching = false
+                        }
+                        withContext(Dispatchers.Main) { liveEvals = liveEvals + (fen to e); livePartial = livePartial - fen }
                     }
                 }
             } catch (e: Exception) {
@@ -270,5 +289,6 @@ class GameViewModel : ViewModel() {
 
     private companion object {
         const val LIVE_IDLE_MS = 10_000L
+        const val LIVE_WAIT_MS = 25L
     }
 }

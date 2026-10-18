@@ -35,11 +35,24 @@ class Analyzer(private val sf: StockfishSession) {
         return s
     }
 
-    fun analyze(fen: String, depth: Int): PositionEval {
+    /** Searches [fen] to [depth]. [onDepth], if given, gets a result each time a deeper depth is done. */
+    fun analyze(fen: String, depth: Int, onDepth: ((PositionEval) -> Unit)? = null): PositionEval {
         val whiteToMove = fen.split(' ').getOrNull(1) != "b"
         sf.send("position fen $fen")
         sf.send("go depth $depth")
-        val lines = sf.readUntil(SEARCH_TIMEOUT_MS) { it.startsWith("bestmove") }
+        var shown = 0
+        var second: Eval? = null
+        val lines = sf.readUntil(SEARCH_TIMEOUT_MS) { line ->
+            if (onDepth != null) Uci.parseInfo(line)?.let { info ->
+                // MultiPV 2 comes after MultiPV 1 at each depth, so the second eval is one depth behind.
+                if (info.multipv == 2) second = Eval.fromUci(info.score, whiteToMove)
+                else if (info.multipv == 1 && info.depth > shown) {
+                    shown = info.depth
+                    onDepth(PositionEval(Eval.fromUci(info.score, whiteToMove), info.pv.firstOrNull(), second, info.depth))
+                }
+            }
+            line.startsWith("bestmove")
+        }
         // Keep the deepest line for each multipv slot.
         val infos = lines.mapNotNull(Uci::parseInfo).groupBy { it.multipv }.mapValues { (_, v) -> v.maxBy { it.depth } }
         val pv1 = infos[1] ?: throw IllegalStateException("no score for position")
