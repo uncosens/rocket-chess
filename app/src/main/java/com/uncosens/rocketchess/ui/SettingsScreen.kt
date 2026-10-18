@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -45,6 +46,8 @@ import androidx.compose.ui.unit.dp
 import com.uncosens.rocketchess.R
 import com.uncosens.rocketchess.analysis.EngineOptions
 import com.uncosens.rocketchess.analysis.EngineOptionsStore
+import com.uncosens.rocketchess.data.KnownUsers
+import com.uncosens.rocketchess.data.Sources
 import kotlin.math.roundToInt
 
 private const val START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
@@ -116,6 +119,20 @@ fun SettingsScreen(onBack: () -> Unit, onLicenses: () -> Unit) {
             START_FEN, null, null, stringResource(R.string.board_start), Modifier.widthIn(max = 240.dp),
             pieceSet = pieces, boardStyle = board,
         )
+
+        Text(stringResource(R.string.settings_accounts), style = MaterialTheme.typography.titleMedium)
+        for ((source, label) in listOf(Sources.CHESS_COM to R.string.my_id_chesscom, Sources.LICHESS to R.string.my_id_lichess)) {
+            var id by remember { mutableStateOf(KnownUsers.myId(context, source)) }
+            OutlinedTextField(
+                value = id,
+                onValueChange = { id = it; KnownUsers.setMyId(context, source, it) },
+                label = { Text(stringResource(label)) },
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        Text(stringResource(R.string.my_id_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
         Text(stringResource(R.string.engine_settings), style = MaterialTheme.typography.titleLarge)
         Text(stringResource(R.string.settings_threads), style = MaterialTheme.typography.titleMedium)

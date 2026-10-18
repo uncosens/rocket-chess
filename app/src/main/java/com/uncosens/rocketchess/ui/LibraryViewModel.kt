@@ -130,7 +130,6 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
                 val p = if (source == Sources.LICHESS) Lichess.Pager(name) else ChessCom.Pager(name)
                 pager = p
                 val games = p.next()
-                KnownUsers.add(getApplication(), source, name)
                 searched = name.trim()
                 // Saved games this user played, imported before owners were kept, are theirs too.
                 dao.claimOwner(name.trim())

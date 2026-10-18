@@ -2,15 +2,15 @@ package com.uncosens.rocketchess.data
 
 import android.content.Context
 
-/** The last name searched on each site, to fill the search box. */
+/** The user's own name on each site, set in Settings for the search's My ID button. */
 object KnownUsers {
     private fun prefs(c: Context) = c.getSharedPreferences("users", Context.MODE_PRIVATE)
 
-    fun add(c: Context, source: String, name: String) {
-        prefs(c).edit().putString("last_$source", name.trim()).apply()
-    }
+    fun myId(c: Context, source: String): String = prefs(c).getString("id_$source", null).orEmpty()
 
-    fun last(c: Context, source: String): String = prefs(c).getString("last_$source", null).orEmpty()
+    fun setMyId(c: Context, source: String, name: String) {
+        prefs(c).edit().putString("id_$source", name.trim()).apply()
+    }
 
     /** Names older versions kept for all games. Moved onto each game once, then forgotten. */
     fun oldNames(c: Context): Set<String> = prefs(c).getStringSet("names", null).orEmpty().toSet()

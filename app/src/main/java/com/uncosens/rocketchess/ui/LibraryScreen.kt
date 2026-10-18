@@ -119,7 +119,7 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: (String, String, String?) -> Uni
                         Icon(painterResource(sourceIcon(g.source)), null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.players, g.white, g.black), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Text(stringResource(R.string.players_lines, g.white, g.black), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                             // Weighted, so the accuracy is measured first and keeps its full width.
                             Text(
@@ -207,8 +207,9 @@ private fun ImportButton(icon: Int, text: String, modifier: Modifier, onClick: (
 fun OnlineScreen(vm: LibraryViewModel, onOpen: (String, String, String?) -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current
     var source by rememberSaveable { mutableStateOf(Sources.CHESS_COM) }
-    // Starts with the last name searched on this site.
-    var name by rememberSaveable { mutableStateOf(KnownUsers.last(context, Sources.CHESS_COM)) }
+    var name by rememberSaveable { mutableStateOf("") }
+    // The user's own name on this site, from Settings.
+    val myId = KnownUsers.myId(context, source)
     val accuracies by vm.accuracies.collectAsState()
     BackHandler { vm.clearOnline(); onBack() }
 
@@ -218,7 +219,7 @@ fun OnlineScreen(vm: LibraryViewModel, onOpen: (String, String, String?) -> Unit
             listOf(Sources.CHESS_COM, Sources.LICHESS).forEachIndexed { i, s ->
                 SegmentedButton(
                     selected = source == s,
-                    onClick = { source = s; name = KnownUsers.last(context, s); vm.clearOnline() },
+                    onClick = { source = s; vm.clearOnline() },
                     shape = SegmentedButtonDefaults.itemShape(i, 2),
                 ) { Text(sourceLabel(s)) }
             }
@@ -235,8 +236,15 @@ fun OnlineScreen(vm: LibraryViewModel, onOpen: (String, String, String?) -> Unit
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.weight(1f),
             )
-            Button(onClick = search, enabled = name.isNotBlank() && vm.online != OnlineState.Loading, modifier = Modifier.height(52.dp), shape = RoundedCornerShape(16.dp)) {
-                Text(stringResource(R.string.search))
+            // With an empty box, My ID fills in the name; once there is text, Search is back.
+            if (name.isBlank() && myId.isNotEmpty()) {
+                Button(onClick = { name = myId }, modifier = Modifier.height(52.dp), shape = RoundedCornerShape(16.dp)) {
+                    Text(stringResource(R.string.my_id))
+                }
+            } else {
+                Button(onClick = search, enabled = name.isNotBlank() && vm.online != OnlineState.Loading, modifier = Modifier.height(52.dp), shape = RoundedCornerShape(16.dp)) {
+                    Text(stringResource(R.string.search))
+                }
             }
         }
         Text(stringResource(R.string.online_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -257,7 +265,7 @@ fun OnlineScreen(vm: LibraryViewModel, onOpen: (String, String, String?) -> Unit
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(Modifier.weight(1f)) {
-                                Text(stringResource(R.string.players, rated(g.white, g.whiteElo), rated(g.black, g.blackElo)) + "  " + (com.uncosens.rocketchess.remote.tag(g.pgn, "Result") ?: ""))
+                                Text(stringResource(R.string.players_lines, rated(g.white, g.whiteElo), rated(g.black, g.blackElo)) + "  " + (com.uncosens.rocketchess.remote.tag(g.pgn, "Result") ?: ""))
                                 Text(
                                     listOfNotNull(g.speed, DateFormat.getDateInstance().format(Date(g.endedAt))).joinToString(" · "),
                                     style = MaterialTheme.typography.bodySmall,

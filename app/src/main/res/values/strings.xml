@@ -7,6 +7,7 @@
     <string name="cancel">Cancel</string>
     <string name="no_game">No game loaded.</string>
     <string name="players">%1$s vs %2$s</string>
+    <string name="players_lines">%1$s vs\n%2$s</string>
     <string name="nav_prev">Previous move</string>
     <string name="nav_next">Next move</string>
     <string name="board_start">Chess board, start position</string>
@@ -95,6 +96,11 @@
     <string name="back_to_game">Back to game</string>
     <string name="accuracy_mine">%1$.1f%%</string>
     <string name="retry">Retry</string>
+    <string name="settings_accounts">My accounts</string>
+    <string name="my_id_chesscom">Chess.com user name</string>
+    <string name="my_id_lichess">Lichess user name</string>
+    <string name="my_id_note">The My ID button in Lichess / Chess.com search fills in these names.</string>
+    <string name="my_id">My ID</string>
     <string name="play_engine">Play vs engine</string>
     <string name="play_side">Your side</string>
     <string name="side_random">Random</string>
