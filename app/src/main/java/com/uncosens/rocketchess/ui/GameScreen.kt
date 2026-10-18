@@ -226,9 +226,13 @@ private fun MoveCard(vm: GameViewModel, line: GameLine) {
                     )
                     g?.let { Text(it.cls.label(), color = it.cls.color(), style = MaterialTheme.typography.labelLarge) }
                 }
-                if (notes.isNotEmpty()) {
-                    Text(notes.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+                // Always two lines, so the card keeps its height on Best moves and the start position too.
+                Text(
+                    notes.joinToString(" · ").ifEmpty { " " },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
             }
             e?.let {
                 // The score is from the bottom side's view, on a chip of that side's color.

@@ -22,7 +22,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -142,10 +141,10 @@ fun Summary(vm: GameViewModel, line: GameLine) {
         val c = counts[side]
         Text(
             stringResource(name) + ": " + listOf(
-                pluralStringResource(R.plurals.weaks, c[0], c[0]),
-                pluralStringResource(R.plurals.mistakes, c[1], c[1]),
-                pluralStringResource(R.plurals.blunders, c[2], c[2]),
-            ).joinToString(", "),
+                stringResource(R.string.count_weak, c[0]),
+                stringResource(R.string.count_mistake, c[1]),
+                stringResource(R.string.count_blunder, c[2]),
+            ).joinToString(" · "),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

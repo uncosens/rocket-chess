@@ -130,15 +130,11 @@ private fun Controls(
     for (row in listOf("KQRBNP", "kqrbnp")) {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             for (p in row) {
-                ToolButton(selected = tool == p, description = p.toString(), onClick = { onTool(p) }) {
+                // Tapping the picked piece again unpicks it, which switches to removing.
+                ToolButton(selected = tool == p, description = p.toString(), onClick = { onTool(if (tool == p) ' ' else p) }) {
                     Canvas(Modifier.size(40.dp)) {
                         drawIntoCanvas { images[p]?.renderToCanvas(it.nativeCanvas, RectF(0f, 0f, size.width, size.height)) }
                     }
-                }
-            }
-            if (row[0] == 'k') {
-                ToolButton(selected = tool == ' ', description = stringResource(R.string.remove_piece), onClick = { onTool(' ') }) {
-                    Text("✕", style = MaterialTheme.typography.titleLarge)
                 }
             }
         }
