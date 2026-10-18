@@ -60,8 +60,9 @@ fun GameScreen(vm: GameViewModel, onBack: () -> Unit) {
     val exe = remember { StockfishSession.binary(context) }
     val onAnalyze = { vm.analyze(exe, EngineOptionsStore.load(context)) }
     BackHandler(onBack = onBack)
-    // A newly opened game is analyzed right away.
-    LaunchedEffect(vm.game) { if (vm.game != null && vm.analysis == AnalysisState.Idle) onAnalyze() }
+    // A newly opened game is analyzed right away. Keyed on the state too: reopening the same
+    // game after a stop gives an equal game but resets the state to Idle.
+    LaunchedEffect(vm.game, vm.analysis) { if (vm.game != null && vm.analysis == AnalysisState.Idle) onAnalyze() }
     // Positions the user reaches on the board are analyzed right away.
     LaunchedEffect(vm.variation, vm.ply) { vm.analyzeLive(exe, EngineOptionsStore.load(context)) }
 
@@ -77,10 +78,14 @@ fun GameScreen(vm: GameViewModel, onBack: () -> Unit) {
                 }
             }
         } else {
+            // The board takes what is left after the eval, graph and moves, so all fit on one screen.
             Column {
                 Header(vm, onBack)
-                BoardBlock(vm, Modifier.fillMaxWidth())
-                Details(vm, Modifier.weight(1f))
+                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+                    // Room for the two player rows above and below the board.
+                    BoardBlock(vm, Modifier.size(minOf(maxWidth, maxHeight - 68.dp)))
+                }
+                Details(vm, Modifier)
                 Footer(vm, onAnalyze)
             }
         }
