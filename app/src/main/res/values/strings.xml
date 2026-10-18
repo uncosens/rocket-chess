@@ -44,7 +44,6 @@
     <string name="delete_all">Delete all</string>
     <string name="confirm_delete">Delete this game from this device?</string>
     <string name="confirm_delete_all">Delete all saved games from this device?</string>
-    <string name="storage_note">Games, their accuracy and the analysis of the last 100 analyzed games are saved only on this device.</string>
     <string name="source_chesscom">Chess.com</string>
     <string name="source_lichess">Lichess</string>
     <string name="source_file">File</string>
