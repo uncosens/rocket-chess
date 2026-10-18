@@ -18,7 +18,7 @@ sealed interface Eval {
     }
 }
 
-enum class MoveClass { Best, Excellent, Good, Inaccuracy, Mistake, Blunder }
+enum class MoveClass { Brilliant, Best, Excellent, Good, Inaccuracy, Mistake, Blunder }
 
 /** All analysis numbers live here so UI code never repeats them. Not the official Lichess grading. */
 object AnalysisPolicy {
@@ -46,6 +46,28 @@ fun winLoss(before: Eval, after: Eval, whiteMoved: Boolean): Double {
     val b = whiteWinPercent(before)
     val a = whiteWinPercent(after)
     return if (whiteMoved) b - a else a - b
+}
+
+/** En Croissant's centipawns for grading: the mover's view, mate as ±1000, clamped to ±1000. */
+private fun ecCp(eval: Eval, white: Boolean): Int {
+    val cp = when (eval) {
+        is Eval.Cp -> eval.cp
+        is Eval.Mate -> if (eval.whiteWins) 1000 else -1000
+    }
+    return (if (white) cp else -cp).coerceIn(-1000, 1000)
+}
+
+private fun ecWin(cp: Int) = whiteWinPercent(Eval.Cp(cp))
+
+/**
+ * En Croissant's "!!" (src/utils/score.ts, getAnnotation): the move loses at most 5 win%, PV2 was more
+ * than 10 win% worse than PV1 (the move was the only good one), the move is PV1, and it is a sacrifice.
+ */
+fun isBrilliant(before: PositionEval, after: Eval, playedUci: String, sacrifice: Boolean, whiteMoved: Boolean): Boolean {
+    if (ecWin(ecCp(before.eval, whiteMoved)) - ecWin(ecCp(after, whiteMoved)) > 5) return false
+    val second = before.second ?: return false
+    val onlyMove = ecWin(ecCp(before.eval, whiteMoved)) - ecWin(ecCp(second, whiteMoved)) > 10
+    return onlyMove && playedUci == before.best && sacrifice
 }
 
 /** Lichess-style accuracy of one move from its win% loss: 100 means nothing was lost. */

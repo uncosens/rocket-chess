@@ -108,6 +108,25 @@ class AnalysisTest {
     }
 
     @Test
+    fun brilliantLikeEnCroissant() {
+        // Greek gift: Bxh7+ gives a bishop for a pawn after Kxh7.
+        val fen = "r1bq1rk1/pppn1ppp/4p3/3pP3/1b1P4/2NB1N2/PPP2PPP/R1BQK2R w KQ - 0 1"
+        val line = GameLine.from(Pgn.parse("[FEN \"$fen\"]\n\n1. Bxh7+ *"))
+        assertTrue(line.plies[0].sacrifice)
+        assertTrue(!GameLine.from(Pgn.parse("1. e4 *")).plies[0].sacrifice)
+
+        fun grade(second: Eval) = Analyzer.grade(
+            line,
+            listOf(PositionEval(Eval.Cp(150), "d3h7", second, 14), PositionEval(Eval.Cp(140), "g8h7", null, 14)),
+            0,
+        )!!.cls
+        // The only good move (PV2 far worse), played, and a sacrifice: brilliant.
+        assertEquals(MoveClass.Brilliant, grade(Eval.Cp(-200)))
+        // PV2 nearly as good: just the best move.
+        assertEquals(MoveClass.Best, grade(Eval.Cp(120)))
+    }
+
+    @Test
     fun accuracyFromWinLoss() {
         assertEquals(100.0, moveAccuracy(0.0), 0.01)
         assertEquals(100.0, moveAccuracy(-5.0), 0.01) // a gain counts as no loss

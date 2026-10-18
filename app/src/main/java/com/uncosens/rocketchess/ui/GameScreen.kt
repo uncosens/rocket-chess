@@ -240,7 +240,8 @@ private fun MoveCard(vm: GameViewModel, line: GameLine) {
     val e = vm.evals.getOrNull(vm.ply)
     val g = if (vm.ply > 0) vm.grade(vm.ply - 1) else null
     val notes = mutableListOf<String>()
-    if (g != null && g.cls != MoveClass.Best) {
+    // Best and Brilliant are the engine's own move, so there is no other move to show.
+    if (g != null && g.cls != MoveClass.Best && g.cls != MoveClass.Brilliant) {
         vm.evals[vm.ply - 1]?.best?.let { notes += stringResource(R.string.engine_move, GameLine.san(line.positions[vm.ply - 1].fen, it)) }
     }
     e?.let { notes += stringResource(R.string.depth, it.depth) }

@@ -61,7 +61,9 @@ class Analyzer(private val sf: StockfishSession) {
             val after = evals.getOrNull(ply + 1) ?: return null
             val whiteMoved = line.positions[ply].fen.split(' ')[1] == "w"
             val loss = winLoss(before.eval, after.eval, whiteMoved)
-            return MoveResult(classify(line.plies[ply].uci, before.best, loss), loss)
+            val p = line.plies[ply]
+            val cls = if (isBrilliant(before, after.eval, p.uci, p.sacrifice, whiteMoved)) MoveClass.Brilliant else classify(p.uci, before.best, loss)
+            return MoveResult(cls, loss)
         }
 
         /** Mean accuracy of one side's graded moves; null if none are graded. */

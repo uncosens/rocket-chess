@@ -6,8 +6,8 @@ import com.github.bhlangonijr.chesslib.PieceType
 import com.github.bhlangonijr.chesslib.move.Move
 import com.github.bhlangonijr.chesslib.move.MoveList
 
-/** One half-move. Squares are names like "e2". [uci] is the engine notation, e.g. "e7e8q". */
-data class Ply(val san: String, val uci: String, val from: String, val to: String)
+/** One half-move. Squares are names like "e2". [uci] is the engine notation, e.g. "e7e8q". [sacrifice]: see [Sacrifice]. */
+data class Ply(val san: String, val uci: String, val from: String, val to: String, val sacrifice: Boolean = false)
 
 /** A position. [check] is the square of the king in check, if any; [mate] if that king is checkmated. */
 data class Position(val fen: String, val check: String?, val mate: Boolean = false)
@@ -20,8 +20,8 @@ class GameLine(val plies: List<Ply>, val positions: List<Position>) {
         val board = Board().apply { loadFromFen(fen) }
         val move = board.legalMoves().firstOrNull { uciOf(it) == uci } ?: return null
         val san = MoveList(fen).apply { add(move) }.toSanArray()[0].trimEnd('+', '#')
+        val next = Ply(san, uci, uci.substring(0, 2), uci.substring(2, 4), Sacrifice.of(board, move))
         board.doMove(move)
-        val next = Ply(san, uci, uci.substring(0, 2), uci.substring(2, 4))
         return GameLine(plies.take(ply) + next, positions.take(ply + 1) + position(board))
     }
 
@@ -41,7 +41,7 @@ class GameLine(val plies: List<Ply>, val positions: List<Position>) {
             for (token in game.moves) {
                 val move = resolve(board, token)
                 val uci = uciOf(move)
-                plies += Ply(token.text.trimEnd('+', '#', '!', '?'), uci, uci.substring(0, 2), uci.substring(2, 4))
+                plies += Ply(token.text.trimEnd('+', '#', '!', '?'), uci, uci.substring(0, 2), uci.substring(2, 4), Sacrifice.of(board, move))
                 board.doMove(move)
                 positions += position(board)
             }

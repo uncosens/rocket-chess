@@ -21,6 +21,7 @@
     <string name="analysis_done">%1$s · depth %2$d · MultiPV %3$d · %4$d threads · %5$d MB hash</string>
     <string name="analysis_failed">Analysis failed: %1$s</string>
     <string name="engine_move">Engine: %1$s</string>
+    <string name="class_brilliant">Brilliant</string>
     <string name="class_best">Best</string>
     <string name="class_excellent">Excellent</string>
     <string name="class_good">Good</string>

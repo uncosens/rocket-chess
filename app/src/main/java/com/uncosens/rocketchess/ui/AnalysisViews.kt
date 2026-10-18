@@ -41,6 +41,7 @@ private val GRAPH_FILL = Color(0xFFE8ECF4)
 private val GRAPH_MID = Color(0xFF59678A)
 
 fun MoveClass.color(): Color = when (this) {
+    MoveClass.Brilliant -> Color(0xFF1FBFA9)
     MoveClass.Best -> Color(0xFF1C93A8)
     MoveClass.Excellent -> Color(0xFF4C8DF6)
     MoveClass.Good -> Color(0xFF8C96AB)
@@ -50,6 +51,7 @@ fun MoveClass.color(): Color = when (this) {
 }
 
 fun MoveClass.suffix(): String = when (this) {
+    MoveClass.Brilliant -> "!!"
     MoveClass.Inaccuracy -> "?!"
     MoveClass.Mistake -> "?"
     MoveClass.Blunder -> "??"
@@ -66,6 +68,7 @@ fun MoveClass.badge(): String? = when (this) {
 @Composable
 fun MoveClass.label(): String = stringResource(
     when (this) {
+        MoveClass.Brilliant -> R.string.class_brilliant
         MoveClass.Best -> R.string.class_best
         MoveClass.Excellent -> R.string.class_excellent
         MoveClass.Good -> R.string.class_good
