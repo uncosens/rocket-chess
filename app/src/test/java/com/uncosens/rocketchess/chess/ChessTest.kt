@@ -91,6 +91,26 @@ class ChessTest {
     }
 
     @Test
+    fun mateAndResignation() {
+        val mated = line("1. e4 e5 2. Qh5 Nc6 3. Bc4 Nf6 4. Qxf7# 1-0")
+        assertTrue(mated.positions.last().mate)
+        assertEquals("e8", mated.positions.last().check)
+        // Check alone is not mate.
+        val check = line("1. e4 f5 2. Qh5+ *").positions.last()
+        assertEquals("e8", check.check)
+        assertTrue(!check.mate)
+
+        fun game(termination: String?, result: String) =
+            Pgn.parse((termination?.let { "[Termination \"$it\"]\n" } ?: "") + "[Result \"$result\"]\n\n1. e4 e5 $result")
+        assertTrue(game("thibault won by resignation", "0-1").resigned())
+        assertTrue(game("Normal", "1-0").resigned()) // Lichess: mate is ruled out by the board
+        assertTrue(!game("Hikaru won on time", "1-0").resigned())
+        assertTrue(!game("Time forfeit", "0-1").resigned())
+        assertTrue(!game("Normal", "1/2-1/2").resigned())
+        assertTrue(!game(null, "1-0").resigned())
+    }
+
+    @Test
     fun playsOwnMoves() {
         val game = line("1. e4 e5 2. Nf3 *")
         assertEquals(20, GameLine.legalMoves(GameLine.START_FEN).size)

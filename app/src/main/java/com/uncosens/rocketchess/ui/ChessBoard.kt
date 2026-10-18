@@ -43,10 +43,15 @@ private val LAST = Color(0x66F6C548)
 private val ARROW = Color(0xD91C93A8)
 private val SELECTED = Color(0x801C93A8)
 private val TARGET = Color(0x59101828)
+private val LOST = Color(0xFFD9363E)
+private val WON = Color(0xFF2EA043)
 private const val MOVE_MS = 220
 
 /** Square name like "e4" to 0..63, a1 = 0. */
 private fun index(square: String) = (square[0] - 'a') + (square[1] - '1') * 8
+
+/** How the game ended on this board: who lost, and whether by resignation (else checkmate). */
+data class Ending(val whiteLost: Boolean, val resigned: Boolean)
 
 /** Pieces one side has more of than the other, as letters like "rp", and its point lead (0 if behind). */
 data class MaterialEdge(val pieces: String, val points: Int)
@@ -101,6 +106,7 @@ internal fun slides(old: Map<Int, Char>, new: Map<Int, Char>): Map<Int, Int> {
  * [flipped] shows the board from Black's side. Pieces slide when [fen] changes.
  * [pieceSet] and [boardStyle] default to the saved choices.
  * With [onTap], squares can be tapped; [selected] is marked and [targets] get a dot.
+ * With [ending], the losing king gets "#" (mate) or a flag (resigned) and the winning king a crown.
  */
 @Composable
 fun ChessBoard(
@@ -117,6 +123,7 @@ fun ChessBoard(
     selected: String? = null,
     targets: Set<String> = emptySet(),
     onTap: ((String) -> Unit)? = null,
+    ending: Ending? = null,
 ) {
     val measurer = rememberTextMeasurer()
     val colors = LocalBoardColors.current
@@ -200,13 +207,19 @@ fun ChessBoard(
             else drawCircle(TARGET, sq * 0.16f, center(i))
         }
         if (arrow != null) drawArrow(center(index(arrow.first)), center(index(arrow.second)), sq)
-        val mark = grade?.badge()
-        if (grade != null && mark != null && lastMove != null) {
-            val c = at(index(lastMove.second)) + Offset(sq * 0.8f, sq * 0.2f)
-            drawCircle(grade.color(), sq * 0.19f, c)
-            val t = measurer.measure(mark, TextStyle(fontSize = (sq * 0.22f).toSp(), fontWeight = FontWeight.Bold))
+        fun badge(square: Int, color: Color, text: String) {
+            val c = at(square) + Offset(sq * 0.8f, sq * 0.2f)
+            drawCircle(color, sq * 0.19f, c)
+            val t = measurer.measure(text, TextStyle(fontSize = (sq * 0.22f).toSp(), fontWeight = FontWeight.Bold))
             drawText(t, Color.White, c - Offset(t.size.width / 2f, t.size.height / 2f))
         }
+        // King marks win over the grade badge when they share a square.
+        val kings = if (ending == null) emptyMap() else now.filterValues { it == 'K' || it == 'k' }.mapValues { (_, k) ->
+            if ((k == 'K') == ending.whiteLost) LOST to (if (ending.resigned) "\u2691\uFE0E" else "#") else WON to "\u265A\uFE0E"
+        }
+        val mark = grade?.badge()
+        if (grade != null && mark != null && lastMove != null && index(lastMove.second) !in kings) badge(index(lastMove.second), grade.color(), mark)
+        for ((i, m) in kings) badge(i, m.first, m.second)
     }
 }
 

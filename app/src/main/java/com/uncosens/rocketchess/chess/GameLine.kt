@@ -9,8 +9,8 @@ import com.github.bhlangonijr.chesslib.move.MoveList
 /** One half-move. Squares are names like "e2". [uci] is the engine notation, e.g. "e7e8q". */
 data class Ply(val san: String, val uci: String, val from: String, val to: String)
 
-/** A position. [check] is the square of the king in check, if any. */
-data class Position(val fen: String, val check: String?)
+/** A position. [check] is the square of the king in check, if any; [mate] if that king is checkmated. */
+data class Position(val fen: String, val check: String?, val mate: Boolean = false)
 
 /** A game as a straight line: positions.size == plies.size + 1. */
 class GameLine(val plies: List<Ply>, val positions: List<Position>) {
@@ -67,6 +67,7 @@ class GameLine(val plies: List<Ply>, val positions: List<Position>) {
         private fun position(board: Board) = Position(
             board.fen,
             if (board.isKingAttacked) board.getKingSquare(board.sideToMove).value().lowercase() else null,
+            board.isMated,
         )
 
         private fun resolve(board: Board, token: SanToken): Move {

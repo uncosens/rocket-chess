@@ -3,7 +3,18 @@ package com.uncosens.rocketchess.chess
 /** A SAN move as written in the PGN, with its 1-based position in the text. */
 data class SanToken(val text: String, val line: Int, val column: Int)
 
-data class PgnGame(val tags: Map<String, String>, val moves: List<SanToken>, val result: String?)
+data class PgnGame(val tags: Map<String, String>, val moves: List<SanToken>, val result: String?) {
+    /**
+     * True when a decisive game ended by resignation. Chess.com writes "... won by resignation";
+     * Lichess writes "Normal" for both resignation and mate, so a mated last position must be ruled out first.
+     */
+    fun resigned(): Boolean {
+        val r = result ?: tags["Result"]
+        if (r != "1-0" && r != "0-1") return false
+        val t = tags["Termination"] ?: return false
+        return t.contains("resignation", ignoreCase = true) || t == "Normal"
+    }
+}
 
 class PgnException(val reason: String, val line: Int, val column: Int) :
     Exception("line $line, column $column: $reason")
