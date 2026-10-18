@@ -57,16 +57,16 @@ class AnalysisTest {
     fun classBoundaries() {
         fun c(loss: Double) = classify("a2a3", "e2e4", loss)
         assertEquals(MoveClass.Best, classify("e2e4", "e2e4", 40.0))
-        assertEquals(MoveClass.Excellent, c(-3.0))
-        assertEquals(MoveClass.Excellent, c(0.0))
-        assertEquals(MoveClass.Excellent, c(1.999))
-        assertEquals(MoveClass.Good, c(2.0))
-        assertEquals(MoveClass.Good, c(4.999))
-        assertEquals(MoveClass.Inaccuracy, c(5.0))
-        assertEquals(MoveClass.Inaccuracy, c(9.999))
+        assertEquals(MoveClass.Good, c(-3.0))
+        assertEquals(MoveClass.Good, c(0.0))
+        assertEquals(MoveClass.Good, c(1.999))
+        assertEquals(MoveClass.Fine, c(2.0))
+        assertEquals(MoveClass.Fine, c(4.999))
+        assertEquals(MoveClass.Weak, c(5.0))
+        assertEquals(MoveClass.Weak, c(9.999))
         assertEquals(MoveClass.Mistake, c(10.0))
-        assertEquals(MoveClass.Mistake, c(14.999))
-        assertEquals(MoveClass.Blunder, c(15.0))
+        assertEquals(MoveClass.Mistake, c(19.999))
+        assertEquals(MoveClass.Blunder, c(20.0))
     }
 
     @Test
@@ -156,12 +156,8 @@ class AnalysisTest {
     }
 
     @Test
-    fun accuracyFromWinLoss() {
-        assertEquals(100.0, moveAccuracy(0.0), 0.01)
-        assertEquals(100.0, moveAccuracy(-5.0), 0.01) // a gain counts as no loss
-        assertEquals(63.6, moveAccuracy(10.0), 0.1)
-        assertEquals(0.0, moveAccuracy(100.0), 0.01)
-        // White's two moves lose 0 and about 10 win%; Black's one move loses nothing.
+    fun accuracyIsMeanGradeScore() {
+        // White plays the best move, then loses about 10 win% (a Mistake); Black plays the best move.
         val line = GameLine.from(Pgn.parse("1. e4 e5 2. Qh5 *"))
         val evals = listOf(
             PositionEval(Eval.Cp(30), "e2e4", null, 14),
@@ -169,9 +165,14 @@ class AnalysisTest {
             PositionEval(Eval.Cp(30), "g1f3", null, 14),
             PositionEval(Eval.Cp(-81), "b8c6", null, 14),
         )
-        val loss = winLoss(Eval.Cp(30), Eval.Cp(-81), whiteMoved = true)
-        assertEquals((100.0 + moveAccuracy(loss)) / 2, Analyzer.accuracy(line, evals, white = true)!!, 0.001)
+        assertEquals(MoveClass.Mistake, Analyzer.grade(line, evals, 2)!!.cls)
+        assertEquals((100.0 + 11.0) / 2, Analyzer.accuracy(line, evals, white = true)!!, 0.001)
         assertEquals(100.0, Analyzer.accuracy(line, evals, white = false)!!, 0.001)
         assertNull(Analyzer.accuracy(line, listOf(evals[0]), white = true))
+        // A Blunder scores below 0, but a side's accuracy stops at 0.
+        val one = GameLine.from(Pgn.parse("1. d4 *"))
+        val blunder = listOf(PositionEval(Eval.Cp(30), "e2e4", null, 14), PositionEval(Eval.Cp(-900), "e7e5", null, 14))
+        assertEquals(MoveClass.Blunder, Analyzer.grade(one, blunder, 0)!!.cls)
+        assertEquals(0.0, Analyzer.accuracy(one, blunder, white = true)!!, 0.001)
     }
 }

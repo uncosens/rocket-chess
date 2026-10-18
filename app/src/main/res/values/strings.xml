@@ -20,19 +20,18 @@
     <string name="stop">Stop</string>
     <string name="analyzing">Analyzing %1$d / %2$d</string>
     <string name="analysis_stopped">Stopped at %1$d / %2$d. Moves without both evals are not graded.</string>
-    <string name="analysis_done">%1$s</string>
     <string name="analysis_failed">Analysis failed: %1$s</string>
     <string name="engine_move">Engine: %1$s</string>
     <string name="class_brilliant">Brilliant</string>
     <string name="class_best">Best</string>
-    <string name="class_excellent">Great</string>
     <string name="class_good">Good</string>
-    <string name="class_inaccuracy">Inaccuracy</string>
+    <string name="class_fine">Fine</string>
+    <string name="class_weak">Weak</string>
     <string name="class_mistake">Mistake</string>
     <string name="class_blunder">Blunder</string>
     <string name="side_white">White</string>
     <string name="side_black">Black</string>
-    <plurals name="inaccuracies"><item quantity="one">%d inaccuracy</item><item quantity="other">%d inaccuracies</item></plurals>
+    <plurals name="weaks"><item quantity="one">%d weak</item><item quantity="other">%d weaks</item></plurals>
     <plurals name="mistakes"><item quantity="one">%d mistake</item><item quantity="other">%d mistakes</item></plurals>
     <plurals name="blunders"><item quantity="one">%d blunder</item><item quantity="other">%d blunders</item></plurals>
     <string name="graph_description">Evaluation graph. Tap to go to a position.</string>
@@ -87,9 +86,8 @@
     <string name="cd_back">Back</string>
     <string name="new_analysis">New analysis</string>
     <string name="eval_title">Evaluation</string>
-    <string name="tap_to_jump">Tap to jump</string>
+    <string name="eval_title_detail">Evaluation: %1$s, depth %2$d</string>
     <string name="start_position">Start position</string>
-    <string name="depth">depth %1$d</string>
     <string name="back_to_game">Back to game</string>
     <string name="follow_best">Follow best move</string>
     <string name="accuracy_mine">%1$.1f%%</string>

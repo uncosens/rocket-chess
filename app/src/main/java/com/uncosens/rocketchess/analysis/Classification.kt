@@ -18,7 +18,7 @@ sealed interface Eval {
     }
 }
 
-enum class MoveClass { Brilliant, Best, Excellent, Good, Inaccuracy, Mistake, Blunder }
+enum class MoveClass { Brilliant, Best, Good, Fine, Weak, Mistake, Blunder }
 
 /** All analysis numbers live here so UI code never repeats them. Not the official Lichess grading. */
 object AnalysisPolicy {
@@ -30,10 +30,11 @@ object AnalysisPolicy {
     const val HASH_MB = 32
 
     /** Upper bounds (exclusive) of win% loss for each class after Best. */
-    const val EXCELLENT_BELOW = 2.0
-    const val GOOD_BELOW = 5.0
-    const val INACCURACY_BELOW = 10.0
-    const val MISTAKE_BELOW = 15.0
+    const val GOOD_BELOW = 2.0
+    const val FINE_BELOW = 5.0
+    const val WEAK_BELOW = 10.0
+    // Chess.com's lines: a blunder loses 20% or more.
+    const val MISTAKE_BELOW = 20.0
 }
 
 /** White's winning chance in percent. Lichess-style curve on centipawns; mate is 0 or 100. */
@@ -71,8 +72,18 @@ fun isBrilliant(before: PositionEval, after: Eval, playedUci: String, sacrifice:
     return onlyMove && playedUci == before.best && sacrifice
 }
 
-/** Lichess-style accuracy of one move from its win% loss: 100 means nothing was lost. */
-fun moveAccuracy(loss: Double): Double = (103.1668 * exp(-0.04354 * loss.coerceAtLeast(0.0)) - 3.1669).coerceIn(0.0, 100.0)
+/**
+ * Points a move adds to its side's accuracy, which is the mean of these (Chess.com style: a score
+ * per grade). Fitted to Chess.com's accuracy on 79 reviewed games: about 4 points off on average.
+ */
+fun gradeScore(cls: MoveClass): Double = when (cls) {
+    MoveClass.Brilliant, MoveClass.Best -> 100.0
+    MoveClass.Good -> 86.0
+    MoveClass.Fine -> 79.0
+    MoveClass.Weak -> 38.0
+    MoveClass.Mistake -> 11.0
+    MoveClass.Blunder -> -39.0
+}
 
 /**
  * Best when the played move is the engine's first choice (PV1). Otherwise by win% loss.
@@ -81,9 +92,9 @@ fun moveAccuracy(loss: Double): Double = (103.1668 * exp(-0.04354 * loss.coerceA
  */
 fun classify(playedUci: String, bestUci: String?, loss: Double): MoveClass = when {
     playedUci == bestUci -> MoveClass.Best
-    loss < AnalysisPolicy.EXCELLENT_BELOW -> MoveClass.Excellent
     loss < AnalysisPolicy.GOOD_BELOW -> MoveClass.Good
-    loss < AnalysisPolicy.INACCURACY_BELOW -> MoveClass.Inaccuracy
+    loss < AnalysisPolicy.FINE_BELOW -> MoveClass.Fine
+    loss < AnalysisPolicy.WEAK_BELOW -> MoveClass.Weak
     loss < AnalysisPolicy.MISTAKE_BELOW -> MoveClass.Mistake
     else -> MoveClass.Blunder
 }

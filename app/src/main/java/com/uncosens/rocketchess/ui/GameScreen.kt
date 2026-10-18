@@ -204,8 +204,6 @@ private fun MoveCard(vm: GameViewModel, line: GameLine) {
     if (g != null && g.cls != MoveClass.Best && g.cls != MoveClass.Brilliant) {
         vm.evals[vm.ply - 1]?.best?.let { notes += stringResource(R.string.engine_move, GameLine.san(line.positions[vm.ply - 1].fen, it)) }
     }
-    e?.let { notes += stringResource(R.string.depth, it.depth) }
-
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(18.dp)) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(
@@ -213,7 +211,7 @@ private fun MoveCard(vm: GameViewModel, line: GameLine) {
                 contentAlignment = Alignment.Center,
             ) {
                 when (g?.cls) {
-                    null, MoveClass.Excellent, MoveClass.Good -> {}
+                    null, MoveClass.Good, MoveClass.Fine -> {}
                     MoveClass.Best -> Icon(painterResource(R.drawable.ic_star), null, Modifier.size(16.dp), tint = Color.White)
                     else -> Text(g.cls.suffix(), color = Color.White, fontWeight = FontWeight.Bold)
                 }
@@ -296,7 +294,7 @@ private fun Footer(vm: GameViewModel, onAnalyze: () -> Unit, onReanalyze: (() ->
         } else {
             AnalyzeButton(vm, onAnalyze, onReanalyze, Modifier.weight(1f).height(52.dp))
         }
-        SquareIconButton(R.drawable.ic_star, stringResource(R.string.follow_best), { best?.let(vm::play) }, enabled = best != null)
+        SquareIconButton(R.drawable.ic_star, stringResource(R.string.follow_best), { best?.let(vm::play) }, size = 52.dp, enabled = best != null)
         SquareIconButton(R.drawable.ic_back, stringResource(R.string.nav_prev), { vm.goTo(vm.ply - 1) }, size = 52.dp)
         SquareIconButton(R.drawable.ic_next, stringResource(R.string.nav_next), { vm.goTo(vm.ply + 1) }, size = 52.dp)
     }

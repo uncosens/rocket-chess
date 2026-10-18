@@ -43,16 +43,16 @@ private val GRAPH_MID = Color(0xFF59678A)
 fun MoveClass.color(): Color = when (this) {
     MoveClass.Brilliant -> Color(0xFF1FBFA9)
     MoveClass.Best -> Color(0xFF1C93A8)
-    MoveClass.Excellent -> Color(0xFF4C8DF6)
-    MoveClass.Good -> Color(0xFF8C96AB)
-    MoveClass.Inaccuracy -> Color(0xFFE0A21F)
+    MoveClass.Good -> Color(0xFF4C8DF6)
+    MoveClass.Fine -> Color(0xFF8C96AB)
+    MoveClass.Weak -> Color(0xFFE0A21F)
     MoveClass.Mistake -> Color(0xFFF07B2A)
     MoveClass.Blunder -> Color(0xFFD9363E)
 }
 
 fun MoveClass.suffix(): String = when (this) {
     MoveClass.Brilliant -> "!!"
-    MoveClass.Inaccuracy -> "?!"
+    MoveClass.Weak -> "?!"
     MoveClass.Mistake -> "?"
     MoveClass.Blunder -> "??"
     else -> ""
@@ -61,7 +61,7 @@ fun MoveClass.suffix(): String = when (this) {
 /** Text for the round grade badge, or null for no badge. */
 fun MoveClass.badge(): String? = when (this) {
     MoveClass.Best -> "★"
-    MoveClass.Excellent, MoveClass.Good -> null
+    MoveClass.Good, MoveClass.Fine -> null
     else -> suffix()
 }
 
@@ -70,9 +70,9 @@ fun MoveClass.label(): String = stringResource(
     when (this) {
         MoveClass.Brilliant -> R.string.class_brilliant
         MoveClass.Best -> R.string.class_best
-        MoveClass.Excellent -> R.string.class_excellent
         MoveClass.Good -> R.string.class_good
-        MoveClass.Inaccuracy -> R.string.class_inaccuracy
+        MoveClass.Fine -> R.string.class_fine
+        MoveClass.Weak -> R.string.class_weak
         MoveClass.Mistake -> R.string.class_mistake
         MoveClass.Blunder -> R.string.class_blunder
     },
@@ -117,26 +117,22 @@ fun AnalysisStatus(vm: GameViewModel) {
             LinearProgressIndicator(progress = { s.done.toFloat() / s.total }, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(2.dp)))
         }
         is AnalysisState.Stopped -> Text(stringResource(R.string.analysis_stopped, s.done, s.total), style = small, color = muted)
-        is AnalysisState.Done -> Text(
-            stringResource(R.string.analysis_done, s.settings.engine),
-            style = small,
-            color = muted,
-        )
+        is AnalysisState.Done -> {}
         is AnalysisState.Failed -> Text(stringResource(R.string.analysis_failed, s.message), style = small, color = MaterialTheme.colorScheme.error)
         AnalysisState.Idle -> {}
     }
 }
 
-/** Counts of inaccuracies, mistakes and blunders per side. */
+/** Counts of weak moves, mistakes and blunders per side. */
 @Composable
 fun Summary(vm: GameViewModel, line: GameLine) {
     val white = line.positions[0].fen.split(' ')[1] == "w"
-    val counts = Array(2) { IntArray(3) } // [side][inaccuracy, mistake, blunder]
+    val counts = Array(2) { IntArray(3) } // [side][weak, mistake, blunder]
     for (i in line.plies.indices) {
         val g = vm.grade(i) ?: continue
         val side = if ((i % 2 == 0) == white) 0 else 1
         when (g.cls) {
-            MoveClass.Inaccuracy -> counts[side][0]++
+            MoveClass.Weak -> counts[side][0]++
             MoveClass.Mistake -> counts[side][1]++
             MoveClass.Blunder -> counts[side][2]++
             else -> {}
@@ -146,7 +142,7 @@ fun Summary(vm: GameViewModel, line: GameLine) {
         val c = counts[side]
         Text(
             stringResource(name) + ": " + listOf(
-                pluralStringResource(R.plurals.inaccuracies, c[0], c[0]),
+                pluralStringResource(R.plurals.weaks, c[0], c[0]),
                 pluralStringResource(R.plurals.mistakes, c[1], c[1]),
                 pluralStringResource(R.plurals.blunders, c[2], c[2]),
             ).joinToString(", "),
@@ -160,12 +156,14 @@ fun Summary(vm: GameViewModel, line: GameLine) {
 @Composable
 fun EvalCard(vm: GameViewModel, line: GameLine) {
     if (vm.evals.size < 2) return
+    val settings = (vm.analysis as? AnalysisState.Done)?.settings
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(18.dp)) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Row {
-                Text(stringResource(R.string.eval_title), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
-                Text(stringResource(R.string.tap_to_jump), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+            Text(
+                settings?.let { stringResource(R.string.eval_title_detail, it.engine, it.depth) } ?: stringResource(R.string.eval_title),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             EvalGraph(vm.evals, vm.ply, vm::goTo, whiteView = !vm.flipped)
             Summary(vm, line)
         }

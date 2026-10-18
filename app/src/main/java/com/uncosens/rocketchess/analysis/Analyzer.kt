@@ -66,10 +66,10 @@ class Analyzer(private val sf: StockfishSession) {
             return MoveResult(cls, loss)
         }
 
-        /** Mean accuracy of one side's graded moves; null if none are graded. */
+        /** One side's accuracy: the mean grade score of its graded moves, 0 to 100; null if none are graded. */
         fun accuracy(line: GameLine, evals: List<PositionEval?>, white: Boolean): Double? =
             line.plies.indices.filter { (line.positions[it].fen.split(' ')[1] == "w") == white }
-                .mapNotNull { grade(line, evals, it)?.let { g -> moveAccuracy(g.loss) } }
-                .takeIf { it.isNotEmpty() }?.average()
+                .mapNotNull { grade(line, evals, it)?.let { g -> gradeScore(g.cls) } }
+                .takeIf { it.isNotEmpty() }?.average()?.coerceIn(0.0, 100.0)
     }
 }
