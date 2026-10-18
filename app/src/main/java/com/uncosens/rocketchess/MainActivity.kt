@@ -48,7 +48,8 @@ class MainActivity : ComponentActivity() {
                         game.load(pgn, key, owner, analysis); from = screen; screen = GAME
                     }
                     // A finished or stopped run saves its results; a finished one also stores the accuracy for the lists.
-                    LaunchedEffect(game.analysis) {
+                    // Keyed on the game too: two games done with the same settings have equal states.
+                    LaunchedEffect(game.key, game.analysis) {
                         val key = game.key ?: return@LaunchedEffect
                         val a = game.analysis
                         if (a is AnalysisState.Done || a is AnalysisState.Stopped) game.takeAnalysisToSave()?.let { library.saveAnalysis(key, it) }
