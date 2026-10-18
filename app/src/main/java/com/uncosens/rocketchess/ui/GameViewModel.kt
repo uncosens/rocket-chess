@@ -91,8 +91,8 @@ class GameViewModel : ViewModel() {
     /** Latest positions to analyze live. Older requests are dropped. */
     private val liveQueue = Channel<List<String>>(Channel.CONFLATED)
 
-    /** Loads a game. If a [names] entry played it, the board shows that side at the bottom. */
-    fun load(text: String, gameKey: String, names: Set<String>) {
+    /** Loads a game. If [owner] played it, the board shows that side at the bottom. */
+    fun load(text: String, gameKey: String, owner: String?) {
         viewModelScope.launch {
             val result = withContext(Dispatchers.Default) {
                 runCatching { Pgn.parse(text).let { it to GameLine.from(it) } }
@@ -100,7 +100,7 @@ class GameViewModel : ViewModel() {
             result.onSuccess { (g, l) ->
                 stopAnalysis()
                 raw = text; game = g; key = gameKey; mainLine = l; variation = null; ply = 0; error = null
-                userSide(g.tags["White"] ?: "", g.tags["Black"] ?: "", names)?.let { flipped = !it }
+                userSide(g.tags["White"] ?: "", g.tags["Black"] ?: "", owner)?.let { flipped = !it }
                 mainEvals = emptyList(); liveEvals = emptyMap(); analysis = AnalysisState.Idle
             }.onFailure {
                 error = if (it is PgnException) LoadError.Parse(it) else LoadError.Unreadable

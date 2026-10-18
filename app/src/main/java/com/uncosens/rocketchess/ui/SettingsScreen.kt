@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,7 +17,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -39,6 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.uncosens.rocketchess.R
@@ -79,14 +80,30 @@ fun SettingsScreen(onBack: () -> Unit, onLicenses: () -> Unit) {
         }
 
         Text(stringResource(R.string.settings_pieces), style = MaterialTheme.typography.titleMedium)
-        // Chips wrap onto more lines, so every name stays readable.
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            PieceSet.entries.forEach { s ->
-                FilterChip(
-                    selected = pieces == s,
-                    onClick = { pieces = s; PieceSetStore.save(context, s) },
-                    label = { Text(s.id.replaceFirstChar { it.uppercase() }) },
-                )
+        // Always two rows of equal chips, with small text so every name fits.
+        Column {
+            for (row in PieceSet.entries.chunked((PieceSet.entries.size + 1) / 2)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    for (s in row) {
+                        // A plain chip with little padding, so long names like "Chessnut" fit.
+                        val selected = pieces == s
+                        Surface(
+                            onClick = { pieces = s; PieceSetStore.save(context, s) },
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                            modifier = Modifier.weight(1f).padding(vertical = 4.dp).semantics { this.selected = selected },
+                        ) {
+                            Text(
+                                s.id.replaceFirstChar { it.uppercase() },
+                                Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
+                                style = MaterialTheme.typography.labelMedium,
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                            )
+                        }
+                    }
+                }
             }
         }
         Text(stringResource(R.string.settings_board), style = MaterialTheme.typography.titleMedium)

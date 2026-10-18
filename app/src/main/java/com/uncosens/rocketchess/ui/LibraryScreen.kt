@@ -46,7 +46,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -69,10 +68,8 @@ import java.util.Date
 
 /** Saved games and the ways to add one. */
 @Composable
-fun LibraryScreen(vm: LibraryViewModel, onOpen: (String, String) -> Unit, onOnline: () -> Unit, onSetup: () -> Unit, onSettings: () -> Unit) {
+fun LibraryScreen(vm: LibraryViewModel, onOpen: (String, String, String?) -> Unit, onOnline: () -> Unit, onSetup: () -> Unit, onPlay: () -> Unit, onSettings: () -> Unit) {
     val games by vm.games.collectAsState()
-    val context = LocalContext.current
-    val names = remember { KnownUsers.names(context) }
     var pasting by rememberSaveable { mutableStateOf(false) }
     var confirmDelete by rememberSaveable { mutableStateOf<Long?>(null) } // -1 = delete all
     val openFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -92,10 +89,14 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: (String, String) -> Unit, onOnli
             Spacer(Modifier.width(10.dp))
             Text(stringResource(R.string.import_online), style = MaterialTheme.typography.titleMedium)
         }
+        // Two per row so the labels fit on a phone.
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ImportButton(R.drawable.ic_paste, stringResource(R.string.paste_pgn), Modifier.weight(1f)) { pasting = true }
             ImportButton(R.drawable.ic_file, stringResource(R.string.open_file), Modifier.weight(1f)) { openFile.launch(arrayOf("*/*")) }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ImportButton(R.drawable.ic_board, stringResource(R.string.setup_board), Modifier.weight(1f), onSetup)
+            ImportButton(R.drawable.ic_engine, stringResource(R.string.play_engine), Modifier.weight(1f), onPlay)
         }
         vm.error?.let { ErrorText(it) }
 
@@ -118,10 +119,20 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: (String, String) -> Unit, onOnli
                         Icon(painterResource(sourceIcon(g.source)), null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.players, g.white, g.black), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text("${sourceLabel(g.source)} · ${g.date}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.players, g.white, g.black), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            // Weighted, so the accuracy is measured first and keeps its full width.
+                            Text(
+                                "${sourceLabel(g.source)} · ${g.date}",
+                                Modifier.weight(1f, fill = false),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            AccuracyText(g.white, g.black, g.whiteAccuracy, g.blackAccuracy, g.owner)
+                        }
                     }
-                    AccuracyText(g.white, g.black, g.whiteAccuracy, g.blackAccuracy, names)
                     Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(8.dp)) {
                         Text(g.result, Modifier.padding(horizontal = 8.dp, vertical = 4.dp), fontFamily = Mono, style = MaterialTheme.typography.bodySmall)
                     }
@@ -158,16 +169,15 @@ private fun sourceLabel(source: String) = stringResource(
     },
 )
 
-/** The user's accuracy in an analyzed game, or both sides' when the user is not one of the players. */
+/** The searched user's accuracy in an analyzed game; nothing when no searched user played it. */
 @Composable
-private fun AccuracyText(white: String, black: String, whiteAcc: Double?, blackAcc: Double?, names: Set<String>) {
-    if (whiteAcc == null && blackAcc == null) return
-    val text = when (userSide(white, black, names)) {
-        true -> whiteAcc?.let { stringResource(R.string.accuracy_mine, it) }
-        false -> blackAcc?.let { stringResource(R.string.accuracy_mine, it) }
-        null -> stringResource(R.string.accuracy_both, whiteAcc ?: 0.0, blackAcc ?: 0.0)
-    } ?: return
-    Text(text, style = MaterialTheme.typography.labelMedium, fontFamily = Mono, color = MaterialTheme.colorScheme.primary)
+private fun AccuracyText(white: String, black: String, whiteAcc: Double?, blackAcc: Double?, owner: String?) {
+    val text = when (userSide(white, black, owner)) {
+        true -> whiteAcc
+        false -> blackAcc
+        null -> null
+    }?.let { stringResource(R.string.accuracy_mine, it) } ?: return
+    Text(text, style = MaterialTheme.typography.labelMedium, fontFamily = Mono, color = MaterialTheme.colorScheme.primary, maxLines = 1, softWrap = false)
 }
 
 private fun sourceIcon(source: String) = when (source) {
@@ -194,7 +204,7 @@ private fun ImportButton(icon: Int, text: String, modifier: Modifier, onClick: (
 
 /** Search a Lichess or Chess.com user and pick a game. */
 @Composable
-fun OnlineScreen(vm: LibraryViewModel, onOpen: (String, String) -> Unit, onBack: () -> Unit) {
+fun OnlineScreen(vm: LibraryViewModel, onOpen: (String, String, String?) -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current
     var source by rememberSaveable { mutableStateOf(Sources.CHESS_COM) }
     // Starts with the last name searched on this site.
@@ -240,7 +250,6 @@ fun OnlineScreen(vm: LibraryViewModel, onOpen: (String, String) -> Unit, onBack:
             is OnlineState.Failed -> Text(fetchErrorText(s.error), color = MaterialTheme.colorScheme.error)
             is OnlineState.Found -> {
                 if (s.games.isEmpty()) Text(stringResource(R.string.no_public_games))
-                val names = setOf(name.trim().lowercase())
                 LazyColumn(Modifier.weight(1f)) {
                     items(s.games, key = { it.key }) { g ->
                         Row(
@@ -255,7 +264,7 @@ fun OnlineScreen(vm: LibraryViewModel, onOpen: (String, String) -> Unit, onBack:
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
-                            accuracies[g.key]?.let { AccuracyText(g.white, g.black, it.whiteAccuracy, it.blackAccuracy, names) }
+                            accuracies[g.key]?.let { AccuracyText(g.white, g.black, it.whiteAccuracy, it.blackAccuracy, name.trim()) }
                         }
                         HorizontalDivider()
                     }

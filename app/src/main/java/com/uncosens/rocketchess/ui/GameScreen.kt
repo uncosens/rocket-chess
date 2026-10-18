@@ -147,9 +147,7 @@ private fun Board(vm: GameViewModel, modifier: Modifier) {
     val best = vm.evals.getOrNull(vm.ply)?.best
     val fen = position?.fen ?: GameLine.START_FEN
     // Tap a piece, then a target square, to play your own move.
-    var selected by remember(fen) { mutableStateOf<String?>(null) }
-    var promotions by remember(fen) { mutableStateOf<List<String>>(emptyList()) }
-    val legal = remember(fen, line) { if (line == null) emptyList() else GameLine.legalMoves(fen) }
+    val input = rememberMoveInput(fen, enabled = line != null) { vm.play(it) }
     ChessBoard(
         fen = fen,
         lastMove = last?.let { it.from to it.to },
@@ -167,37 +165,9 @@ private fun Board(vm: GameViewModel, modifier: Modifier) {
                 vm.game?.finish()?.let { Ending(whiteLost = (vm.game?.result ?: vm.game?.tags?.get("Result")) == "0-1", it) }
             else -> null
         },
-        selected = selected,
-        targets = selected?.let { s -> legal.filter { it.startsWith(s) }.map { it.substring(2, 4) }.toSet() } ?: emptySet(),
-        onTap = { sq ->
-            val moves = selected?.let { s -> legal.filter { it.startsWith(s + sq) } } ?: emptyList()
-            when {
-                moves.size == 1 -> vm.play(moves[0])
-                moves.size > 1 -> promotions = moves
-                sq != selected && legal.any { it.startsWith(sq) } -> selected = sq
-                else -> selected = null
-            }
-        },
-    )
-    if (promotions.isNotEmpty()) PromotionDialog(promotions, onPick = { promotions = emptyList(); vm.play(it) }, onDismiss = { promotions = emptyList() })
-}
-
-/** Pick the piece a pawn becomes. [moves] are the same move with each promotion letter. */
-@Composable
-private fun PromotionDialog(moves: List<String>, onPick: (String) -> Unit, onDismiss: () -> Unit) {
-    val names = mapOf('q' to R.string.piece_queen, 'r' to R.string.piece_rook, 'b' to R.string.piece_bishop, 'n' to R.string.piece_knight)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.promote_to)) },
-        text = {
-            Column {
-                for (m in moves.sortedBy { "qrbn".indexOf(it.last()) }) {
-                    TextButton(onClick = { onPick(m) }) { Text(stringResource(names.getValue(m.last()))) }
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+        selected = input.selected,
+        targets = input.targets,
+        onTap = input::tap,
     )
 }
 

@@ -30,6 +30,8 @@ data class SavedGame(
     /** Mean move accuracy per side, set once a full analysis finishes. */
     val whiteAccuracy: Double? = null,
     val blackAccuracy: Double? = null,
+    /** The user name searched when the game was imported; their side is the user's side. */
+    val owner: String? = null,
 )
 
 /** List row without the PGN text. */
@@ -42,6 +44,7 @@ data class GameSummary(
     val date: String,
     val whiteAccuracy: Double?,
     val blackAccuracy: Double?,
+    val owner: String?,
 )
 
 data class KeyAccuracy(val sourceKey: String, val whiteAccuracy: Double?, val blackAccuracy: Double?)
@@ -55,7 +58,7 @@ interface GameDao {
     @Query("SELECT id FROM games WHERE sourceKey = :key")
     suspend fun idFor(key: String): Long?
 
-    @Query("SELECT id, source, white, black, result, date, whiteAccuracy, blackAccuracy FROM games ORDER BY importedAt DESC, id DESC")
+    @Query("SELECT id, source, white, black, result, date, whiteAccuracy, blackAccuracy, owner FROM games ORDER BY importedAt DESC, id DESC")
     fun summaries(): Flow<List<GameSummary>>
 
     @Query("SELECT sourceKey, whiteAccuracy, blackAccuracy FROM games WHERE whiteAccuracy IS NOT NULL OR blackAccuracy IS NOT NULL")
@@ -63,6 +66,14 @@ interface GameDao {
 
     @Query("UPDATE games SET whiteAccuracy = :white, blackAccuracy = :black WHERE sourceKey = :key")
     suspend fun setAccuracy(key: String, white: Double?, black: Double?)
+
+    /** Makes [name] the owner of every saved game it played that has no owner yet. */
+    @Query("UPDATE games SET owner = :name WHERE owner IS NULL AND (lower(white) = lower(:name) OR lower(black) = lower(:name))")
+    suspend fun claimOwner(name: String)
+
+    /** Sets the owner of a game saved before it had one. */
+    @Query("UPDATE games SET owner = :owner WHERE sourceKey = :key AND owner IS NULL")
+    suspend fun setOwnerIfMissing(key: String, owner: String)
 
     @Query("SELECT * FROM games WHERE id = :id")
     suspend fun get(id: Long): SavedGame?
@@ -74,7 +85,7 @@ interface GameDao {
     suspend fun deleteAll()
 }
 
-@Database(entities = [SavedGame::class], version = 2, autoMigrations = [AutoMigration(from = 1, to = 2)])
+@Database(entities = [SavedGame::class], version = 3, autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)])
 abstract class AppDatabase : RoomDatabase() {
     abstract fun games(): GameDao
 

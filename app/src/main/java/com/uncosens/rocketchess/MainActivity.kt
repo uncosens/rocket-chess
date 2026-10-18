@@ -14,13 +14,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import com.uncosens.rocketchess.data.KnownUsers
 import com.uncosens.rocketchess.data.Sources
 import com.uncosens.rocketchess.ui.AnalysisState
 import com.uncosens.rocketchess.ui.GameScreen
 import com.uncosens.rocketchess.ui.GameViewModel
 import com.uncosens.rocketchess.ui.LibraryScreen
 import com.uncosens.rocketchess.ui.LicensesScreen
+import com.uncosens.rocketchess.ui.PlayScreen
+import com.uncosens.rocketchess.ui.PlayViewModel
 import com.uncosens.rocketchess.ui.LibraryViewModel
 import com.uncosens.rocketchess.ui.OnlineScreen
 import com.uncosens.rocketchess.ui.RocketTheme
@@ -30,6 +31,7 @@ import com.uncosens.rocketchess.ui.SetupScreen
 class MainActivity : ComponentActivity() {
     private val game: GameViewModel by viewModels()
     private val library: LibraryViewModel by viewModels()
+    private val play: PlayViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -41,8 +43,8 @@ class MainActivity : ComponentActivity() {
                     var screen by rememberSaveable { mutableStateOf(LIBRARY) }
                     // The screen a game was opened from, so Back returns there.
                     var from by rememberSaveable { mutableStateOf(LIBRARY) }
-                    val open = { pgn: String, key: String ->
-                        game.load(pgn, key, KnownUsers.names(this@MainActivity)); from = screen; screen = GAME
+                    val open = { pgn: String, key: String, owner: String? ->
+                        game.load(pgn, key, owner); from = screen; screen = GAME
                     }
                     // A finished analysis stores the game's accuracy for the lists.
                     LaunchedEffect(game.analysis) {
@@ -57,9 +59,13 @@ class MainActivity : ComponentActivity() {
                             ONLINE -> OnlineScreen(library, onOpen = open, onBack = { screen = LIBRARY })
                             LICENSES -> LicensesScreen(onBack = { screen = SETTINGS })
                             SETTINGS -> SettingsScreen(onBack = { screen = LIBRARY }, onLicenses = { screen = LICENSES })
-                            SETUP -> SetupScreen(onAnalyze = { library.importText(it, Sources.SETUP, open) }, onBack = { screen = LIBRARY })
+                            // Set-up positions open without being saved.
+                            SETUP -> SetupScreen(onAnalyze = { open(it, Sources.textKey(it), null) }, onBack = { screen = LIBRARY })
+                            // Games against the engine open without being saved; "You" is the owner.
+                            PLAY -> PlayScreen(play, onAnalyze = { open(it, Sources.textKey(it), getString(R.string.you)) }, onBack = { screen = LIBRARY })
                             else -> LibraryScreen(
-                                library, onOpen = open, onOnline = { screen = ONLINE }, onSetup = { screen = SETUP }, onSettings = { screen = SETTINGS },
+                                library, onOpen = open, onOnline = { screen = ONLINE }, onSetup = { screen = SETUP }, onPlay = { screen = PLAY },
+                                onSettings = { screen = SETTINGS },
                             )
                         }
                     }
@@ -81,5 +87,6 @@ class MainActivity : ComponentActivity() {
         const val LICENSES = "licenses"
         const val SETTINGS = "settings"
         const val SETUP = "setup"
+        const val PLAY = "play"
     }
 }

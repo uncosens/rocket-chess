@@ -79,9 +79,9 @@ class RemoteTest {
         assertEquals(1600 to 1580, lichess[0].whiteElo to lichess[0].blackElo)
         assertEquals(null, lichess[1].whiteElo) // Stockfish has no rating
 
-        val names = setOf("testuser")
-        assertEquals(true, userSide("TestUser", "Rival", names))
-        assertEquals(false, userSide("Stockfish level 3", "testuser", names))
-        assertEquals(null, userSide("a", "b", names))
+        assertEquals(true, userSide("TestUser", "Rival", "testuser"))
+        assertEquals(false, userSide("Stockfish level 3", "testuser", "TestUser"))
+        assertEquals(null, userSide("a", "b", "testuser"))
+        assertEquals(null, userSide("a", "b", null))
     }
 }

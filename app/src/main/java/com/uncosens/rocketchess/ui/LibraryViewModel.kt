@@ -53,8 +53,20 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     private var fetchJob: Job? = null
     private var pager: GamePager? = null
 
-    /** Checks the PGN, saves it (or finds the saved copy) and passes its text and key to [open]. */
-    private suspend fun save(pgn: String, source: String, key: String, open: (String, String) -> Unit) {
+    /** The name behind the online results shown now. */
+    private var searched: String? = null
+
+    init {
+        // Names an older version kept for all games become the owner of the games they played.
+        val old = KnownUsers.oldNames(app)
+        if (old.isNotEmpty()) viewModelScope.launch {
+            old.forEach { dao.claimOwner(it) }
+            KnownUsers.forgetOldNames(app)
+        }
+    }
+
+    /** Checks the PGN, saves it (or finds the saved copy) and passes its text, key and [owner] to [open]. */
+    private suspend fun save(pgn: String, source: String, key: String, open: (String, String, String?) -> Unit, owner: String? = null) {
         val game = withContext(Dispatchers.Default) {
             runCatching { Pgn.parse(pgn).also { GameLine.from(it) } }
         }.getOrElse {
@@ -66,17 +78,20 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             SavedGame(
                 source = source, sourceKey = key, pgn = pgn, importedAt = System.currentTimeMillis(),
                 white = t["White"] ?: "?", black = t["Black"] ?: "?", result = game.result ?: t["Result"] ?: "*", date = t["Date"] ?: "",
+                owner = owner,
             ),
         )
+        // A copy saved earlier without an owner gets one now.
+        owner?.let { dao.setOwnerIfMissing(key, it) }
         error = null
-        open(pgn, key)
+        open(pgn, key, owner)
     }
 
-    fun importText(text: String, source: String, open: (String, String) -> Unit) {
+    fun importText(text: String, source: String, open: (String, String, String?) -> Unit) {
         viewModelScope.launch { save(text, source, Sources.textKey(text), open) }
     }
 
-    fun importFile(uri: Uri, open: (String, String) -> Unit) {
+    fun importFile(uri: Uri, open: (String, String, String?) -> Unit) {
         viewModelScope.launch {
             val bytes = withContext(Dispatchers.IO) {
                 runCatching {
@@ -91,13 +106,13 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun importRemote(game: RemoteGame, open: (String, String) -> Unit) {
+    fun importRemote(game: RemoteGame, open: (String, String, String?) -> Unit) {
         val source = if (game.key.startsWith("lichess:")) Sources.LICHESS else Sources.CHESS_COM
-        viewModelScope.launch { save(game.pgn, source, game.key, open) }
+        viewModelScope.launch { save(game.pgn, source, game.key, open, searched) }
     }
 
-    fun open(id: Long, open: (String, String) -> Unit) {
-        viewModelScope.launch { dao.get(id)?.let { open(it.pgn, it.sourceKey) } }
+    fun open(id: Long, open: (String, String, String?) -> Unit) {
+        viewModelScope.launch { dao.get(id)?.let { open(it.pgn, it.sourceKey, it.owner) } }
     }
 
     fun saveAccuracy(key: String, white: Double?, black: Double?) = viewModelScope.launch { dao.setAccuracy(key, white, black) }
@@ -106,7 +121,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
 
     fun deleteAll() = viewModelScope.launch { dao.deleteAll() }
 
-    /** Loads the first page of [name]'s games and remembers the name as the user's. */
+    /** Loads the first page of [name]'s games. Games opened from them are saved with [name] as owner. */
     fun fetch(source: String, name: String) {
         cancelFetch()
         online = OnlineState.Loading
@@ -116,6 +131,9 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
                 pager = p
                 val games = p.next()
                 KnownUsers.add(getApplication(), source, name)
+                searched = name.trim()
+                // Saved games this user played, imported before owners were kept, are theirs too.
+                dao.claimOwner(name.trim())
                 OnlineState.Found(games, p.done)
             } catch (e: FetchError) {
                 OnlineState.Failed(e)
