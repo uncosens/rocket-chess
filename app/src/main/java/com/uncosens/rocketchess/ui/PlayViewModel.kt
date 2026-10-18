@@ -80,6 +80,8 @@ class PlayViewModel : ViewModel() {
             board.isDraw -> "1/2-1/2"
             else -> null
         }
+        // The game is over: free the engine's memory now.
+        if (result != null) close()
     }
 
     /** Asks the engine for its move when it is its turn. Starts the engine on first use. */

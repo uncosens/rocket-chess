@@ -25,6 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -100,6 +101,8 @@ class GameViewModel : ViewModel() {
     private var liveJob: Job? = null
     /** Latest positions to analyze live. Older requests are dropped. */
     private val liveQueue = Channel<List<String>>(Channel.CONFLATED)
+    /** Set when the live engine has gone idle and is quitting; a new request then starts another. */
+    @Volatile private var liveQuitting = false
 
     /**
      * Loads a game. If [owner] played it, the board shows that side at the bottom.
@@ -213,8 +216,9 @@ class GameViewModel : ViewModel() {
         val fens = listOf(ply - 1, ply).filter { it >= 0 && evals.getOrNull(it) == null }.map { l.positions[it].fen }
         if (fens.isEmpty()) return
         liveQueue.trySend(fens)
-        if (liveJob?.isActive == true) return
+        if (liveJob?.isActive == true && !liveQuitting) return
         liveError = null
+        liveQuitting = false
         liveJob = viewModelScope.launch(Dispatchers.IO) {
             val sf = runCatching { StockfishSession(exe) }.getOrElse {
                 withContext(Dispatchers.Main) { liveError = it.message ?: "start failed" }
@@ -224,10 +228,18 @@ class GameViewModel : ViewModel() {
                 val analyzer = Analyzer(sf)
                 // One position at a time: more than two threads only slows a fixed-depth search on phones.
                 val settings = analyzer.start(opts.copy(threads = minOf(opts.threads, 2)))
-                for (batch in liveQueue) for (fen in batch) {
-                    if (fen in liveEvals) continue
-                    val e = analyzer.analyze(fen, settings.depth)
-                    withContext(Dispatchers.Main) { liveEvals = liveEvals + (fen to e) }
+                // Quits after a short idle time, so the engine's memory is not held while the user only looks.
+                while (true) {
+                    val batch = withTimeoutOrNull(LIVE_IDLE_MS) { liveQueue.receive() }
+                    if (batch == null) {
+                        liveQuitting = true
+                        break
+                    }
+                    for (fen in batch) {
+                        if (fen in liveEvals) continue
+                        val e = analyzer.analyze(fen, settings.depth)
+                        withContext(Dispatchers.Main) { liveEvals = liveEvals + (fen to e) }
+                    }
                 }
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
@@ -254,5 +266,9 @@ class GameViewModel : ViewModel() {
     fun goTo(index: Int) {
         val last = line?.plies?.size ?: return
         ply = index.coerceIn(0, last)
+    }
+
+    private companion object {
+        const val LIVE_IDLE_MS = 10_000L
     }
 }
