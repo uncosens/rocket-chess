@@ -13,14 +13,18 @@ import com.uncosens.rocketchess.chess.PgnGame
 import com.uncosens.rocketchess.data.userSide
 import com.uncosens.rocketchess.analysis.AnalysisSettings
 import com.uncosens.rocketchess.analysis.Analyzer
+import com.uncosens.rocketchess.analysis.EngineBudget
 import com.uncosens.rocketchess.analysis.EngineOptions
 import com.uncosens.rocketchess.analysis.PositionEval
 import com.uncosens.rocketchess.analysis.SavedAnalysis
 import com.uncosens.rocketchess.engine.StockfishSession
 import java.io.File
+import java.util.concurrent.ConcurrentLinkedQueue
+import kotlin.concurrent.thread
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -88,6 +92,8 @@ class GameViewModel : ViewModel() {
     private var job: Job? = null
     /** Settings of the run that made [mainEvals], and whether those have new results not yet saved. */
     private var runSettings: AnalysisSettings? = null
+    /** Engines of the running full analysis. */
+    private val sessions = mutableListOf<StockfishSession>()
     private var unsaved = false
     /** Identifies the current run so a cancelled run can never write its results. */
     private var runId = 0
@@ -117,40 +123,55 @@ class GameViewModel : ViewModel() {
         }
     }
 
-    /** Analyzes the game. After a stop it goes on from where it stopped; [fresh] starts over. */
-    fun analyze(exe: File, opts: EngineOptions, fresh: Boolean = false) {
+    /**
+     * Analyzes the game on [engines] engines at once, each on one thread taking the next position left.
+     * After a stop it goes on from where it stopped; [fresh] starts over.
+     */
+    fun analyze(exe: File, opts: EngineOptions, engines: Int, fresh: Boolean = false) {
         val l = mainLine ?: return
         stopAnalysis()
         val id = ++runId
         val total = l.positions.size
         if (fresh || mainEvals.size != total) mainEvals = List(total) { null }
         analysis = AnalysisState.Running(mainEvals.count { it != null }, total)
+        val todo = ConcurrentLinkedQueue(l.positions.indices.filter { mainEvals[it] == null })
+        val each = opts.copy(threads = 1, hashMb = EngineBudget.hashShare(opts, engines))
         job = viewModelScope.launch(Dispatchers.IO) {
-            val sf = runCatching { StockfishSession(exe) }.getOrElse {
-                withContext(Dispatchers.Main) { if (id == runId) analysis = AnalysisState.Failed(it.message ?: "start failed") }
-                return@launch
-            }
             try {
-                val analyzer = Analyzer(sf)
-                val settings = analyzer.start(opts)
-                withContext(Dispatchers.Main) { if (id == runId) runSettings = settings }
-                l.positions.forEachIndexed { i, p ->
-                    ensureActive()
-                    if (mainEvals[i] != null) return@forEachIndexed
-                    val e = analyzer.analyze(p.fen, settings.depth)
-                    withContext(Dispatchers.Main) {
-                        if (id != runId) return@withContext
-                        mainEvals = mainEvals.toMutableList().also { it[i] = e }
-                        unsaved = true
-                        analysis = AnalysisState.Running(i + 1, total)
+                coroutineScope {
+                    repeat(engines) {
+                        launch {
+                            val sf = StockfishSession(exe).also { synchronized(sessions) { sessions += it } }
+                            try {
+                                val analyzer = Analyzer(sf)
+                                val s = analyzer.start(each)
+                                // One line for the whole run: all engines together, with the full hash.
+                                val settings = s.copy(threads = engines, hashMb = opts.hashMb)
+                                withContext(Dispatchers.Main) { if (id == runId) runSettings = settings }
+                                while (true) {
+                                    ensureActive()
+                                    val i = todo.poll() ?: break
+                                    val e = analyzer.analyze(l.positions[i].fen, s.depth)
+                                    withContext(Dispatchers.Main) {
+                                        if (id != runId) return@withContext
+                                        mainEvals = mainEvals.toMutableList().also { it[i] = e }
+                                        unsaved = true
+                                        analysis = AnalysisState.Running(mainEvals.count { it != null }, total)
+                                    }
+                                }
+                            } finally {
+                                synchronized(sessions) { sessions -= sf }
+                                sf.close()
+                            }
+                        }
                     }
                 }
-                withContext(Dispatchers.Main) { if (id == runId) analysis = AnalysisState.Done(settings) }
+                withContext(Dispatchers.Main) {
+                    if (id == runId) runSettings?.let { analysis = AnalysisState.Done(it) }
+                }
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 withContext(Dispatchers.Main) { if (id == runId) analysis = AnalysisState.Failed(e.message ?: e.toString()) }
-            } finally {
-                sf.close()
             }
         }
     }
@@ -159,6 +180,9 @@ class GameViewModel : ViewModel() {
     fun stopAnalysis() {
         job?.cancel()
         job = null
+        // Quit the engines now instead of waiting for their searches, so their memory is freed at once.
+        val running = synchronized(sessions) { sessions.toList() }
+        if (running.isNotEmpty()) thread { running.forEach { it.close() } }
         runId++
         (analysis as? AnalysisState.Running)?.let { analysis = AnalysisState.Stopped(it.done, it.total) }
         liveJob?.cancel()
@@ -198,7 +222,8 @@ class GameViewModel : ViewModel() {
             }
             try {
                 val analyzer = Analyzer(sf)
-                val settings = analyzer.start(opts)
+                // One position at a time: more than two threads only slows a fixed-depth search on phones.
+                val settings = analyzer.start(opts.copy(threads = minOf(opts.threads, 2)))
                 for (batch in liveQueue) for (fen in batch) {
                     if (fen in liveEvals) continue
                     val e = analyzer.analyze(fen, settings.depth)

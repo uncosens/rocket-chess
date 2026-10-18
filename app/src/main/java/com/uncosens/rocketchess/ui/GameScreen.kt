@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.uncosens.rocketchess.R
+import com.uncosens.rocketchess.analysis.EngineBudget
 import com.uncosens.rocketchess.analysis.EngineOptionsStore
 import com.uncosens.rocketchess.analysis.MoveClass
 import com.uncosens.rocketchess.chess.Finish
@@ -60,12 +61,13 @@ import com.uncosens.rocketchess.engine.StockfishSession
 fun GameScreen(vm: GameViewModel, onBack: () -> Unit) {
     val context = LocalContext.current
     val exe = remember { StockfishSession.binary(context) }
-    val onAnalyze = { vm.analyze(exe, EngineOptionsStore.load(context)) }
+    val onAnalyze = { EngineOptionsStore.load(context).let { vm.analyze(exe, it, EngineBudget.forDevice(context, it)) } }
     // A finished run can be redone only once the engine settings differ from the ones it used.
     val opts = EngineOptionsStore.load(context)
     val ran = (vm.analysis as? AnalysisState.Done)?.settings
-    val changed = ran != null && (ran.depth != opts.depth || ran.threads != opts.threads || ran.hashMb != opts.hashMb)
-    val onReanalyze = if (changed) ({ vm.analyze(exe, opts, fresh = true) }) else null
+    val engines = remember(opts, ran) { EngineBudget.forDevice(context, opts) }
+    val changed = ran != null && (ran.depth != opts.depth || ran.threads != engines || ran.hashMb != opts.hashMb)
+    val onReanalyze = if (changed) ({ vm.analyze(exe, opts, engines, fresh = true) }) else null
     BackHandler(onBack = onBack)
     // A newly opened game is analyzed right away. Keyed on the state too: reopening the same
     // game after a stop gives an equal game but resets the state to Idle.

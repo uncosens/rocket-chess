@@ -25,7 +25,8 @@ object AnalysisPolicy {
     const val DEPTH = 14
     const val MULTI_PV = 2
     // Defaults for the user settings in EngineOptions.
-    const val THREADS = 2
+    // CPU cores: engines run at once for a full analysis, one thread each.
+    const val THREADS = 4
     const val HASH_MB = 32
 
     /** Upper bounds (exclusive) of win% loss for each class after Best. */

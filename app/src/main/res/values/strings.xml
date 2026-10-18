@@ -20,7 +20,7 @@
     <string name="stop">Stop</string>
     <string name="analyzing">Analyzing %1$d / %2$d</string>
     <string name="analysis_stopped">Stopped at %1$d / %2$d. Moves without both evals are not graded.</string>
-    <string name="analysis_done">%1$s · depth %2$d · MultiPV %3$d · %4$d threads · %5$d MB hash</string>
+    <string name="analysis_done">%1$s · depth %2$d · MultiPV %3$d · %4$d engines · %5$d MB hash</string>
     <string name="analysis_failed">Analysis failed: %1$s</string>
     <string name="engine_move">Engine: %1$s</string>
     <string name="class_brilliant">Brilliant</string>
@@ -79,11 +79,11 @@
     <string name="theme_system">System</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
-    <string name="settings_threads">Threads</string>
+    <string name="settings_threads">CPU cores</string>
     <string name="settings_hash">Hash table</string>
     <string name="settings_hash_mb">%1$d MB</string>
     <string name="settings_depth">Search depth: %1$d</string>
-    <string name="settings_note">More threads and depth give better analysis but take longer and use more battery. Changes apply to the next analysis.</string>
+    <string name="settings_note">CPU cores is how many engines analyze positions at once; fewer are used when memory is short. More cores finish sooner but warm the device; more depth is better but slower. Changes apply to the next analysis.</string>
     <string name="settings_reset">Reset to defaults</string>
     <string name="cd_back">Back</string>
     <string name="new_analysis">New analysis</string>

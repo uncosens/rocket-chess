@@ -98,13 +98,27 @@ class AnalysisTest {
     @Test
     fun readsAndClampsEngineOptions() {
         // Nothing saved: the defaults.
-        assertEquals(EngineOptions(2, 32, 14), EngineOptions.read(cores = 8) { _, d -> d })
+        assertEquals(EngineOptions(4, 32, 14), EngineOptions.read(cores = 8) { _, d -> d })
         val saved = mapOf("threads" to 9, "hash_mb" to 100, "depth" to 3)
         assertEquals(EngineOptions(4, 128, 10), EngineOptions.read(cores = 8) { k, d -> saved[k] ?: d })
         // Threads stop at the core count; hash snaps to the nearest choice.
         assertEquals(EngineOptions(1, 64, 20), EngineOptions(threads = 2, hashMb = 70, depth = 25).clamped(cores = 1))
         assertEquals(EngineOptions(1, 16, 14), EngineOptions(threads = 0, hashMb = 1).clamped(cores = 4))
         assertEquals(3, EngineOptions.maxThreads(3))
+    }
+
+    @Test
+    fun enginesFollowCoresAndMemory() {
+        fun n(cores: Int, totalMb: Long, availMb: Long, lowRam: Boolean = false) = EngineBudget.engines(cores, totalMb, availMb, lowRam, 32)
+        assertEquals(4, n(4, 7_242, 2_065)) // Galaxy S23+ (8 GB) as measured
+        assertEquals(2, n(2, 7_242, 2_065)) // the user's core setting wins
+        assertEquals(2, n(4, 5_500, 3_000)) // 6 GB device
+        assertEquals(1, n(4, 3_700, 2_000)) // 4 GB device
+        assertEquals(2, n(4, 7_242, 1_200)) // little free memory right now
+        assertEquals(1, n(4, 7_242, 300)) // always at least one
+        assertEquals(1, n(4, 16_000, 8_000, lowRam = true))
+        assertEquals(16, EngineBudget.hashShare(EngineOptions(hashMb = 32), 4))
+        assertEquals(32, EngineBudget.hashShare(EngineOptions(hashMb = 128), 4))
     }
 
     @Test
