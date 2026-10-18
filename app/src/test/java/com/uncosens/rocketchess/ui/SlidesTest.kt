@@ -46,7 +46,8 @@ class SlidesTest {
 
         assertEquals("+0.35", Eval.Cp(35).text())
         assertEquals("-0.35", Eval.Cp(35).text(whiteView = false))
-        assertEquals("#-2", Eval.Mate(whiteWins = true, moves = 2).text(whiteView = false))
-        assertEquals("#2", Eval.Mate(whiteWins = false, moves = 2).text(whiteView = false))
+        assertEquals("-M2", Eval.Mate(whiteWins = true, moves = 2).text(whiteView = false))
+        assertEquals("M2", Eval.Mate(whiteWins = false, moves = 2).text(whiteView = false))
+        assertEquals("#", Eval.Mate(whiteWins = true, moves = 0).text())
     }
 }

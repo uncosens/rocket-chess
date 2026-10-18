@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.sp
 import com.uncosens.rocketchess.R
 import com.uncosens.rocketchess.analysis.EngineOptionsStore
 import com.uncosens.rocketchess.analysis.MoveClass
+import com.uncosens.rocketchess.chess.Finish
 import com.uncosens.rocketchess.chess.GameLine
 import com.uncosens.rocketchess.engine.StockfishSession
 
@@ -160,10 +161,10 @@ private fun Board(vm: GameViewModel, modifier: Modifier) {
         flipped = vm.flipped,
         arrow = best?.let { it.substring(0, 2) to it.substring(2, 4) },
         ending = when {
-            position?.mate == true -> Ending(whiteLost = fen.split(' ')[1] == "w", resigned = false)
-            // Resignation shows only at the end of the game itself, not in the user's own moves.
-            vm.variation == null && line != null && vm.ply == line.plies.size && vm.game?.resigned() == true ->
-                Ending(whiteLost = (vm.game?.result ?: vm.game?.tags?.get("Result")) == "0-1", resigned = true)
+            position?.mate == true -> Ending(whiteLost = fen.split(' ')[1] == "w", Finish.MATE)
+            // Resignation and time loss show only at the end of the game itself, not in the user's own moves.
+            vm.variation == null && line != null && vm.ply == line.plies.size ->
+                vm.game?.finish()?.let { Ending(whiteLost = (vm.game?.result ?: vm.game?.tags?.get("Result")) == "0-1", it) }
             else -> null
         },
         selected = selected,

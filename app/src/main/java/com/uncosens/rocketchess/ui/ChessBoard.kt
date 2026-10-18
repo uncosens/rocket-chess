@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.IntSize
 import com.uncosens.rocketchess.analysis.MoveClass
+import com.uncosens.rocketchess.chess.Finish
 import kotlin.math.hypot
 import kotlin.math.roundToInt
 
@@ -50,8 +51,8 @@ private const val MOVE_MS = 220
 /** Square name like "e4" to 0..63, a1 = 0. */
 private fun index(square: String) = (square[0] - 'a') + (square[1] - '1') * 8
 
-/** How the game ended on this board: who lost, and whether by resignation (else checkmate). */
-data class Ending(val whiteLost: Boolean, val resigned: Boolean)
+/** How the game ended on this board: who lost, and how. */
+data class Ending(val whiteLost: Boolean, val finish: Finish)
 
 /** Pieces one side has more of than the other, as letters like "rp", and its point lead (0 if behind). */
 data class MaterialEdge(val pieces: String, val points: Int)
@@ -106,7 +107,7 @@ internal fun slides(old: Map<Int, Char>, new: Map<Int, Char>): Map<Int, Int> {
  * [flipped] shows the board from Black's side. Pieces slide when [fen] changes.
  * [pieceSet] and [boardStyle] default to the saved choices.
  * With [onTap], squares can be tapped; [selected] is marked and [targets] get a dot.
- * With [ending], the losing king gets "#" (mate) or a flag (resigned) and the winning king a crown.
+ * With [ending], the losing king gets "#" (mate), a flag (resigned) or a clock (time) and the winning king a crown.
  */
 @Composable
 fun ChessBoard(
@@ -207,15 +208,29 @@ fun ChessBoard(
             else drawCircle(TARGET, sq * 0.16f, center(i))
         }
         if (arrow != null) drawArrow(center(index(arrow.first)), center(index(arrow.second)), sq)
-        fun badge(square: Int, color: Color, text: String) {
+        // A round badge with [text], or a small clock face when [text] is null.
+        fun badge(square: Int, color: Color, text: String?) {
             val c = at(square) + Offset(sq * 0.8f, sq * 0.2f)
             drawCircle(color, sq * 0.19f, c)
+            if (text == null) {
+                val r = sq * 0.11f
+                val w = sq * 0.03f
+                drawCircle(Color.White, r, c, style = Stroke(w))
+                drawLine(Color.White, c, c + Offset(0f, -r * 0.7f), strokeWidth = w, cap = StrokeCap.Round)
+                drawLine(Color.White, c, c + Offset(r * 0.55f, 0f), strokeWidth = w, cap = StrokeCap.Round)
+                return
+            }
             val t = measurer.measure(text, TextStyle(fontSize = (sq * 0.22f).toSp(), fontWeight = FontWeight.Bold))
             drawText(t, Color.White, c - Offset(t.size.width / 2f, t.size.height / 2f))
         }
         // King marks win over the grade badge when they share a square.
         val kings = if (ending == null) emptyMap() else now.filterValues { it == 'K' || it == 'k' }.mapValues { (_, k) ->
-            if ((k == 'K') == ending.whiteLost) LOST to (if (ending.resigned) "\u2691\uFE0E" else "#") else WON to "\u265A\uFE0E"
+            if ((k == 'K') != ending.whiteLost) WON to "\u265A\uFE0E"
+            else LOST to when (ending.finish) {
+                Finish.MATE -> "#"
+                Finish.RESIGNED -> "\u2691\uFE0E"
+                Finish.TIME -> null
+            }
         }
         val mark = grade?.badge()
         if (grade != null && mark != null && lastMove != null && index(lastMove.second) !in kings) badge(index(lastMove.second), grade.color(), mark)

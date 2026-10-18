@@ -3,16 +3,24 @@ package com.uncosens.rocketchess.chess
 /** A SAN move as written in the PGN, with its 1-based position in the text. */
 data class SanToken(val text: String, val line: Int, val column: Int)
 
+/** How a decisive game ended. */
+enum class Finish { MATE, RESIGNED, TIME }
+
 data class PgnGame(val tags: Map<String, String>, val moves: List<SanToken>, val result: String?) {
     /**
-     * True when a decisive game ended by resignation. Chess.com writes "... won by resignation";
-     * Lichess writes "Normal" for both resignation and mate, so a mated last position must be ruled out first.
+     * Resignation or time loss in a decisive game, from the Termination tag; null if unknown.
+     * Chess.com writes "... won by resignation" / "... won on time"; Lichess writes "Time forfeit",
+     * and "Normal" for both resignation and mate, so a mated last position must be ruled out first.
      */
-    fun resigned(): Boolean {
+    fun finish(): Finish? {
         val r = result ?: tags["Result"]
-        if (r != "1-0" && r != "0-1") return false
-        val t = tags["Termination"] ?: return false
-        return t.contains("resignation", ignoreCase = true) || t == "Normal"
+        if (r != "1-0" && r != "0-1") return null
+        val t = tags["Termination"] ?: return null
+        return when {
+            t.contains("on time", ignoreCase = true) || t.equals("Time forfeit", ignoreCase = true) -> Finish.TIME
+            t.contains("resignation", ignoreCase = true) || t == "Normal" -> Finish.RESIGNED
+            else -> null
+        }
     }
 }
 

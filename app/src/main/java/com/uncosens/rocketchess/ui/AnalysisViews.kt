@@ -75,13 +75,14 @@ fun MoveClass.label(): String = stringResource(
     },
 )
 
-/** "+0.35" or "#3" / "#-3", from White's view, or Black's when [whiteView] is false. */
+/** "+0.35" or "M3" / "-M3", from White's view, or Black's when [whiteView] is false. */
 fun Eval.text(whiteView: Boolean = true): String = when (this) {
     is Eval.Cp -> {
         val v = if (whiteView) cp else -cp
         (if (v >= 0) "+" else "-") + "%.2f".format(abs(v) / 100.0)
     }
-    is Eval.Mate -> if (whiteWins == whiteView) "#$moves" else "#-$moves"
+    // "M3" = mate in 3 for the viewing side, "-M3" against it, "#" once mated.
+    is Eval.Mate -> if (moves == 0) "#" else if (whiteWins == whiteView) "M$moves" else "-M$moves"
 }
 
 /** Stop while running; Analyze to start or go on after a stop. Nothing once done. */

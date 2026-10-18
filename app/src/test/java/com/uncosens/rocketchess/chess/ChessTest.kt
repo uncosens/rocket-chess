@@ -125,12 +125,13 @@ class ChessTest {
 
         fun game(termination: String?, result: String) =
             Pgn.parse((termination?.let { "[Termination \"$it\"]\n" } ?: "") + "[Result \"$result\"]\n\n1. e4 e5 $result")
-        assertTrue(game("thibault won by resignation", "0-1").resigned())
-        assertTrue(game("Normal", "1-0").resigned()) // Lichess: mate is ruled out by the board
-        assertTrue(!game("Hikaru won on time", "1-0").resigned())
-        assertTrue(!game("Time forfeit", "0-1").resigned())
-        assertTrue(!game("Normal", "1/2-1/2").resigned())
-        assertTrue(!game(null, "1-0").resigned())
+        assertEquals(Finish.RESIGNED, game("thibault won by resignation", "0-1").finish())
+        assertEquals(Finish.RESIGNED, game("Normal", "1-0").finish()) // Lichess: mate is ruled out by the board
+        assertEquals(Finish.TIME, game("Grum000 won on time", "0-1").finish())
+        assertEquals(Finish.TIME, game("Time forfeit", "0-1").finish())
+        assertNull(game("Game drawn by timeout vs insufficient material", "1/2-1/2").finish())
+        assertNull(game("Normal", "1/2-1/2").finish())
+        assertNull(game(null, "1-0").finish())
     }
 
     @Test
