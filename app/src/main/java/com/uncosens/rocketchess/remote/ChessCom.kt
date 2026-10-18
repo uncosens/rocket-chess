@@ -5,8 +5,6 @@ import kotlinx.serialization.Serializable
 
 /** Chess.com PubAPI: list monthly archives, then read the newest months. */
 object ChessCom {
-    private const val MAX_MONTHS = 3
-
     @Serializable
     data class Archives(val archives: List<String> = emptyList())
 
@@ -26,7 +24,7 @@ object ChessCom {
     )
 
     @Serializable
-    data class Player(val username: String = "?")
+    data class Player(val username: String = "?", val rating: Int? = null)
 
     fun parseArchives(json: String): List<String> =
         runCatching { Http.json.decodeFromString<Archives>(json).archives }.getOrElse { throw FetchError.BadResponse }
@@ -35,20 +33,35 @@ object ChessCom {
     fun parseMonth(json: String): List<RemoteGame> {
         val month = runCatching { Http.json.decodeFromString<Month>(json) }.getOrElse { throw FetchError.BadResponse }
         return month.games.filter { it.rules == "chess" && !it.pgn.isNullOrBlank() }.map {
-            RemoteGame("chesscom:${it.uuid ?: it.url}", it.white.username, it.black.username, it.endTime * 1000, it.timeClass, it.pgn!!)
+            RemoteGame(
+                "chesscom:${it.uuid ?: it.url}", it.white.username, it.black.username, it.endTime * 1000, it.timeClass, it.pgn!!,
+                it.white.rating, it.black.rating,
+            )
         }
     }
 
-    /** Newest games first, reading at most [MAX_MONTHS] months. */
-    suspend fun recentGames(name: String, limit: Int = 30): List<RemoteGame> {
-        val user = Http.checkName(name).lowercase()
-        val months = parseArchives(Http.get("https://api.chess.com/pub/player/$user/games/archives")).reversed()
-        val games = mutableListOf<RemoteGame>()
-        // Archive URLs come from Chess.com; only follow ones on its API host.
-        for (url in months.filter { it.startsWith("https://api.chess.com/") }.take(MAX_MONTHS)) {
-            games += parseMonth(Http.get(url))
-            if (games.size >= limit) break
+    /** Reads months newest first, only as many as the next page needs. */
+    class Pager(name: String) : GamePager {
+        private val user = Http.checkName(name).lowercase()
+        private var months: ArrayDeque<String>? = null
+        private val buffer = mutableListOf<RemoteGame>()
+        override var done = false
+            private set
+
+        override suspend fun next(): List<RemoteGame> {
+            // Archive URLs come from Chess.com; only follow ones on its API host.
+            val left = months ?: ArrayDeque(
+                parseArchives(Http.get("https://api.chess.com/pub/player/$user/games/archives"))
+                    .filter { it.startsWith("https://api.chess.com/") }.reversed(),
+            ).also { months = it }
+            while (buffer.size < GamePager.PAGE && left.isNotEmpty()) {
+                buffer += parseMonth(Http.get(left.first())).sortedByDescending { it.endedAt }
+                left.removeFirst()
+            }
+            val page = buffer.take(GamePager.PAGE)
+            buffer.subList(0, page.size).clear()
+            done = buffer.isEmpty() && left.isEmpty()
+            return page
         }
-        return games.sortedByDescending { it.endedAt }.take(limit)
     }
 }

@@ -28,13 +28,28 @@ Stockfish NNUE network (embedded in the engine)
   Stockfish's networks are trained on data from the Leela Chess Zero project,
   which is available under the Open Database License (ODbL).
 
+Piece images (assets/pieces), from the Lichess project: https://github.com/lichess-org/lila
+  cburnett - Colin M.L. Burnett - GNU GPL v2 or later, used under GPL v3 (see GPL-3.0).
+  merida - Armando Hernandez Marroquin - GNU GPL v2 or later, used under GPL v3 (see GPL-3.0).
+  mpchess - Maxime Chupin - GNU GPL v3 or later (see GPL-3.0).
+  chessnut - Alexis Luengas - Apache License 2.0 (see Apache-2.0).
+
+Board images (assets/boards), from the Lichess project: https://github.com/lichess-org/lila
+  wood4, maple, marble, blue-marble - the lila authors and pirouetti - GNU AGPL v3 or later (see AGPL-3.0).
+  Combined with this GPL v3 app as allowed by section 13 of both licenses.
+
+Fonts (res/font), under the SIL Open Font License 1.1 (see OFL-1.1)
+  Unbounded - Copyright 2022 The Unbounded Project Authors (https://github.com/googlefonts/unbounded)
+  IBM Plex Sans - Copyright 2017 IBM Corp. with Reserved Font Name "Plex"
+  JetBrains Mono - Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)
+
 Java and Kotlin libraries
   All libraries below are under the Apache License 2.0 (see Apache-2.0).
 """
 
 # Every shipped group must be listed here with its license. Unknown groups stop the script.
 APACHE_GROUPS = ("androidx.", "org.jetbrains", "com.squareup.", "com.google.guava", "org.jspecify",
-                 "org.apache.commons", "com.github.bhlangonijr")
+                 "org.apache.commons", "com.github.bhlangonijr", "com.caverock")
 
 
 def main(deps_path, out_path="app/src/main/assets/licenses/third_party.txt"):

@@ -25,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.uncosens.rocketchess.BuildConfig
 import com.uncosens.rocketchess.R
@@ -59,16 +58,19 @@ fun LicensesScreen(onBack: () -> Unit) {
             Text(stringResource(R.string.licenses_stockfish_source))
         }
         Text(stringResource(R.string.licenses_libraries))
+        Text(stringResource(R.string.licenses_assets))
         SelectionContainer {
             Text(
                 stringResource(R.string.licenses_build, BuildConfig.GIT_COMMIT, BuildConfig.STOCKFISH_COMMIT, BuildConfig.ENGINE_SHA256),
-                fontFamily = FontFamily.Monospace,
+                fontFamily = Mono,
                 style = MaterialTheme.typography.bodySmall,
             )
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             FilledTonalButton(onClick = { file = "GPL-3.0.txt" }) { Text("GPL-3.0") }
             FilledTonalButton(onClick = { file = "Apache-2.0.txt" }) { Text("Apache-2.0") }
+            FilledTonalButton(onClick = { file = "OFL-1.1.txt" }) { Text("OFL-1.1") }
+            FilledTonalButton(onClick = { file = "AGPL-3.0.txt" }) { Text("AGPL-3.0") }
             FilledTonalButton(onClick = { file = "third_party.txt" }) { Text(stringResource(R.string.licenses_notices)) }
         }
     }
@@ -78,5 +80,5 @@ fun LicensesScreen(onBack: () -> Unit) {
 private fun LicenseText(name: String) {
     val context = LocalContext.current
     val text = remember(name) { context.assets.open("licenses/$name").bufferedReader().use { it.readText() } }
-    SelectionContainer { Text(text, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall) }
+    SelectionContainer { Text(text, fontFamily = Mono, style = MaterialTheme.typography.bodySmall) }
 }

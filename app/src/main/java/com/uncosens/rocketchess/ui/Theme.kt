@@ -1,5 +1,7 @@
 package com.uncosens.rocketchess.ui
 
+import android.app.Activity
+import android.content.Context
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
@@ -7,19 +9,30 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.uncosens.rocketchess.R
 
 /** Board square colors. [lastLight]/[lastDark] mark the last move. */
 data class BoardColors(val light: Color, val dark: Color, val lastLight: Color, val lastDark: Color)
 
 val LocalBoardColors = staticCompositionLocalOf { NightBoard }
 
-// "Night Launch" for dark mode, "Daylight" for light mode.
+// The Rocket board keeps its "Night Launch" colors in both dark and light mode.
 private val NightBoard = BoardColors(Color(0xFFCBD2E1), Color(0xFF59678A), Color(0xFFF2B48F), Color(0xFFC98765))
-private val DayBoard = BoardColors(Color(0xFFE8EDF4), Color(0xFF8DA2C4), Color(0xFFC3CEF7), Color(0xFF7D93E2))
 
 private val Night = darkColorScheme(
     primary = Color(0xFFFF6B35),
@@ -61,18 +74,73 @@ private val Day = lightColorScheme(
     error = Color(0xFFC62828),
 )
 
+// Variable fonts in res/font; each Font picks its weight from the one file.
+private fun family(res: Int, vararg weights: Int) = FontFamily(weights.map { Font(res, FontWeight(it)) })
+
+private val Display = family(R.font.unbounded, 500, 600, 700)
+private val Sans = family(R.font.ibm_plex_sans, 400, 500, 600)
+val Mono = family(R.font.jetbrains_mono, 400, 500, 600)
+
 private val Type = Typography().run {
+    fun TextStyle.display() = copy(fontFamily = Display, fontWeight = FontWeight.SemiBold, letterSpacing = (-0.01).em)
+    fun TextStyle.sans() = copy(fontFamily = Sans)
     copy(
-        titleLarge = titleLarge.copy(fontWeight = FontWeight.SemiBold),
-        titleMedium = titleMedium.copy(fontWeight = FontWeight.SemiBold),
-        labelSmall = labelSmall.copy(letterSpacing = 1.4.sp),
+        displayLarge = displayLarge.display(),
+        displayMedium = displayMedium.display(),
+        displaySmall = displaySmall.display(),
+        headlineLarge = headlineLarge.display(),
+        headlineMedium = headlineMedium.display(),
+        headlineSmall = headlineSmall.display(),
+        titleLarge = titleLarge.display().copy(fontSize = 20.sp),
+        titleMedium = titleMedium.sans().copy(fontWeight = FontWeight.SemiBold),
+        titleSmall = titleSmall.sans(),
+        bodyLarge = bodyLarge.sans(),
+        bodyMedium = bodyMedium.sans(),
+        bodySmall = bodySmall.sans(),
+        labelLarge = labelLarge.sans(),
+        labelMedium = labelMedium.sans(),
+        labelSmall = labelSmall.copy(fontFamily = Mono, letterSpacing = 1.4.sp),
     )
+}
+
+enum class ThemeMode { SYSTEM, LIGHT, DARK }
+
+/** The chosen theme mode, saved in SharedPreferences. Changes apply at once. */
+object ThemeStore {
+    private const val KEY = "theme"
+    var mode by mutableStateOf(ThemeMode.SYSTEM)
+        private set
+
+    private fun prefs(c: Context) = c.getSharedPreferences("ui", Context.MODE_PRIVATE)
+
+    fun load(c: Context) {
+        mode = ThemeMode.entries.firstOrNull { it.name == prefs(c).getString(KEY, null) } ?: ThemeMode.SYSTEM
+    }
+
+    fun save(c: Context, m: ThemeMode) {
+        mode = m
+        prefs(c).edit().putString(KEY, m.name).apply()
+    }
 }
 
 @Composable
 fun RocketTheme(content: @Composable () -> Unit) {
-    val dark = isSystemInDarkTheme()
-    CompositionLocalProvider(LocalBoardColors provides if (dark) NightBoard else DayBoard) {
+    val view = LocalView.current
+    remember { ThemeStore.load(view.context) }
+    val dark = when (ThemeStore.mode) {
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
+    // Status and navigation bar icons follow the app theme, not the system one.
+    SideEffect {
+        val window = (view.context as Activity).window
+        WindowCompat.getInsetsController(window, view).apply {
+            isAppearanceLightStatusBars = !dark
+            isAppearanceLightNavigationBars = !dark
+        }
+    }
+    CompositionLocalProvider(LocalBoardColors provides NightBoard) {
         MaterialTheme(colorScheme = if (dark) Night else Day, typography = Type, content = content)
     }
 }

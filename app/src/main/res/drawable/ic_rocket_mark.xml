@@ -1,23 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- App mark: a rocket turned 40 degrees clockwise over a 2x2 board. -->
+<!-- App mark: the bishop rocket flying on the diagonal over a 2x2 board. Small, so no shadow or core. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="34dp"
     android:height="34dp"
     android:viewportWidth="100"
     android:viewportHeight="100">
-    <path android:fillColor="#FF6B35" android:pathData="M0,0h100v100h-100z" />
-    <path android:fillColor="#D65A2D" android:pathData="M50,0h50v50h-50z M0,50h50v50h-50z" />
-    <group android:rotation="40" android:pivotX="50" android:pivotY="50" android:translateX="2" android:translateY="3">
-        <path android:fillColor="#0B1020" android:fillAlpha="0.25"
-            android:pathData="M50,14 C60,22 64,36 64,52 L64,66 L36,66 L36,52 C36,36 40,22 50,14 Z M36,50 L26,64 L26,72 L36,66 Z M64,50 L74,64 L74,72 L64,66 Z" />
-    </group>
-    <group android:rotation="40" android:pivotX="50" android:pivotY="50">
-        <path android:fillColor="#FFD166" android:pathData="M42,70 Q50,96 58,70 Z" />
-        <path android:fillColor="#FFFFFF" android:pathData="M46,70 Q50,84 54,70 Z" />
-        <path android:fillColor="#FFFFFF" android:pathData="M36,50 L26,64 L26,72 L36,66 Z M64,50 L74,64 L74,72 L64,66 Z" />
-        <path android:fillColor="#FFFFFF" android:pathData="M50,14 C60,22 64,36 64,52 L64,66 L36,66 L36,52 C36,36 40,22 50,14 Z" />
-        <path android:fillColor="#D5DAE6" android:pathData="M41,66h18v5h-18z" />
-        <path android:fillColor="#0B1020" android:pathData="M43.5,40a6.5,6.5 0,1 0,13 0a6.5,6.5 0,1 0,-13 0z" />
-        <path android:fillColor="#FFFFFF" android:pathData="M50.4,37.8a1.8,1.8 0,1 0,3.6 0a1.8,1.8 0,1 0,-3.6 0z" />
+    <path android:fillColor="#FF6B35" android:pathData="M0 0h100v100h-100z" />
+    <path android:fillColor="#D65A2D" android:pathData="M50 0h50v50h-50z M0 50h50v50h-50z" />
+    <group android:rotation="45" android:scaleX="0.897" android:scaleY="0.897" android:pivotX="50" android:pivotY="61" android:translateY="-11">
+        <path android:fillColor="#3D7BFF" android:pathData="M38 88C38 94 39 99 40 103C42 101 43.5 100.5 45 100.6C46.5 106 48 110 50 114C52 110 53.5 106 55 100.6C56.5 100.5 58 101 60 103C61 99 62 94 62 88Z" />
+        <path android:fillColor="#7FB2FF" android:pathData="M42.5 88C42.5 96 46 103 50 109C54 103 57.5 96 57.5 88Z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M50 13C54.5 16.5 58.5 20.5 60.7 25.5L49.3 46.6A2.3 2.3 0 0 0 52.5 49.8L63.9 28.7C70 42 72 58 63 78H37C26 50 32 27 50 13ZM37 77.5H63C67.5 79.5 72 83.5 74 89H26C28 83.5 32.5 79.5 37 77.5Z" />
     </group>
 </vector>

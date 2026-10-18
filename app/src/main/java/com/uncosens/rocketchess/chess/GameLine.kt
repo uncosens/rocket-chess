@@ -6,14 +6,25 @@ import com.github.bhlangonijr.chesslib.PieceType
 import com.github.bhlangonijr.chesslib.move.Move
 import com.github.bhlangonijr.chesslib.move.MoveList
 
-/** One half-move. Squares are names like "e2". [uci] is the engine notation, e.g. "e7e8q". */
-data class Ply(val san: String, val uci: String, val from: String, val to: String)
+/** One half-move. Squares are names like "e2". [uci] is the engine notation, e.g. "e7e8q". [sacrifice]: see [Sacrifice]. */
+data class Ply(val san: String, val uci: String, val from: String, val to: String, val sacrifice: Boolean = false)
 
-/** A position. [check] is the square of the king in check, if any. */
-data class Position(val fen: String, val check: String?)
+/** A position. [check] is the square of the king in check, if any; [mate] if that king is checkmated. */
+data class Position(val fen: String, val check: String?, val mate: Boolean = false)
 
 /** A game as a straight line: positions.size == plies.size + 1. */
 class GameLine(val plies: List<Ply>, val positions: List<Position>) {
+    /** This line up to position [ply], then [uci]. Null if the move is not legal there. */
+    fun play(ply: Int, uci: String): GameLine? {
+        val fen = positions[ply].fen
+        val board = Board().apply { loadFromFen(fen) }
+        val move = board.legalMoves().firstOrNull { uciOf(it) == uci } ?: return null
+        val san = MoveList(fen).apply { add(move) }.toSanArray()[0].trimEnd('+', '#')
+        val next = Ply(san, uci, uci.substring(0, 2), uci.substring(2, 4), Sacrifice.of(board, move))
+        board.doMove(move)
+        return GameLine(plies.take(ply) + next, positions.take(ply + 1) + position(board))
+    }
+
     companion object {
         const val START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
@@ -30,7 +41,7 @@ class GameLine(val plies: List<Ply>, val positions: List<Position>) {
             for (token in game.moves) {
                 val move = resolve(board, token)
                 val uci = uciOf(move)
-                plies += Ply(token.text.trimEnd('+', '#', '!', '?'), uci, uci.substring(0, 2), uci.substring(2, 4))
+                plies += Ply(token.text.trimEnd('+', '#', '!', '?'), uci, uci.substring(0, 2), uci.substring(2, 4), Sacrifice.of(board, move))
                 board.doMove(move)
                 positions += position(board)
             }
@@ -44,6 +55,10 @@ class GameLine(val plies: List<Ply>, val positions: List<Position>) {
             MoveList(fen).apply { add(move) }.toSanArray()[0]
         }.getOrDefault(uci)
 
+        /** Legal moves in a position, in UCI. Empty if the FEN cannot be read. */
+        fun legalMoves(fen: String): List<String> =
+            runCatching { Board().apply { loadFromFen(fen) }.legalMoves().map(::uciOf) }.getOrDefault(emptyList())
+
         private fun uciOf(move: Move): String {
             val promo = move.promotion.takeIf { it != Piece.NONE }?.let { letter(it.pieceType).lowercaseChar() }
             return move.from.value().lowercase() + move.to.value().lowercase() + (promo ?: "")
@@ -52,6 +67,7 @@ class GameLine(val plies: List<Ply>, val positions: List<Position>) {
         private fun position(board: Board) = Position(
             board.fen,
             if (board.isKingAttacked) board.getKingSquare(board.sideToMove).value().lowercase() else null,
+            board.isMated,
         )
 
         private fun resolve(board: Board, token: SanToken): Move {

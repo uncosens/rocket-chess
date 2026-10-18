@@ -19,7 +19,19 @@ data class RemoteGame(
     val endedAt: Long,
     val speed: String?,
     val pgn: String,
+    val whiteElo: Int? = null,
+    val blackElo: Int? = null,
 )
+
+/** Games in pages of [PAGE], newest first. [done] is true once there are no more. */
+interface GamePager {
+    val done: Boolean
+    suspend fun next(): List<RemoteGame>
+
+    companion object {
+        const val PAGE = 20
+    }
+}
 
 sealed class FetchError(message: String) : Exception(message) {
     data object BadName : FetchError("bad user name")

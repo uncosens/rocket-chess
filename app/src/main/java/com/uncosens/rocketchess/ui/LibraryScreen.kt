@@ -18,7 +18,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.Arrangement
@@ -45,6 +44,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,20 +52,23 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import com.uncosens.rocketchess.R
+import com.uncosens.rocketchess.data.KnownUsers
 import com.uncosens.rocketchess.data.Sources
+import com.uncosens.rocketchess.data.userSide
 import com.uncosens.rocketchess.remote.FetchError
 import java.text.DateFormat
 import java.util.Date
 
 /** Saved games and the ways to add one. */
 @Composable
-fun LibraryScreen(vm: LibraryViewModel, onOpen: (String) -> Unit, onOnline: () -> Unit, onSettings: () -> Unit, onLicenses: () -> Unit) {
+fun LibraryScreen(vm: LibraryViewModel, onOpen: OpenGame, onOnline: () -> Unit, onSetup: () -> Unit, onPlay: () -> Unit, onSettings: () -> Unit) {
     val games by vm.games.collectAsState()
     var pasting by rememberSaveable { mutableStateOf(false) }
     var confirmDelete by rememberSaveable { mutableStateOf<Long?>(null) } // -1 = delete all
@@ -81,14 +84,19 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: (String) -> Unit, onOnline: () -
         }
 
         SectionLabel(stringResource(R.string.new_analysis), Modifier.padding(top = 12.dp))
-        Button(onClick = { pasting = true }, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp)) {
-            Icon(painterResource(R.drawable.ic_paste), null, Modifier.size(20.dp))
+        Button(onClick = onOnline, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(16.dp)) {
+            Icon(painterResource(R.drawable.ic_globe), null, Modifier.size(20.dp))
             Spacer(Modifier.width(10.dp))
-            Text(stringResource(R.string.paste_pgn), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.import_online), style = MaterialTheme.typography.titleMedium)
+        }
+        // Two per row so the labels fit on a phone.
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ImportButton(R.drawable.ic_paste, stringResource(R.string.paste_pgn), Modifier.weight(1f)) { pasting = true }
+            ImportButton(R.drawable.ic_file, stringResource(R.string.open_file), Modifier.weight(1f)) { openFile.launch(arrayOf("*/*")) }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ImportButton(R.drawable.ic_file, stringResource(R.string.open_file), Modifier.weight(1f)) { openFile.launch(arrayOf("*/*")) }
-            ImportButton(R.drawable.ic_globe, stringResource(R.string.import_online), Modifier.weight(1f), onOnline)
+            ImportButton(R.drawable.ic_board, stringResource(R.string.setup_board), Modifier.weight(1f), onSetup)
+            ImportButton(R.drawable.ic_engine, stringResource(R.string.play_engine), Modifier.weight(1f), onPlay)
         }
         vm.error?.let { ErrorText(it) }
 
@@ -111,21 +119,28 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: (String) -> Unit, onOnline: () -
                         Icon(painterResource(sourceIcon(g.source)), null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.players, g.white, g.black), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text("${sourceLabel(g.source)} · ${g.date}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.players_lines, g.white, g.black), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            // Weighted, so the accuracy is measured first and keeps its full width.
+                            Text(
+                                "${sourceLabel(g.source)} · ${g.date}",
+                                Modifier.weight(1f, fill = false),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            AccuracyText(g.white, g.black, g.whiteAccuracy, g.blackAccuracy, g.owner)
+                        }
                     }
                     Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(8.dp)) {
-                        Text(g.result, Modifier.padding(horizontal = 8.dp, vertical = 4.dp), fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
+                        Text(g.result, Modifier.padding(horizontal = 8.dp, vertical = 4.dp), fontFamily = Mono, style = MaterialTheme.typography.bodySmall)
                     }
                     IconButton(onClick = { confirmDelete = g.id }) {
                         Icon(painterResource(R.drawable.ic_delete), stringResource(R.string.delete), Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.storage_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
-            TextButton(onClick = onLicenses) { Text(stringResource(R.string.about_licenses)) }
         }
     }
 
@@ -148,13 +163,26 @@ private fun sourceLabel(source: String) = stringResource(
         Sources.CHESS_COM -> R.string.source_chesscom
         Sources.LICHESS -> R.string.source_lichess
         Sources.FILE -> R.string.source_file
+        Sources.SETUP -> R.string.source_setup
         else -> R.string.source_paste
     },
 )
 
+/** The searched user's accuracy in an analyzed game; nothing when no searched user played it. */
+@Composable
+private fun AccuracyText(white: String, black: String, whiteAcc: Double?, blackAcc: Double?, owner: String?) {
+    val text = when (userSide(white, black, owner)) {
+        true -> whiteAcc
+        false -> blackAcc
+        null -> null
+    }?.let { stringResource(R.string.accuracy_mine, it) } ?: return
+    Text(text, style = MaterialTheme.typography.labelMedium, fontFamily = Mono, color = MaterialTheme.colorScheme.primary, maxLines = 1, softWrap = false)
+}
+
 private fun sourceIcon(source: String) = when (source) {
     Sources.CHESS_COM, Sources.LICHESS -> R.drawable.ic_globe
     Sources.FILE -> R.drawable.ic_file
+    Sources.SETUP -> R.drawable.ic_board
     else -> R.drawable.ic_paste
 }
 
@@ -175,9 +203,13 @@ private fun ImportButton(icon: Int, text: String, modifier: Modifier, onClick: (
 
 /** Search a Lichess or Chess.com user and pick a game. */
 @Composable
-fun OnlineScreen(vm: LibraryViewModel, onOpen: (String) -> Unit, onBack: () -> Unit) {
+fun OnlineScreen(vm: LibraryViewModel, onOpen: OpenGame, onBack: () -> Unit) {
+    val context = LocalContext.current
     var source by rememberSaveable { mutableStateOf(Sources.CHESS_COM) }
     var name by rememberSaveable { mutableStateOf("") }
+    // The user's own name on this site, from Settings.
+    val myId = KnownUsers.myId(context, source)
+    val accuracies by vm.accuracies.collectAsState()
     BackHandler { vm.clearOnline(); onBack() }
 
     Column(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -203,8 +235,15 @@ fun OnlineScreen(vm: LibraryViewModel, onOpen: (String) -> Unit, onBack: () -> U
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.weight(1f),
             )
-            Button(onClick = search, enabled = name.isNotBlank() && vm.online != OnlineState.Loading, modifier = Modifier.height(52.dp), shape = RoundedCornerShape(16.dp)) {
-                Text(stringResource(R.string.search))
+            // With an empty box, My ID fills in the name; once there is text, Search is back.
+            if (name.isBlank() && myId.isNotEmpty()) {
+                Button(onClick = { name = myId }, modifier = Modifier.height(52.dp), shape = RoundedCornerShape(16.dp)) {
+                    Text(stringResource(R.string.my_id))
+                }
+            } else {
+                Button(onClick = search, enabled = name.isNotBlank() && vm.online != OnlineState.Loading, modifier = Modifier.height(52.dp), shape = RoundedCornerShape(16.dp)) {
+                    Text(stringResource(R.string.search))
+                }
             }
         }
         Text(stringResource(R.string.online_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -220,23 +259,43 @@ fun OnlineScreen(vm: LibraryViewModel, onOpen: (String) -> Unit, onBack: () -> U
                 if (s.games.isEmpty()) Text(stringResource(R.string.no_public_games))
                 LazyColumn(Modifier.weight(1f)) {
                     items(s.games, key = { it.key }) { g ->
-                        Column(
+                        Row(
                             Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable { vm.importRemote(g, onOpen) }.padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(stringResource(R.string.players, g.white, g.black) + "  " + (com.uncosens.rocketchess.remote.tag(g.pgn, "Result") ?: ""))
-                            Text(
-                                listOfNotNull(g.speed, DateFormat.getDateInstance().format(Date(g.endedAt))).joinToString(" · "),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            Column(Modifier.weight(1f)) {
+                                Text(stringResource(R.string.players_lines, rated(g.white, g.whiteElo), rated(g.black, g.blackElo)) + "  " + (com.uncosens.rocketchess.remote.tag(g.pgn, "Result") ?: ""))
+                                Text(
+                                    listOfNotNull(g.speed, DateFormat.getDateInstance().format(Date(g.endedAt))).joinToString(" · "),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            accuracies[g.key]?.let { AccuracyText(g.white, g.black, it.whiteAccuracy, it.blackAccuracy, name.trim()) }
                         }
                         HorizontalDivider()
+                    }
+                    // Reaching the end of the list loads the next page.
+                    if (!s.done) item {
+                        Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                            val err = s.moreError
+                            if (err != null) {
+                                Text(fetchErrorText(err), color = MaterialTheme.colorScheme.error, modifier = Modifier.weight(1f))
+                                TextButton(onClick = vm::loadMore) { Text(stringResource(R.string.retry)) }
+                            } else {
+                                LaunchedEffect(s.games.size) { vm.loadMore() }
+                                CircularProgressIndicator(Modifier.size(28.dp))
+                            }
+                        }
                     }
                 }
             }
         }
     }
 }
+
+/** "name (1500)", or just the name without a rating. */
+private fun rated(name: String, elo: Int?) = if (elo == null) name else "$name ($elo)"
 
 @Composable
 private fun fetchErrorText(e: FetchError): String = when (e) {
