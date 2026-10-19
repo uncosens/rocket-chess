@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.lerp as lerpColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
@@ -162,11 +163,12 @@ fun ChessBoard(
         fun center(i: Int) = at(i) + Offset(sq / 2, sq / 2)
 
         val last = lastMove?.let { setOf(index(it.first), index(it.second)) } ?: emptySet()
-        val tint = grade?.color()?.copy(alpha = 0.5f)
         val coord = TextStyle(fontSize = (sq * 0.2f).toSp(), fontFamily = Mono, fontWeight = FontWeight.SemiBold)
         val themed = style == BoardStyle.ROCKET
         val lightSq = if (themed) colors.light else style.light
         val darkSq = if (themed) colors.dark else style.dark
+        // Solid, mixed with one base color, so both squares of the move get the same shade.
+        val tint = grade?.color()?.let { lerpColor(lightSq, it, 0.7f) }
         texture?.let { drawImage(it, dstSize = IntSize((sq * 8).roundToInt(), (sq * 8).roundToInt())) }
         for (i in 0 until 64) {
             val topLeft = at(i)
