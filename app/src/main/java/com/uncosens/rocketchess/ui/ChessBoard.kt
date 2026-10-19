@@ -167,18 +167,25 @@ fun ChessBoard(
         val themed = style == BoardStyle.ROCKET
         val lightSq = if (themed) colors.light else style.light
         val darkSq = if (themed) colors.dark else style.dark
-        // Solid, mixed with one base color, so both squares of the move get the same shade.
-        val tint = grade?.color()?.let { lerpColor(lightSq, it, 0.7f) }
+        // Fixed solid colors, whatever the board: a lighter from square and the grade color on the to square.
+        val fromTint = grade?.color()?.let { lerpColor(Color.White, it, 0.65f) }
+        val toTint = grade?.color()
         texture?.let { drawImage(it, dstSize = IntSize((sq * 8).roundToInt(), (sq * 8).roundToInt())) }
         for (i in 0 until 64) {
             val topLeft = at(i)
             val dark = (i % 8 + i / 8) % 2 == 0
             when {
-                themed -> drawRect(if (i in last && tint == null) (if (dark) colors.lastDark else colors.lastLight) else if (dark) darkSq else lightSq, topLeft, Size(sq, sq))
+                themed -> drawRect(if (i in last && grade == null) (if (dark) colors.lastDark else colors.lastLight) else if (dark) darkSq else lightSq, topLeft, Size(sq, sq))
                 texture == null -> drawRect(if (dark) darkSq else lightSq, topLeft, Size(sq, sq))
             }
-            // A graded move gets its grade's color; otherwise other styles use a see-through overlay.
-            if (i in last && tint != null) drawRect(tint, topLeft, Size(sq, sq))
+            // A graded move gets its grade's colors; otherwise other styles use a see-through overlay.
+            val tint = when {
+                lastMove == null -> null
+                i == index(lastMove.first) -> fromTint
+                i == index(lastMove.second) -> toTint
+                else -> null
+            }
+            if (tint != null) drawRect(tint, topLeft, Size(sq, sq))
             else if (!themed && i in last) drawRect(LAST, topLeft, Size(sq, sq))
             if (check != null && i == index(check)) drawRect(CHECK, topLeft, Size(sq, sq))
             if (selected != null && i == index(selected)) drawRect(SELECTED, topLeft, Size(sq, sq))
@@ -214,6 +221,8 @@ fun ChessBoard(
         fun badge(square: Int, color: Color, text: String?) {
             val c = at(square) + Offset(sq * 0.8f, sq * 0.2f)
             drawCircle(color, sq * 0.19f, c)
+            // A white ring keeps the badge visible on a square of its own color.
+            drawCircle(Color.White, sq * 0.19f, c, style = Stroke(sq * 0.025f))
             if (text == null) {
                 val r = sq * 0.11f
                 val w = sq * 0.03f
