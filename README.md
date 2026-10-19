@@ -87,7 +87,11 @@ Play blocks updates without 16 KB support from 2027-02-01 (see the Android page-
 - Brilliant (our own rule): a piece sacrifice that is PV1, loses under 2 points, was played when the mover's win% was below 90,
   and leaves the mover at 50% or more.
   A sacrifice means the opponent can win the moved piece for a net 200+ (a minor piece for a pawn, or the exchange), by a static exchange on its square (`chess/Sacrifice.kt`).
-- Accuracy is the mean of a score per grade (Best/Brilliant 100, Good 86, Fine 79, Weak 38, Mistake 11, Blunder -39), kept to 0..100.
+- Great (our own rule): PV1 that beats PV2 by 10+ points for the mover and changes the result between them
+  (losing < 40% <= even <= 60% < winning; losing to even, even to winning, or losing to winning). A plain recapture (taking back on the square
+  the last move captured on) is never Great, and neither is any move before move 6 (we have no opening book).
+  Brilliant wins over Great.
+- Accuracy is the mean of a score per grade (Best/Great/Brilliant 100, Good 86, Fine 79, Weak 38, Mistake 11, Blunder -39), kept to 0..100.
   The scores were fitted to Chess.com's accuracy on 79 reviewed games; about 4 points off on average. Chess.com's own formula is not public.
 - A negative loss is graded as no loss. It happens because the next position is searched on its own and can find more.
 - Stop keeps the results so far; ungraded moves stay ungraded. Going to the background stops the run and quits the engine.

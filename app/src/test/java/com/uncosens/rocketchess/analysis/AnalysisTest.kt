@@ -126,14 +126,16 @@ class AnalysisTest {
     fun savedAnalysisRoundTrip() {
         val settings = AnalysisSettings("Stockfish 19", depth = 15, multiPv = 2, threads = 3, hashMb = 64)
         val evals = listOf(
-            PositionEval(Eval.Cp(35), "e2e4", Eval.Cp(-20), 15),
+            PositionEval(Eval.Cp(35), "e2e4", Eval.Cp(-20), 15, "d2d4"),
             null,
             PositionEval(Eval.Mate(whiteWins = false, moves = 3), "e7e8q", null, 14),
             PositionEval(Eval.Mate(whiteWins = true, moves = 0), null, null, 0),
         )
         val text = SavedAnalysis.encode(settings, evals)
-        assertEquals("Stockfish 19\t15\t2\t3\t64\nc35,e2e4,c-20,15;;m-3,e7e8q,,14;m+0,,,0", text)
+        assertEquals("Stockfish 19\t15\t2\t3\t64\nc35,e2e4,c-20,15,d2d4;;m-3,e7e8q,,14,;m+0,,,0,", text)
         assertEquals(settings to evals, SavedAnalysis.decode(text))
+        // Text saved before PV2's move was kept still reads.
+        assertEquals(PositionEval(Eval.Cp(35), "e2e4", Eval.Cp(-20), 15), SavedAnalysis.decode("x\t15\t2\t3\t64\nc35,e2e4,c-20,15")?.second?.single())
         assertNull(SavedAnalysis.decode("broken"))
     }
 
@@ -177,6 +179,63 @@ class AnalysisTest {
     }
 
     @Test
+    fun greatIsTheOnlyMoveThatChangesTheResult() {
+        val line = GameLine.from(Pgn.parse("[FEN \"$START_AT_6\"]\n\n6. e4 e5 *"))
+        // [best] and [second] are White-view centipawns for PV1 and PV2 before the move at [ply].
+        fun grade(best: Int, second: Int?, ply: Int = 0, bestUci: String = if (ply == 0) "e2e4" else "e7e5"): MoveClass {
+            val evals = MutableList(3) { PositionEval(Eval.Cp(best), null, null, 14) }
+            evals[ply] = PositionEval(Eval.Cp(best), bestUci, second?.let { Eval.Cp(it) }, 14)
+            return Analyzer.grade(line, evals, ply)!!.cls
+        }
+        // Losing (about 25%) to even (50%).
+        assertEquals(MoveClass.Great, grade(0, -300))
+        // Even (50%) to winning (about 75%).
+        assertEquals(MoveClass.Great, grade(300, 0))
+        // Black's view: the second choice leaves Black at about 25%.
+        assertEquals(MoveClass.Great, grade(0, 300, ply = 1))
+        // Both even, small gap.
+        assertEquals(MoveClass.Best, grade(0, -60))
+        // Already winning either way.
+        assertEquals(MoveClass.Best, grade(900, 400))
+        // Losing either way.
+        assertEquals(MoveClass.Best, grade(-300, -900))
+        // Only one legal move: no second choice.
+        assertEquals(MoveClass.Best, grade(0, null))
+        // Not the engine's choice.
+        assertEquals(MoveClass.Good, grade(0, -300, bestUci = "d2d4"))
+    }
+
+    @Test
+    fun recaptureIsNeverGreat() {
+        val line = GameLine.from(Pgn.parse("[FEN \"$START_AT_6\"]\n\n6. e4 d5 7. exd5 Qxd5 *"))
+        // PV1 at 50% for the mover, PV2 at about 25%: Great unless it is a recapture.
+        fun grade(ply: Int): MoveClass {
+            val second = if (line.positions[ply].fen.split(' ')[1] == "w") -300 else 300
+            val evals = MutableList(5) { PositionEval(Eval.Cp(0), null, null, 14) }
+            evals[ply] = PositionEval(Eval.Cp(0), line.plies[ply].uci, Eval.Cp(second), 14)
+            return Analyzer.grade(line, evals, ply)!!.cls
+        }
+        // exd5 takes a pawn that just moved there: not a recapture.
+        assertEquals(MoveClass.Great, grade(2))
+        // Qxd5 takes back on d5 right after exd5.
+        assertEquals(MoveClass.Best, grade(3))
+    }
+
+    @Test
+    fun noGreatInTheFirstFiveMoves() {
+        // Black's 5th move, then White's 6th, both PV1 with PV2 at about 25%.
+        val line = GameLine.from(Pgn.parse("[FEN \"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 5\"]\n\n5... e5 6. e4 *"))
+        fun grade(ply: Int): MoveClass {
+            val second = if (ply == 0) 300 else -300
+            val evals = MutableList(3) { PositionEval(Eval.Cp(0), null, null, 14) }
+            evals[ply] = PositionEval(Eval.Cp(0), line.plies[ply].uci, Eval.Cp(second), 14)
+            return Analyzer.grade(line, evals, ply)!!.cls
+        }
+        assertEquals(MoveClass.Best, grade(0))
+        assertEquals(MoveClass.Great, grade(1))
+    }
+
+    @Test
     fun accuracyIsMeanGradeScore() {
         // White plays the best move, then loses about 10 win% (a Mistake); Black plays the best move.
         val line = GameLine.from(Pgn.parse("1. e4 e5 2. Qh5 *"))
@@ -195,5 +254,10 @@ class AnalysisTest {
         val blunder = listOf(PositionEval(Eval.Cp(30), "e2e4", null, 14), PositionEval(Eval.Cp(-900), "e7e5", null, 14))
         assertEquals(MoveClass.Blunder, Analyzer.grade(one, blunder, 0)!!.cls)
         assertEquals(0.0, Analyzer.accuracy(one, blunder, white = true)!!, 0.001)
+    }
+
+    private companion object {
+        // The start position at move 6, past the moves where Great is off.
+        const val START_AT_6 = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 6"
     }
 }

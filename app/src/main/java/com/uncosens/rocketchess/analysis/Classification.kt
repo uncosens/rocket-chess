@@ -18,7 +18,7 @@ sealed interface Eval {
     }
 }
 
-enum class MoveClass { Brilliant, Best, Good, Fine, Weak, Mistake, Blunder }
+enum class MoveClass { Brilliant, Great, Best, Good, Fine, Weak, Mistake, Blunder }
 
 /** All analysis numbers live here so UI code never repeats them. Not the official Lichess grading. */
 object AnalysisPolicy {
@@ -41,6 +41,16 @@ object AnalysisPolicy {
 
     /** A Brilliant must leave the mover at least this win% after the move. */
     const val SOUND_FROM = 50.0
+
+    /** A Great move beats the engine's second choice by at least this win% for the mover. */
+    const val GREAT_GAP = 10.0
+
+    /** Mover's win% from [EVEN_FROM] to [EVEN_UNTIL] counts as about even; below is losing, above is winning. */
+    const val EVEN_FROM = 40.0
+    const val EVEN_UNTIL = 60.0
+
+    /** No Great before this move number: we have no opening book, and early moves are mostly book moves. */
+    const val GREAT_FROM_MOVE = 6
 }
 
 /** White's winning chance in percent. Lichess-style curve on centipawns; mate is 0 or 100. */
@@ -65,12 +75,28 @@ fun isBrilliant(playedUci: String, bestUci: String?, sacrifice: Boolean, loss: D
     sacrifice && playedUci == bestUci && loss < AnalysisPolicy.GOOD_BELOW &&
         moverWinBefore < AnalysisPolicy.WINNING_FROM && moverWinBefore - loss >= AnalysisPolicy.SOUND_FROM
 
+/** 0 losing, 1 about even, 2 winning, from the mover's win%. */
+private fun outcome(moverWin: Double): Int = when {
+    moverWin < AnalysisPolicy.EVEN_FROM -> 0
+    moverWin <= AnalysisPolicy.EVEN_UNTIL -> 1
+    else -> 2
+}
+
+/**
+ * Our Great rule: the engine's first choice, far better than its second choice, and it changes the result
+ * (losing to even, or even to winning). A plain recapture or a move in the first 5 moves is never Great.
+ * [moverWinBest] and [moverWinSecond] are the mover's win% for PV1 and PV2; [moveNumber] is the FEN move number.
+ */
+fun isGreat(playedUci: String, bestUci: String?, moverWinBest: Double, moverWinSecond: Double?, recapture: Boolean, moveNumber: Int): Boolean =
+    !recapture && moveNumber >= AnalysisPolicy.GREAT_FROM_MOVE && playedUci == bestUci && moverWinSecond != null &&
+        moverWinBest - moverWinSecond >= AnalysisPolicy.GREAT_GAP && outcome(moverWinBest) > outcome(moverWinSecond)
+
 /**
  * Points a move adds to its side's accuracy, which is the mean of these (Chess.com style: a score
  * per grade). Fitted to Chess.com's accuracy on 79 reviewed games: about 4 points off on average.
  */
 fun gradeScore(cls: MoveClass): Double = when (cls) {
-    MoveClass.Brilliant, MoveClass.Best -> 100.0
+    MoveClass.Brilliant, MoveClass.Great, MoveClass.Best -> 100.0
     MoveClass.Good -> 86.0
     MoveClass.Fine -> 79.0
     MoveClass.Weak -> 38.0

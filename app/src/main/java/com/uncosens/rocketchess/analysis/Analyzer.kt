@@ -4,8 +4,8 @@ import com.uncosens.rocketchess.chess.GameLine
 import com.uncosens.rocketchess.engine.StockfishSession
 import com.uncosens.rocketchess.engine.Uci
 
-/** Engine result for one position. [best] is PV1's first move in UCI, null if the game is over. */
-data class PositionEval(val eval: Eval, val best: String?, val second: Eval?, val depth: Int)
+/** Engine result for one position. [best] is PV1's first move in UCI, null if the game is over. [secondBest] is PV2's. */
+data class PositionEval(val eval: Eval, val best: String?, val second: Eval?, val depth: Int, val secondBest: String? = null)
 
 data class MoveResult(val cls: MoveClass, val loss: Double)
 
@@ -42,13 +42,16 @@ class Analyzer(private val sf: StockfishSession) {
         sf.send("go depth $depth")
         var shown = 0
         var second: Eval? = null
+        var secondBest: String? = null
         val lines = sf.readUntil(SEARCH_TIMEOUT_MS) { line ->
             if (onDepth != null) Uci.parseInfo(line)?.let { info ->
                 // MultiPV 2 comes after MultiPV 1 at each depth, so the second eval is one depth behind.
-                if (info.multipv == 2) second = Eval.fromUci(info.score, whiteToMove)
-                else if (info.multipv == 1 && info.depth > shown) {
+                if (info.multipv == 2) {
+                    second = Eval.fromUci(info.score, whiteToMove)
+                    secondBest = info.pv.firstOrNull()
+                } else if (info.multipv == 1 && info.depth > shown) {
                     shown = info.depth
-                    onDepth(PositionEval(Eval.fromUci(info.score, whiteToMove), info.pv.firstOrNull(), second, info.depth))
+                    onDepth(PositionEval(Eval.fromUci(info.score, whiteToMove), info.pv.firstOrNull(), second, info.depth, secondBest))
                 }
             }
             line.startsWith("bestmove")
@@ -61,6 +64,7 @@ class Analyzer(private val sf: StockfishSession) {
             best = pv1.pv.firstOrNull() ?: Uci.parseBestMove(lines.last()),
             second = infos[2]?.let { Eval.fromUci(it.score, whiteToMove) },
             depth = pv1.depth,
+            secondBest = infos[2]?.pv?.firstOrNull(),
         )
     }
 
@@ -77,7 +81,16 @@ class Analyzer(private val sf: StockfishSession) {
             val p = line.plies[ply]
             val white = whiteWinPercent(before.eval)
             val moverWin = if (whiteMoved) white else 100 - white
-            val cls = if (isBrilliant(p.uci, before.best, p.sacrifice, loss, moverWin)) MoveClass.Brilliant else classify(p.uci, before.best, loss)
+            val second = before.second?.let { whiteWinPercent(it) }?.let { if (whiteMoved) it else 100 - it }
+            // Recapture: the last move took something and this move takes back on the same square.
+            val prev = line.plies.getOrNull(ply - 1)
+            val recapture = prev != null && 'x' in prev.san && 'x' in p.san && prev.to == p.to
+            val moveNumber = line.positions[ply].fen.split(' ').getOrNull(5)?.toIntOrNull() ?: 1
+            val cls = when {
+                isBrilliant(p.uci, before.best, p.sacrifice, loss, moverWin) -> MoveClass.Brilliant
+                isGreat(p.uci, before.best, moverWin, second, recapture, moveNumber) -> MoveClass.Great
+                else -> classify(p.uci, before.best, loss)
+            }
             return MoveResult(cls, loss)
         }
 

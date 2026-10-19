@@ -40,9 +40,10 @@ private val GRAPH_FILL = Color(0xFFE8ECF4)
 private val GRAPH_MID = Color(0xFF59678A)
 
 fun MoveClass.color(): Color = when (this) {
-    MoveClass.Brilliant -> Color(0xFF1FBFA9)
+    MoveClass.Brilliant -> Color(0xFFA855F7)
+    MoveClass.Great -> Color(0xFF6C7FE0)
     MoveClass.Best -> Color(0xFF1C93A8)
-    MoveClass.Good -> Color(0xFF4C8DF6)
+    MoveClass.Good -> Color(0xFF9CCC65)
     MoveClass.Fine -> Color(0xFF8C96AB)
     MoveClass.Weak -> Color(0xFFE0A21F)
     MoveClass.Mistake -> Color(0xFFF07B2A)
@@ -51,6 +52,7 @@ fun MoveClass.color(): Color = when (this) {
 
 fun MoveClass.suffix(): String = when (this) {
     MoveClass.Brilliant -> "!!"
+    MoveClass.Great -> "!"
     MoveClass.Weak -> "?!"
     MoveClass.Mistake -> "?"
     MoveClass.Blunder -> "??"
@@ -68,6 +70,7 @@ fun MoveClass.badge(): String? = when (this) {
 fun MoveClass.label(): String = stringResource(
     when (this) {
         MoveClass.Brilliant -> R.string.class_brilliant
+        MoveClass.Great -> R.string.class_great
         MoveClass.Best -> R.string.class_best
         MoveClass.Good -> R.string.class_good
         MoveClass.Fine -> R.string.class_fine
@@ -163,14 +166,18 @@ fun EvalCard(vm: GameViewModel, line: GameLine) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            EvalGraph(vm.evals, vm.ply, vm::goTo, whiteView = !vm.flipped)
+            // Brilliant, mistake and blunder moves get a dot in their color.
+            val marks = line.plies.indices.map { i ->
+                vm.grade(i)?.cls?.takeIf { it == MoveClass.Brilliant || it == MoveClass.Mistake || it == MoveClass.Blunder }
+            }
+            EvalGraph(vm.evals, marks, vm.ply, vm::goTo, whiteView = !vm.flipped)
             Summary(vm, line)
         }
     }
 }
 
 @Composable
-private fun EvalGraph(evals: List<PositionEval?>, ply: Int, onSelect: (Int) -> Unit, whiteView: Boolean) {
+private fun EvalGraph(evals: List<PositionEval?>, marks: List<MoveClass?>, ply: Int, onSelect: (Int) -> Unit, whiteView: Boolean) {
     val cursor = MaterialTheme.colorScheme.primary
     val desc = stringResource(R.string.graph_description)
     Canvas(
@@ -194,6 +201,11 @@ private fun EvalGraph(evals: List<PositionEval?>, ply: Int, onSelect: (Int) -> U
         }
         drawPath(fill, if (whiteView) GRAPH_FILL else GRAPH_BG)
         drawLine(GRAPH_MID, Offset(0f, size.height / 2), Offset(size.width, size.height / 2))
+        // Mark at the position after the move, so ply i sits at i + 1.
+        marks.forEachIndexed { i, cls ->
+            val e = known.getOrNull(i + 1)
+            if (cls != null && e != null) drawCircle(cls.color(), 3.dp.toPx(), Offset((i + 1) * step, y(e)))
+        }
         drawLine(cursor, Offset(ply * step, 0f), Offset(ply * step, size.height), strokeWidth = 2.dp.toPx())
         known.getOrNull(ply)?.let { drawCircle(cursor, 4.dp.toPx(), Offset(ply * step, y(it))) }
     }

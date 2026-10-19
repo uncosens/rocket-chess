@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
@@ -71,7 +70,6 @@ import java.util.Date
 fun LibraryScreen(vm: LibraryViewModel, onOpen: OpenGame, onOnline: () -> Unit, onSetup: () -> Unit, onPlay: () -> Unit, onSettings: () -> Unit) {
     val games by vm.games.collectAsState()
     var pasting by rememberSaveable { mutableStateOf(false) }
-    var confirmDelete by rememberSaveable { mutableStateOf<Long?>(null) } // -1 = delete all
     val openFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let { vm.importFile(it, onOpen) }
     }
@@ -102,7 +100,7 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: OpenGame, onOnline: () -> Unit, 
 
         Row(Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             SectionLabel(stringResource(R.string.saved_games, games.size), Modifier.weight(1f))
-            if (games.isNotEmpty()) TextButton(onClick = { confirmDelete = -1 }) { Text(stringResource(R.string.delete_all)) }
+            if (games.isNotEmpty()) TextButton(onClick = vm::deleteAll) { Text(stringResource(R.string.delete_all)) }
         }
         if (games.isEmpty()) Text(stringResource(R.string.no_saved_games), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         LazyColumn(Modifier.weight(1f)) {
@@ -136,7 +134,7 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: OpenGame, onOnline: () -> Unit, 
                     Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(8.dp)) {
                         Text(g.result, Modifier.padding(horizontal = 8.dp, vertical = 4.dp), fontFamily = Mono, style = MaterialTheme.typography.bodySmall)
                     }
-                    IconButton(onClick = { confirmDelete = g.id }) {
+                    IconButton(onClick = { vm.delete(g.id) }) {
                         Icon(painterResource(R.drawable.ic_delete), stringResource(R.string.delete), Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
@@ -145,16 +143,6 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: OpenGame, onOnline: () -> Unit, 
     }
 
     if (pasting) PasteDialog(onDismiss = { pasting = false }, onLoad = { pasting = false; vm.importText(it, Sources.PASTE, onOpen) })
-    confirmDelete?.let { id ->
-        AlertDialog(
-            onDismissRequest = { confirmDelete = null },
-            text = { Text(stringResource(if (id == -1L) R.string.confirm_delete_all else R.string.confirm_delete)) },
-            confirmButton = {
-                TextButton(onClick = { if (id == -1L) vm.deleteAll() else vm.delete(id); confirmDelete = null }) { Text(stringResource(R.string.delete)) }
-            },
-            dismissButton = { TextButton(onClick = { confirmDelete = null }) { Text(stringResource(R.string.cancel)) } },
-        )
-    }
 }
 
 @Composable

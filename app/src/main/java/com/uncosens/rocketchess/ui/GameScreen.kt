@@ -200,9 +200,14 @@ private fun MoveCard(vm: GameViewModel, line: GameLine) {
     val e = vm.evals.getOrNull(vm.ply)
     val g = if (vm.ply > 0) vm.grade(vm.ply - 1) else null
     val notes = mutableListOf<String>()
-    // Best and Brilliant are the engine's own move, so there is no other move to show.
-    if (g != null && g.cls != MoveClass.Best && g.cls != MoveClass.Brilliant) {
-        vm.evals[vm.ply - 1]?.best?.let { notes += stringResource(R.string.engine_move, GameLine.san(line.positions[vm.ply - 1].fen, it)) }
+    // Best, Great and Brilliant are the engine's own move, so there is no other move to show.
+    if (g != null && g.cls != MoveClass.Best && g.cls != MoveClass.Great && g.cls != MoveClass.Brilliant) {
+        vm.evals[vm.ply - 1]?.let { pe ->
+            val fen = line.positions[vm.ply - 1].fen
+            // "b4 / Kh1": the engine's first and second choice.
+            val moves = listOfNotNull(pe.best, pe.secondBest).joinToString(" / ") { GameLine.san(fen, it) }
+            if (moves.isNotEmpty()) notes += stringResource(R.string.engine_move, moves)
+        }
     }
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(18.dp)) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {

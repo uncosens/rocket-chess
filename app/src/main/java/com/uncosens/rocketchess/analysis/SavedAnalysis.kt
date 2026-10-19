@@ -3,13 +3,13 @@ package com.uncosens.rocketchess.analysis
 /**
  * A run's settings and per-position results as compact text, saved with the game.
  * Line 1: engine, depth, MultiPV, threads, hash (tab separated). Line 2: one entry per position,
- * ";" separated, each "eval,best,second,depth" (empty when not analyzed). Evals: "c35" or "m+3" / "m-3".
+ * ";" separated, each "eval,best,second,depth,secondBest" (empty when not analyzed). Evals: "c35" or "m+3" / "m-3".
  */
 object SavedAnalysis {
     fun encode(settings: AnalysisSettings, evals: List<PositionEval?>): String {
         val head = listOf(settings.engine.replace(Regex("[\t\n]"), " "), settings.depth, settings.multiPv, settings.threads, settings.hashMb)
         val body = evals.joinToString(";") { e ->
-            if (e == null) "" else listOf(enc(e.eval), e.best.orEmpty(), e.second?.let(::enc).orEmpty(), e.depth).joinToString(",")
+            if (e == null) "" else listOf(enc(e.eval), e.best.orEmpty(), e.second?.let(::enc).orEmpty(), e.depth, e.secondBest.orEmpty()).joinToString(",")
         }
         return head.joinToString("\t") + "\n" + body
     }
@@ -21,7 +21,7 @@ object SavedAnalysis {
         val settings = AnalysisSettings(h[0], depth = h[1].toInt(), multiPv = h[2].toInt(), threads = h[3].toInt(), hashMb = h[4].toInt())
         val evals = body.split(";").map { entry ->
             if (entry.isEmpty()) null
-            else entry.split(",").let { f -> PositionEval(dec(f[0]), f[1].ifEmpty { null }, f[2].ifEmpty { null }?.let(::dec), f[3].toInt()) }
+            else entry.split(",").let { f -> PositionEval(dec(f[0]), f[1].ifEmpty { null }, f[2].ifEmpty { null }?.let(::dec), f[3].toInt(), f.getOrNull(4)?.ifEmpty { null }) }
         }
         settings to evals
     }.getOrNull()
