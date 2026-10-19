@@ -51,18 +51,26 @@ object AnalysisPolicy {
 
     /** No Great before this move number: we have no opening book, and early moves are mostly book moves. */
     const val GREAT_FROM_MOVE = 6
+
+    /** Win% curve slope for grades and the eval graph (Lichess). */
+    const val WIN_SLOPE = 0.00368208
+    // Accuracy uses a flatter curve and a move score of 100 - DROP * (1 - exp(-DECAY * loss)).
+    // Fitted to Chess.com's accuracy on 500 games of t4ph3s (2026-10): 2.9 points off on average, was 4.4.
+    const val ACCURACY_SLOPE = 0.00177
+    const val ACCURACY_DROP = 208.0
+    const val ACCURACY_DECAY = 0.059
 }
 
 /** White's winning chance in percent. Lichess-style curve on centipawns; mate is 0 or 100. */
-fun whiteWinPercent(eval: Eval): Double = when (eval) {
-    is Eval.Cp -> 50 + 50 * (2 / (1 + exp(-0.00368208 * eval.cp)) - 1)
+fun whiteWinPercent(eval: Eval, slope: Double = AnalysisPolicy.WIN_SLOPE): Double = when (eval) {
+    is Eval.Cp -> 50 + 50 * (2 / (1 + exp(-slope * eval.cp)) - 1)
     is Eval.Mate -> if (eval.whiteWins) 100.0 else 0.0
 }
 
 /** Win% the mover gave away: before the move vs after it, both from the mover's view. Can be negative. */
-fun winLoss(before: Eval, after: Eval, whiteMoved: Boolean): Double {
-    val b = whiteWinPercent(before)
-    val a = whiteWinPercent(after)
+fun winLoss(before: Eval, after: Eval, whiteMoved: Boolean, slope: Double = AnalysisPolicy.WIN_SLOPE): Double {
+    val b = whiteWinPercent(before, slope)
+    val a = whiteWinPercent(after, slope)
     return if (whiteMoved) b - a else a - b
 }
 
@@ -92,17 +100,11 @@ fun isGreat(playedUci: String, bestUci: String?, moverWinBest: Double, moverWinS
         moverWinBest - moverWinSecond >= AnalysisPolicy.GREAT_GAP && outcome(moverWinBest) > outcome(moverWinSecond)
 
 /**
- * Points a move adds to its side's accuracy, which is the mean of these (Chess.com style: a score
- * per grade). Fitted to Chess.com's accuracy on 79 reviewed games: about 4 points off on average.
+ * Points a move adds to its side's accuracy, which is the mean of these. [loss] is win% lost on the
+ * accuracy curve ([AnalysisPolicy.ACCURACY_SLOPE]); no loss is 100, a big blunder goes below 0.
  */
-fun gradeScore(cls: MoveClass): Double = when (cls) {
-    MoveClass.Brilliant, MoveClass.Great, MoveClass.Best -> 100.0
-    MoveClass.Good -> 86.0
-    MoveClass.Fine -> 79.0
-    MoveClass.Weak -> 38.0
-    MoveClass.Mistake -> 11.0
-    MoveClass.Blunder -> -39.0
-}
+fun moveScore(loss: Double): Double =
+    100 - AnalysisPolicy.ACCURACY_DROP * (1 - exp(-AnalysisPolicy.ACCURACY_DECAY * maxOf(0.0, loss)))
 
 /**
  * Best when the played move is the engine's first choice (PV1). Otherwise by win% loss.
