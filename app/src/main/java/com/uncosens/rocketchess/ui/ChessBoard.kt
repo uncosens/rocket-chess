@@ -37,6 +37,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.IntSize
 import com.uncosens.rocketchess.analysis.MoveClass
 import com.uncosens.rocketchess.chess.Finish
+import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.roundToInt
 
@@ -87,7 +88,7 @@ internal fun pieces(fen: String): Map<Int, Char> {
 
 /**
  * Pieces that moved from [old] to [new], as target square to source square.
- * A piece with no free source of its kind (promotion, piece coming back) just appears.
+ * A promoted piece comes from its pawn one rank back. Other pieces with no free source of their kind just appear.
  */
 internal fun slides(old: Map<Int, Char>, new: Map<Int, Char>): Map<Int, Int> {
     val sources = old.filter { (sq, p) -> new[sq] != p }.toMutableMap()
@@ -95,11 +96,20 @@ internal fun slides(old: Map<Int, Char>, new: Map<Int, Char>): Map<Int, Int> {
     for ((sq, p) in new) {
         if (old[sq] == p) continue
         val from = sources.filterValues { it == p }.keys
-            .minByOrNull { hypot((it % 8 - sq % 8).toDouble(), (it / 8 - sq / 8).toDouble()) } ?: continue
+            .minByOrNull { hypot((it % 8 - sq % 8).toDouble(), (it / 8 - sq / 8).toDouble()) }
+            ?: promotedFrom(sources, sq, p) ?: continue
         sources.remove(from)
         out[sq] = from
     }
     return out
+}
+
+/** The square of the pawn that promoted to [piece] on [sq], if one left the rank before it. */
+private fun promotedFrom(sources: Map<Int, Char>, sq: Int, piece: Char): Int? {
+    val white = piece.isUpperCase()
+    if (piece.lowercaseChar() == 'p' || sq / 8 != (if (white) 7 else 0)) return null
+    val rank = if (white) 6 else 1
+    return sources.entries.firstOrNull { (s, c) -> c == (if (white) 'P' else 'p') && s / 8 == rank && abs(s % 8 - sq % 8) <= 1 }?.key
 }
 
 /**
@@ -138,6 +148,8 @@ fun ChessBoard(
 
     val now = remember(fen) { pieces(fen) }
     var shown by remember { mutableStateOf(now) }
+    // The pieces before this change, so a promoting pawn is drawn as a pawn while it slides.
+    val before = remember(fen) { shown }
     val moves = remember(fen) { slides(shown, now) }
     val progress = remember(fen) { Animatable(if (moves.isEmpty()) 1f else 0f) }
     LaunchedEffect(fen) {
@@ -173,10 +185,15 @@ fun ChessBoard(
         texture?.let { drawImage(it, dstSize = IntSize((sq * 8).roundToInt(), (sq * 8).roundToInt())) }
         for (i in 0 until 64) {
             val topLeft = at(i)
+            // Square edges on whole pixels, so a fill never lets the color below show at its border.
+            val left = topLeft.x.roundToInt().toFloat()
+            val top = topLeft.y.roundToInt().toFloat()
+            val cell = Offset(left, top)
+            val cellSize = Size((topLeft.x + sq).roundToInt() - left, (topLeft.y + sq).roundToInt() - top)
             val dark = (i % 8 + i / 8) % 2 == 0
             when {
-                themed -> drawRect(if (i in last && grade == null) (if (dark) colors.lastDark else colors.lastLight) else if (dark) darkSq else lightSq, topLeft, Size(sq, sq))
-                texture == null -> drawRect(if (dark) darkSq else lightSq, topLeft, Size(sq, sq))
+                themed -> drawRect(if (i in last && grade == null) (if (dark) colors.lastDark else colors.lastLight) else if (dark) darkSq else lightSq, cell, cellSize)
+                texture == null -> drawRect(if (dark) darkSq else lightSq, cell, cellSize)
             }
             // A graded move gets its grade's colors; otherwise other styles use a see-through overlay.
             val tint = when {
@@ -185,10 +202,10 @@ fun ChessBoard(
                 i == index(lastMove.second) -> toTint
                 else -> null
             }
-            if (tint != null) drawRect(tint, topLeft, Size(sq, sq))
-            else if (!themed && i in last) drawRect(LAST, topLeft, Size(sq, sq))
-            if (check != null && i == index(check)) drawRect(CHECK, topLeft, Size(sq, sq))
-            if (selected != null && i == index(selected)) drawRect(SELECTED, topLeft, Size(sq, sq))
+            if (tint != null) drawRect(tint, cell, cellSize)
+            else if (!themed && i in last) drawRect(LAST, cell, cellSize)
+            if (check != null && i == index(check)) drawRect(CHECK, cell, cellSize)
+            if (selected != null && i == index(selected)) drawRect(SELECTED, cell, cellSize)
             // Rank numbers on the left edge, file letters on the bottom edge, in the other square color.
             val ink = if (dark) lightSq else darkSq
             if (i % 8 == (if (flipped) 7 else 0)) {
@@ -205,7 +222,8 @@ fun ChessBoard(
             // Still pieces first, so sliding ones pass over them.
             for ((i, c) in now.entries.sortedBy { it.key in moves }) {
                 val o = moves[i]?.let { lerp(at(it), at(i), p) } ?: at(i)
-                images[c]?.renderToCanvas(canvas.nativeCanvas, RectF(o.x, o.y, o.x + sq, o.y + sq))
+                val piece = if (p < 1f) moves[i]?.let { before[it] } ?: c else c
+                images[piece]?.renderToCanvas(canvas.nativeCanvas, RectF(o.x, o.y, o.x + sq, o.y + sq))
             }
         }
         if (p < 1f) return@Canvas

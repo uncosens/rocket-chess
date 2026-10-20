@@ -158,7 +158,10 @@ private fun GamePanel(vm: PlayViewModel, onAnalyze: (String) -> Unit) {
     Text(status, style = MaterialTheme.typography.titleMedium)
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         if (r == null) {
-            OutlinedButton(onClick = vm::resign, modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(16.dp)) {
+            OutlinedButton(onClick = vm::undo, enabled = vm.canUndo, modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(16.dp)) {
+                Text(stringResource(R.string.play_undo))
+            }
+            OutlinedButton(onClick = vm::resign,modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(16.dp)) {
                 Text(stringResource(R.string.play_resign))
             }
         } else {

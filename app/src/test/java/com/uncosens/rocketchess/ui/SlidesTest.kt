@@ -1,6 +1,7 @@
 package com.uncosens.rocketchess.ui
 
 import com.uncosens.rocketchess.analysis.Eval
+import com.uncosens.rocketchess.analysis.MoveClass
 import com.uncosens.rocketchess.chess.GameLine
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -33,6 +34,22 @@ class SlidesTest {
         val before = "4k3/8/8/3p4/4P3/8/8/4K3 w - - 0 1"
         val after = "4k3/8/8/3P4/8/8/8/4K3 b - - 0 1"
         assertEquals(mapOf(sq("d5") to sq("e4")), slides(pieces(before), pieces(after)))
+    }
+
+    @Test
+    fun promotionSlidesThePawn() {
+        // e8=Q goes straight up.
+        assertEquals(mapOf(sq("e8") to sq("e7")), slides(pieces("7k/4P3/8/8/8/8/8/4K3 w - - 0 1"), pieces("4Q2k/8/8/8/8/8/8/4K3 b - - 0 1")))
+        // bxa1=N takes a rook on the way.
+        assertEquals(mapOf(sq("a1") to sq("b2")), slides(pieces("7k/8/8/8/8/8/1p6/R3K3 b - - 0 1"), pieces("7k/8/8/8/8/8/8/n3K3 w - - 0 1")))
+    }
+
+    @Test
+    fun graphMarksBrilliantAndGreat() {
+        assertEquals(
+            setOf(MoveClass.Brilliant, MoveClass.Great, MoveClass.Mistake, MoveClass.Blunder),
+            MoveClass.entries.filter { it in GRAPH_MARKS }.toSet(),
+        )
     }
 
     @Test

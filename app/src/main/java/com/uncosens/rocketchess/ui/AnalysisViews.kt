@@ -39,6 +39,9 @@ private val GRAPH_BG = Color(0xFF10162A)
 private val GRAPH_FILL = Color(0xFFE8ECF4)
 private val GRAPH_MID = Color(0xFF59678A)
 
+/** Grades that get a dot in their color on the eval graph. */
+internal val GRAPH_MARKS = setOf(MoveClass.Brilliant, MoveClass.Great, MoveClass.Mistake, MoveClass.Blunder)
+
 fun MoveClass.color(): Color = when (this) {
     MoveClass.Brilliant -> Color(0xFFA855F7)
     MoveClass.Great -> Color(0xFF6C7FE0)
@@ -166,19 +169,17 @@ fun EvalCard(vm: GameViewModel, line: GameLine) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            // Brilliant, mistake and blunder moves get a dot in their color.
-            val marks = line.plies.indices.map { i ->
-                vm.grade(i)?.cls?.takeIf { it == MoveClass.Brilliant || it == MoveClass.Mistake || it == MoveClass.Blunder }
-            }
-            EvalGraph(vm.evals, marks, vm.ply, vm::goTo, whiteView = !vm.flipped)
+            val marks = line.plies.indices.map { i -> vm.grade(i)?.cls?.takeIf { it in GRAPH_MARKS } }
+            // The cursor takes the grade color of the move that led to this position.
+            val cursor = vm.grade(vm.ply - 1)?.cls?.color() ?: MaterialTheme.colorScheme.primary
+            EvalGraph(vm.evals, marks, vm.ply, vm::goTo, whiteView = !vm.flipped, cursor)
             Summary(vm, line)
         }
     }
 }
 
 @Composable
-private fun EvalGraph(evals: List<PositionEval?>, marks: List<MoveClass?>, ply: Int, onSelect: (Int) -> Unit, whiteView: Boolean) {
-    val cursor = MaterialTheme.colorScheme.primary
+private fun EvalGraph(evals: List<PositionEval?>, marks: List<MoveClass?>, ply: Int, onSelect: (Int) -> Unit, whiteView: Boolean, cursor: Color) {
     val desc = stringResource(R.string.graph_description)
     Canvas(
         Modifier.fillMaxWidth().height(32.dp).clip(RoundedCornerShape(10.dp))

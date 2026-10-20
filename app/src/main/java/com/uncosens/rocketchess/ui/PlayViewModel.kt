@@ -127,6 +127,26 @@ class PlayViewModel : ViewModel() {
         s.readUntil(TIMEOUT_MS) { it == "readyok" }
     }
 
+    /** Plies [undo] takes back: the user's move while the engine is to move, else also the engine's reply. */
+    private val undoPlies: Int
+        get() = if (engineTurn) 1 else 2
+
+    val canUndo: Boolean
+        get() = line != null && result == null && line!!.plies.size >= undoPlies
+
+    /** Takes back the user's last move (and the engine's reply), so it is the user's turn again. */
+    fun undo() {
+        val l = line ?: return
+        if (!canUndo) return
+        // Drops an engine reply still being searched.
+        if (thinking) close()
+        val keep = l.plies.size - undoPlies
+        line = GameLine(l.plies.take(keep), l.positions.take(keep + 1))
+        // Replay from the start so the board keeps the history for repetition draws.
+        board.loadFromFen(GameLine.START_FEN)
+        for (p in line!!.plies) board.doMove(Move(p.uci, board.sideToMove))
+    }
+
     fun resign() {
         if (line == null || result != null) return
         close()

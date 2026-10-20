@@ -110,6 +110,7 @@
     <string name="play_lost_resign">You resigned</string>
     <string name="play_draw">Draw</string>
     <string name="play_resign">Resign</string>
+    <string name="play_undo">Take back</string>
     <string name="play_new">New game</string>
     <string name="you">You</string>
     <string name="engine_name">Stockfish %1$d</string>
