@@ -160,7 +160,7 @@ fun Summary(vm: GameViewModel, line: GameLine) {
 /** Card with White's win% over the game and the side counts. Tap to jump to a position. */
 @Composable
 fun EvalCard(vm: GameViewModel, line: GameLine) {
-    if (vm.evals.size < 2) return
+    if (vm.evals.isEmpty()) return
     val settings = (vm.analysis as? AnalysisState.Done)?.settings
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(18.dp)) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -188,12 +188,14 @@ private fun EvalGraph(evals: List<PositionEval?>, marks: List<MoveClass?>, ply: 
                 detectTapGestures { onSelect((it.x / size.width * (evals.size - 1)).roundToInt()) }
             },
     ) {
-        val step = size.width / (evals.size - 1)
+        // A set-up position has no moves: draw its one eval flat across the graph.
+        val points = if (evals.size == 1) evals + evals else evals
+        val step = size.width / (points.size - 1)
         // The bottom side's winning chance rises; its area is drawn in its own color.
         fun y(e: PositionEval) = whiteWinPercent(e.eval).toFloat().let { w -> size.height * (1 - (if (whiteView) w else 100 - w) / 100f) }
         drawRect(if (whiteView) GRAPH_BG else GRAPH_FILL)
         // Analysis runs in order, so the known part is a prefix.
-        val known = evals.takeWhile { it != null }.filterNotNull()
+        val known = points.takeWhile { it != null }.filterNotNull()
         val fill = Path().apply {
             moveTo(0f, size.height)
             known.forEachIndexed { i, e -> lineTo(i * step, y(e)) }
