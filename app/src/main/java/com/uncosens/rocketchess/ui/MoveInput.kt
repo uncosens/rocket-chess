@@ -7,10 +7,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import com.uncosens.rocketchess.R
 import com.uncosens.rocketchess.chess.GameLine
 
@@ -72,10 +71,10 @@ private fun PromotionDialog(moves: List<String>, onPick: (String) -> Unit, onDis
     val images = remember { PieceSetStore.images(context, PieceSetStore.load(context)) }
     // A pawn that reaches rank 8 is White's.
     val white = moves.first()[3] == '8'
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        text = {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    // No buttons: tapping outside or Back cancels.
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+            Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 for (m in moves.sortedBy { "qrbn".indexOf(it.last()) }) {
                     val piece = if (white) m.last().uppercaseChar() else m.last()
                     val name = stringResource(names.getValue(m.last()))
@@ -92,8 +91,6 @@ private fun PromotionDialog(moves: List<String>, onPick: (String) -> Unit, onDis
                     }
                 }
             }
-        },
-        confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
-    )
+        }
+    }
 }

@@ -18,6 +18,26 @@ class ChessTest {
     }
 
     @Test
+    fun enPassantIsALegalMove() {
+        // After 2...d5 White can take en passant with exd6.
+        val l = line("1. e4 a6 2. e5 d5 *")
+        val fen = l.positions.last().fen
+        assertTrue(fen, "e5d6" in GameLine.legalMoves(fen))
+        val after = l.play(4, "e5d6")!!
+        assertEquals("exd6", after.plies.last().san)
+        assertNull(pieces(after.positions.last().fen, "d5"))
+    }
+
+    private fun pieces(fen: String, sq: String): Char? {
+        val rank = fen.substringBefore(' ').split('/')[8 - (sq[1] - '0')]
+        var file = 0
+        for (c in rank) {
+            if (c.isDigit()) file += c - '0' else if (file++ == sq[0] - 'a') return c
+        }
+        return null
+    }
+
+    @Test
     fun operaGameFixture() {
         val text = javaClass.classLoader!!.getResource("opera.pgn")!!.readText()
         val game = Pgn.parse(text)
