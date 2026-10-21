@@ -156,6 +156,8 @@ private fun Controls(
         val text = when (it) {
             SetupError.KINGS -> R.string.setup_err_kings
             SetupError.PAWNS -> R.string.setup_err_pawns
+            SetupError.TOO_MANY_PAWNS -> R.string.setup_err_too_many_pawns
+            SetupError.TOO_MANY_PIECES -> R.string.setup_err_too_many_pieces
             SetupError.CHECK -> R.string.setup_err_check
         }
         Text(stringResource(text), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)

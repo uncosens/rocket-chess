@@ -123,6 +123,10 @@ class ChessTest {
         assertNull(Setup.error("4k3/8/8/8/8/8/8/4K3 w - - 0 1"))
         assertEquals(SetupError.KINGS, Setup.error("8/8/8/8/8/8/8/4K3 w - - 0 1"))
         assertEquals(SetupError.PAWNS, Setup.error("P3k3/8/8/8/8/8/8/4K3 w - - 0 1"))
+        // Stockfish exits on these, so they cannot be analyzed.
+        assertEquals(SetupError.TOO_MANY_PAWNS, Setup.error("rnbqkbnr/ppppppPp/8/8/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 1"))
+        assertEquals(SetupError.TOO_MANY_PIECES, Setup.error("rnbqkbnr/pppppppp/8/8/8/N7/PPPPPPPP/RNBQKBNR w KQkq - 0 1"))
+        assertNull(Setup.error("4k3/8/8/8/8/8/8/QQQQK3 w - - 0 1"))
         // Black's king is attacked by the rook but it is White's turn.
         assertEquals(SetupError.CHECK, Setup.error("4k3/8/8/8/8/8/8/4RK2 w - - 0 1"))
         assertNull(Setup.error("4k3/8/8/8/8/8/8/4RK2 b - - 0 1"))

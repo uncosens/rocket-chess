@@ -2,7 +2,7 @@ package com.uncosens.rocketchess.chess
 
 import com.github.bhlangonijr.chesslib.Board
 
-enum class SetupError { KINGS, PAWNS, CHECK }
+enum class SetupError { KINGS, PAWNS, TOO_MANY_PAWNS, TOO_MANY_PIECES, CHECK }
 
 /** A position set up by hand. Pieces map a square index (a1 = 0) to a FEN letter. */
 object Setup {
@@ -39,6 +39,9 @@ object Setup {
         if (board.count { it == 'K' } != 1 || board.count { it == 'k' } != 1) return SetupError.KINGS
         val ranks = board.split('/')
         if (ranks.first().any { it in "Pp" } || ranks.last().any { it in "Pp" }) return SetupError.PAWNS
+        // Stockfish exits on a side with more than 8 pawns or 16 pieces.
+        if (board.count { it == 'P' } > 8 || board.count { it == 'p' } > 8) return SetupError.TOO_MANY_PAWNS
+        if (board.count { it.isUpperCase() } > 16 || board.count { it.isLowerCase() } > 16) return SetupError.TOO_MANY_PIECES
         // With the turn handed over, a king under attack means the side not to move is in check.
         val fields = fen.split(' ').toMutableList()
         fields[1] = if (fields[1] == "w") "b" else "w"
