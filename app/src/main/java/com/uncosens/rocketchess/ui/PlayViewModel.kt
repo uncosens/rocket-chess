@@ -39,6 +39,18 @@ class PlayViewModel : ViewModel() {
         private set
     var error by mutableStateOf<String?>(null)
         private set
+    /** The ply shown while looking back over the game; null shows the live position. */
+    var viewPly by mutableStateOf<Int?>(null)
+        private set
+    /** Shows the best move arrow for the shown position. */
+    var showBest by mutableStateOf(false)
+        private set
+    /** Full-strength best move for a position, as (FEN, UCI move). */
+    var hint by mutableStateOf<Pair<String, String>?>(null)
+        private set
+    /** A best-move search is running; the engine's own move waits for it. */
+    var hinting by mutableStateOf(false)
+        private set
 
     // Follows the game move by move, so draws by repetition are seen.
     private val board = Board()
@@ -63,6 +75,7 @@ class PlayViewModel : ViewModel() {
         result = null
         resigned = false
         error = null
+        viewPly = null
     }
 
     /** The user's move. */
@@ -74,6 +87,7 @@ class PlayViewModel : ViewModel() {
     private fun apply(uci: String) {
         val l = line ?: return
         line = l.play(l.plies.size, uci) ?: return
+        viewPly = null
         board.doMove(Move(uci, board.sideToMove))
         result = when {
             board.isMated -> if (board.sideToMove == Side.WHITE) "0-1" else "1-0"
@@ -87,7 +101,7 @@ class PlayViewModel : ViewModel() {
     /** Asks the engine for its move when it is its turn. Starts the engine on first use. */
     fun engineMove() {
         val exe = exe ?: return
-        if (!engineTurn || thinking) return
+        if (!engineTurn || thinking || hinting) return
         val id = gameId
         val moves = line!!.plies.joinToString(" ") { it.uci }
         thinking = true
@@ -108,6 +122,56 @@ class PlayViewModel : ViewModel() {
                 withContext(Dispatchers.Main) {
                     if (id == gameId) {
                         thinking = false
+                        error = e.message ?: e.toString()
+                    }
+                }
+            }
+        }
+    }
+
+    /** FEN of the position on screen: the live one, or the one looked back at. */
+    val shownFen: String
+        get() = line?.let { it.positions[viewPly ?: it.plies.size].fen } ?: GameLine.START_FEN
+
+    fun back() {
+        val l = line ?: return
+        viewPly = ((viewPly ?: l.plies.size) - 1).coerceAtLeast(0)
+    }
+
+    fun forward() {
+        val l = line ?: return
+        val next = (viewPly ?: return) + 1
+        viewPly = if (next >= l.plies.size) null else next
+    }
+
+    fun toggleBest() {
+        showBest = !showBest
+    }
+
+    /** Finds the best move for [fen] at full strength, between the engine's own moves. */
+    fun findBest(fen: String) {
+        val exe = exe ?: return
+        if (!showBest || hint?.first == fen || thinking || hinting || engineTurn) return
+        val id = gameId
+        hinting = true
+        job = viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val s = sf ?: StockfishSession(exe).also { sf = it; setUp(it) }
+                s.send("setoption name UCI_LimitStrength value false")
+                s.send("position fen $fen")
+                s.send("go movetime $MOVE_MS")
+                val best = Uci.parseBestMove(s.readUntil(SEARCH_TIMEOUT_MS) { it.startsWith("bestmove") }.last())
+                s.send("setoption name UCI_LimitStrength value true")
+                withContext(Dispatchers.Main) {
+                    if (id != gameId) return@withContext
+                    hinting = false
+                    best?.let { hint = fen to it }
+                }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                withContext(Dispatchers.Main) {
+                    if (id == gameId) {
+                        hinting = false
                         error = e.message ?: e.toString()
                     }
                 }
@@ -141,6 +205,7 @@ class PlayViewModel : ViewModel() {
         // Drops an engine reply still being searched.
         if (thinking) close()
         val keep = l.plies.size - undoPlies
+        viewPly = null
         line = GameLine(l.plies.take(keep), l.positions.take(keep + 1))
         // Replay from the start so the board keeps the history for repetition draws.
         board.loadFromFen(GameLine.START_FEN)
@@ -169,7 +234,8 @@ class PlayViewModel : ViewModel() {
         }
         val moves = l.plies.mapIndexed { i, p -> if (i % 2 == 0) "${i / 2 + 1}. ${p.san}" else p.san }.joinToString(" ")
         return buildString {
-            append("[Event \"Rocket Chess vs engine\"]\n[White \"$white\"]\n[Black \"$black\"]\n[Result \"$r\"]\n")
+            val date = java.text.SimpleDateFormat("yyyy.MM.dd", java.util.Locale.ROOT).format(java.util.Date())
+            append("[Event \"Rocket Chess vs engine\"]\n[Date \"$date\"]\n[White \"$white\"]\n[Black \"$black\"]\n[Result \"$r\"]\n")
             termination?.let { append("[Termination \"$it\"]\n") }
             append("\n$moves $r\n")
         }
@@ -182,6 +248,7 @@ class PlayViewModel : ViewModel() {
         result = null
         resigned = false
         error = null
+        viewPly = null
     }
 
     /** Stops the engine and frees it; a pending engine move is asked again by [engineMove]. */
@@ -190,6 +257,7 @@ class PlayViewModel : ViewModel() {
         job?.cancel()
         job = null
         thinking = false
+        hinting = false
         sf?.let { s -> thread { s.close() } }
         sf = null
     }

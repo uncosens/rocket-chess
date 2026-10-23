@@ -90,8 +90,8 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         open(pgn, key, owner, dao.analysisFor(key))
     }
 
-    fun importText(text: String, source: String, open: OpenGame) {
-        viewModelScope.launch { save(text, source, Sources.textKey(text), open) }
+    fun importText(text: String, source: String, open: OpenGame, owner: String? = null) {
+        viewModelScope.launch { save(text, source, Sources.textKey(text), open, owner) }
     }
 
     fun importFile(uri: Uri, open: OpenGame) {
@@ -187,7 +187,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     companion object {
         // ponytail: whole file in memory, capped. Stream games if big databases are ever needed.
         const val MAX_FILE_BYTES = 5 * 1024 * 1024
-        const val KEEP_ANALYSES = 100
+        const val KEEP_ANALYSES = 1000
     }
 }
 

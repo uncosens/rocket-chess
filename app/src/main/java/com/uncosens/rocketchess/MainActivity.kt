@@ -65,8 +65,8 @@ class MainActivity : ComponentActivity() {
                             SETTINGS -> SettingsScreen(onBack = { screen = LIBRARY }, onLicenses = { screen = LICENSES })
                             // Set-up positions open without being saved.
                             SETUP -> SetupScreen(onAnalyze = { open(it, Sources.textKey(it), null, null) }, onBack = { screen = LIBRARY })
-                            // Games against the engine open without being saved; "You" is the owner.
-                            PLAY -> PlayScreen(play, onAnalyze = { open(it, Sources.textKey(it), getString(R.string.you), null) }, onBack = { screen = LIBRARY })
+                            // Games against the engine are saved once analyzed; "You" is the owner.
+                            PLAY -> PlayScreen(play, onAnalyze = { library.importText(it, Sources.ENGINE, open, getString(R.string.you)) }, onBack = { screen = LIBRARY })
                             else -> LibraryScreen(
                                 library, onOpen = open, onOnline = { screen = ONLINE }, onSetup = { screen = SETUP }, onPlay = { screen = PLAY },
                                 onSettings = { screen = SETTINGS },

@@ -4,7 +4,8 @@ package com.uncosens.rocketchess.chess
 data class SanToken(val text: String, val line: Int, val column: Int)
 
 /** How a decisive game ended. */
-enum class Finish { MATE, RESIGNED, TIME }
+/** How a game ended. [PgnGame.finish] never returns [DRAW]; screens use it for a 1/2-1/2 result. */
+enum class Finish { MATE, RESIGNED, TIME, DRAW }
 
 data class PgnGame(val tags: Map<String, String>, val moves: List<SanToken>, val result: String?) {
     /**

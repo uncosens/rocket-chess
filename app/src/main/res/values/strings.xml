@@ -48,6 +48,8 @@
     <string name="source_file">File</string>
     <string name="source_paste">Pasted</string>
     <string name="user_name">User name</string>
+    <string name="opponent_name">Opponent (optional)</string>
+    <string name="no_games_vs">No games against %1$s.</string>
     <string name="search">Search</string>
     <string name="online_note">The user name is sent to the chosen site to get its public games. The game you pick is saved on this device.</string>
     <string name="no_public_games">No public games found.</string>
@@ -90,6 +92,7 @@
     <string name="start_position">Start position</string>
     <string name="back_to_game">Back to game</string>
     <string name="follow_best">Follow best move</string>
+    <string name="show_best">Show best move</string>
     <string name="accuracy_mine">%1$.1f%%</string>
     <string name="retry">Retry</string>
     <string name="settings_accounts">My accounts</string>
@@ -116,6 +119,7 @@
     <string name="engine_name">Stockfish %1$d</string>
     <string name="setup_board">Set up board</string>
     <string name="source_setup">Position</string>
+    <string name="source_engine">vs engine</string>
     <string name="white_to_move">White to move</string>
     <string name="black_to_move">Black to move</string>
     <string name="clear_board">Clear</string>

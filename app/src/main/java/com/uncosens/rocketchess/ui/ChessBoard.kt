@@ -48,7 +48,9 @@ private val SELECTED = Color(0x801C93A8)
 private val TARGET = Color(0x59101828)
 private val LOST = Color(0xFFD9363E)
 private val WON = Color(0xFF2EA043)
-private const val MOVE_MS = 220
+private val DRAWN = Color(0xFF8C96AB)
+// 50% faster than the old 220 ms.
+private const val MOVE_MS = 147
 
 /** Square name like "e4" to 0..63, a1 = 0. */
 private fun index(square: String) = (square[0] - 'a') + (square[1] - '1') * 8
@@ -254,11 +256,14 @@ fun ChessBoard(
         }
         // King marks win over the grade badge when they share a square.
         val kings = if (ending == null) emptyMap() else now.filterValues { it == 'K' || it == 'k' }.mapValues { (_, k) ->
-            if ((k == 'K') != ending.whiteLost) WON to "\u265A\uFE0E"
-            else LOST to when (ending.finish) {
-                Finish.MATE -> "#"
-                Finish.RESIGNED -> "\u2691\uFE0E"
-                Finish.TIME -> null
+            when {
+                ending.finish == Finish.DRAW -> DRAWN to "\u00BD"
+                (k == 'K') != ending.whiteLost -> WON to "\u265A\uFE0E"
+                else -> LOST to when (ending.finish) {
+                    Finish.MATE -> "#"
+                    Finish.RESIGNED -> "\u2691\uFE0E"
+                    Finish.TIME, Finish.DRAW -> null
+                }
             }
         }
         val mark = grade?.badge()

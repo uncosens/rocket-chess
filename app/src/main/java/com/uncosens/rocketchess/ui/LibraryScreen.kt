@@ -152,6 +152,7 @@ private fun sourceLabel(source: String) = stringResource(
         Sources.LICHESS -> R.string.source_lichess
         Sources.FILE -> R.string.source_file
         Sources.SETUP -> R.string.source_setup
+        Sources.ENGINE -> R.string.source_engine
         else -> R.string.source_paste
     },
 )
@@ -171,6 +172,7 @@ private fun sourceIcon(source: String) = when (source) {
     Sources.CHESS_COM, Sources.LICHESS -> R.drawable.ic_globe
     Sources.FILE -> R.drawable.ic_file
     Sources.SETUP -> R.drawable.ic_board
+    Sources.ENGINE -> R.drawable.ic_engine
     else -> R.drawable.ic_paste
 }
 
@@ -195,6 +197,8 @@ fun OnlineScreen(vm: LibraryViewModel, onOpen: OpenGame, onBack: () -> Unit) {
     val context = LocalContext.current
     var source by rememberSaveable { mutableStateOf(Sources.CHESS_COM) }
     var name by rememberSaveable { mutableStateOf("") }
+    // Optional: show only the games played against this name.
+    var opponent by rememberSaveable { mutableStateOf("") }
     // The user's own name on this site, from Settings.
     val myId = KnownUsers.myId(context, source)
     val accuracies by vm.accuracies.collectAsState()
@@ -234,6 +238,14 @@ fun OnlineScreen(vm: LibraryViewModel, onOpen: OpenGame, onBack: () -> Unit) {
                 }
             }
         }
+        OutlinedTextField(
+            value = opponent,
+            onValueChange = { opponent = it },
+            label = { Text(stringResource(R.string.opponent_name)) },
+            singleLine = true,
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth(),
+        )
         Text(stringResource(R.string.online_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         vm.error?.let { ErrorText(it) }
         when (val s = vm.online) {
@@ -244,9 +256,13 @@ fun OnlineScreen(vm: LibraryViewModel, onOpen: OpenGame, onBack: () -> Unit) {
             }
             is OnlineState.Failed -> Text(fetchErrorText(s.error), color = MaterialTheme.colorScheme.error)
             is OnlineState.Found -> {
+                val opp = opponent.trim()
+                val shown = if (opp.isEmpty()) s.games else s.games.filter { it.white.equals(opp, true) || it.black.equals(opp, true) }
                 if (s.games.isEmpty()) Text(stringResource(R.string.no_public_games))
+                else if (shown.isEmpty() && s.done) Text(stringResource(R.string.no_games_vs, opp))
                 LazyColumn(Modifier.weight(1f)) {
-                    items(s.games, key = { it.key }) { g ->
+                    // With a filter the end stays in view, so pages keep loading until all are searched.
+                    items(shown, key = { it.key }) { g ->
                         Row(
                             Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable { vm.importRemote(g, onOpen) }.padding(vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically,

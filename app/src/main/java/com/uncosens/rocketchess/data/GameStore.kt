@@ -120,6 +120,7 @@ object Sources {
     const val CHESS_COM = "chesscom"
     const val LICHESS = "lichess"
     const val SETUP = "setup"
+    const val ENGINE = "engine"
 
     /** Pasted and file games have no id, so the text itself is the key. Same text = same game. */
     fun textKey(pgn: String): String =

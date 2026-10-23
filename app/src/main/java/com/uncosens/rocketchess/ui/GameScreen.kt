@@ -128,7 +128,7 @@ private fun BoardBlock(vm: GameViewModel, modifier: Modifier) {
 
 /** Color dot, name, then the pieces this side is up and its point lead. */
 @Composable
-private fun PlayerRow(name: String, white: Boolean, edge: MaterialEdge) {
+internal fun PlayerRow(name: String, white: Boolean, edge: MaterialEdge) {
     Row(Modifier.height(24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Box(
             Modifier.size(12.dp).clip(RoundedCornerShape(4.dp))
@@ -168,8 +168,11 @@ private fun Board(vm: GameViewModel, modifier: Modifier) {
         ending = when {
             position?.mate == true -> Ending(whiteLost = fen.split(' ')[1] == "w", Finish.MATE)
             // Resignation and time loss show only at the end of the game itself, not in the user's own moves.
-            vm.variation == null && line != null && vm.ply == line.plies.size ->
-                vm.game?.finish()?.let { Ending(whiteLost = (vm.game?.result ?: vm.game?.tags?.get("Result")) == "0-1", it) }
+            vm.variation == null && line != null && vm.ply == line.plies.size -> {
+                val result = vm.game?.result ?: vm.game?.tags?.get("Result")
+                if (result == "1/2-1/2") Ending(whiteLost = false, Finish.DRAW)
+                else vm.game?.finish()?.let { Ending(whiteLost = result == "0-1", it) }
+            }
             else -> null
         },
         selected = input.selected,

@@ -30,6 +30,20 @@ class PlayTest {
     }
 
     @Test
+    fun lookBackAndForward() {
+        val vm = PlayViewModel()
+        vm.start(File("none"), EngineOptions(), white = true, elo = 1500)
+        vm.play("e2e4")
+        val live = vm.shownFen
+        vm.back()
+        assertEquals(0, vm.viewPly)
+        assertEquals(GameLine.START_FEN, vm.shownFen)
+        vm.forward()
+        assertEquals(null, vm.viewPly)
+        assertEquals(live, vm.shownFen)
+    }
+
+    @Test
     fun takeBackWhileTheEngineIsToMove() {
         val vm = PlayViewModel()
         vm.start(File("none"), EngineOptions(), white = true, elo = 1500)
