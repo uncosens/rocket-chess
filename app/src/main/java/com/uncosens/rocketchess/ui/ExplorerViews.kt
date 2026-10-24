@@ -52,7 +52,7 @@ fun OpeningTitle(opening: Opening?, modifier: Modifier = Modifier) {
     )
 }
 
-/** All ratings, then one chip per band of the book. Saves the pick. */
+/** All ratings, then one chip per band of the book, labeled with Chess.com rapid ratings. Saves the pick. */
 @Composable
 fun BandChips(edges: List<Int>) {
     val context = LocalContext.current
@@ -63,7 +63,7 @@ fun BandChips(edges: List<Int>) {
             val label = when (i) {
                 0 -> stringResource(R.string.band_under, edges[0])
                 edges.size -> stringResource(R.string.band_over, edges.last())
-                else -> stringResource(R.string.band_range, edges[i - 1], edges[i] - 1)
+                else -> stringResource(R.string.band_range, edges[i - 1], edges[i])
             }
             FilterChip(selected = band == i, onClick = { OpeningData.pickBand(context, i) }, label = { Text(label) })
         }

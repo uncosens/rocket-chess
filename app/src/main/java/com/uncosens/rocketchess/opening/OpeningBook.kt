@@ -43,18 +43,21 @@ data class BookPosition(val bands: List<Tally>, val moves: List<BookMove>) {
  */
 class OpeningBook(bytes: ByteArray) {
     private val buf = ByteBuffer.wrap(bytes)
-    /** Lower rating edge of each band after the first, e.g. 1200, 1600, 2000. */
-    val bandEdges: List<Int>
+    /** Lower edge of each band after the first, as mean Lichess rapid ratings of the two players. */
+    val lichessEdges: List<Int>
+    /** The same edges as Chess.com rapid ratings (1200, 1500, ...), for labels. */
+    val chesscomEdges: List<Int>
     private val bands: Int
     private val count: Int
     private val indexStart: Int
     private val dataStart: Int
 
     init {
-        require(String(bytes, 0, 4, Charsets.US_ASCII) == "RCOB" && bytes[4].toInt() == 1) { "not an opening book" }
+        require(String(bytes, 0, 4, Charsets.US_ASCII) == "RCOB" && bytes[4].toInt() == 2) { "not an opening book" }
         bands = bytes[5].toInt()
-        bandEdges = List(bands - 1) { buf.getShort(6 + 2 * it).toInt() and 0xFFFF }
-        val head = 6 + 2 * (bands - 1)
+        lichessEdges = List(bands - 1) { buf.getShort(6 + 2 * it).toInt() and 0xFFFF }
+        chesscomEdges = List(bands - 1) { buf.getShort(6 + 2 * (bands - 1 + it)).toInt() and 0xFFFF }
+        val head = 6 + 4 * (bands - 1)
         count = buf.getInt(head)
         indexStart = head + 4
         dataStart = indexStart + count * INDEX

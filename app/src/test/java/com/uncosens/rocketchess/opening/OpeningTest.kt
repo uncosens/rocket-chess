@@ -34,12 +34,14 @@ class OpeningTest {
 
     @Test
     fun readsPositionsAndBands() {
-        assertEquals(listOf(1200, 1600, 2000), book.bandEdges)
+        assertEquals(listOf(1560, 1750, 1930, 2140), book.lichessEdges)
+        assertEquals(listOf(1200, 1500, 1800, 2100), book.chesscomEdges)
         val start = book.lookup(GameLine.START_FEN)!!
         assertEquals(158_898, start.tally(null).games)
-        assertEquals(Tally(4771, 822, 4477), start.tally(3))
+        // Band 4: Chess.com 2100+.
+        assertEquals(Tally(1608, 378, 1484), start.tally(4))
         assertEquals(listOf("e2e4", "d2d4", "g1f3", "c2c4"), start.moves(null).take(4).map { it.uci })
-        assertEquals(Tally(2645, 459, 2610), start.moves.first { it.uci == "e2e4" }.tally(3))
+        assertEquals(Tally(870, 205, 809), start.moves.first { it.uci == "e2e4" }.tally(4))
         assertEquals(103_568, start.moves.first { it.uci == "e2e4" }.tally(null).games)
         // A position nobody reaches in rapid games.
         assertNull(book.lookup("4k3/8/8/8/8/8/8/4K3 w - - 0 1"))

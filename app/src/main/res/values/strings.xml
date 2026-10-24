@@ -143,4 +143,5 @@
     <string name="band_under">Under %1$d</string>
     <string name="band_range">%1$d–%2$d</string>
     <string name="band_over">%1$d+</string>
+    <string name="explorer_bands_note">Chess.com rapid ratings, converted from the Lichess rapid ratings of both players.</string>
 </resources>

@@ -94,7 +94,8 @@ private fun Stats(vm: ExplorerViewModel, modifier: Modifier) {
         val names = OpeningData.names
         val opening = remember(names, vm.line, vm.ply) { names?.of(vm.line, vm.ply) }
         OpeningTitle(opening)
-        BandChips(book.bandEdges)
+        BandChips(book.chesscomEdges)
+        Text(stringResource(R.string.explorer_bands_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         val fen = vm.fen
         val position = remember(book, fen) { book.lookup(fen) }
         if (position == null) Text(stringResource(R.string.explorer_no_games), style = MaterialTheme.typography.bodyMedium)

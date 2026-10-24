@@ -25,16 +25,18 @@ import chess
 import numpy as np
 
 MAX_PLY = 30
-# Average rating of the two players: band 0 is below 1200, band 3 is 2000 and up.
-BAND_EDGES = (1200, 1600, 2000)
+# Bands by the mean Lichess rapid rating of the two players. The edges are Chess.com rapid 1200, 1500,
+# 1800 and 2100, turned into Lichess rapid with the fit of github.com/theophile-wallez/lichess-chesscom-ratings.
+BAND_EDGES = (1560, 1750, 1930, 2140)
+CHESSCOM_EDGES = (1200, 1500, 1800, 2100)
 BANDS = len(BAND_EDGES) + 1
 PARTS = 64
-# A record: position key, move, band * 3 + result (0 white wins, 1 draw, 2 black wins).
-RECORD = np.dtype([("k", "<u8"), ("m", "<u2"), ("c", "u1")])
+# A record: position key, move, mean rating of the two players, result (0 white wins, 1 draw, 2 black wins).
+RECORD = np.dtype([("k", "<u8"), ("m", "<u2"), ("r", "<u2"), ("w", "u1")])
 RESULTS = {"1-0": 0, "1/2-1/2": 1, "0-1": 2}
 PROMO = {None: 0, chess.KNIGHT: 1, chess.BISHOP: 2, chess.ROOK: 3, chess.QUEEN: 4}
 MAGIC = b"RCOB"
-VERSION = 1
+VERSION = 2
 
 COMMENT = re.compile(r"\{[^}]*\}|\([^)]*\)|\$\d+")
 NUMBER = re.compile(r"^\d+\.+$")
@@ -64,17 +66,13 @@ def move_code(move):
     return move.from_square | move.to_square << 6 | PROMO[move.promotion] << 12
 
 
-def band_of(avg):
-    return sum(avg >= e for e in BAND_EDGES)
-
-
 def header(text, name):
     m = re.search(r'^\[' + name + r' "([^"]*)"\]', text, re.M)
     return m.group(1) if m else None
 
 
 def parse_game(text):
-    """(band, result, SAN moves) for a usable rated rapid game, else None."""
+    """(mean rating, result, SAN moves) for a usable rated rapid game, else None."""
     if not text.startswith('[Event "Rated Rapid'):
         return None
     result = RESULTS.get(header(text, "Result"))
@@ -93,7 +91,7 @@ def parse_game(text):
         sans.append(tok.rstrip("?!"))
         if len(sans) == MAX_PLY:
             break
-    return band_of((int(we) + int(be)) / 2), result, sans
+    return (int(we) + int(be)) // 2, result, sans
 
 
 # Per worker: move prefix ("e4 e5 Nf3") -> (key before its last move, that move).
@@ -110,14 +108,13 @@ def records(games):
         g = parse_game(text)
         if g is None:
             continue
-        band, result, sans = g
-        code = band * 3 + result
+        rating, result, sans = g
         board, done, prefix = None, [], ""
         for i, san in enumerate(sans):
             prefix += " " + san
             hit = PREFIXES.get(prefix) if board is None else None
             if hit:
-                out.append((hit[0], move_code(hit[1]), code))
+                out.append((hit[0], move_code(hit[1]), rating, result))
                 done.append(hit[1])
                 continue
             if board is None:
@@ -130,7 +127,7 @@ def records(games):
             except ValueError:
                 break
             key = key_of(board)
-            out.append((key, move_code(move), code))
+            out.append((key, move_code(move), rating, result))
             board.push(move)
             if i < PREFIX_PLY and len(PREFIXES) < PREFIX_MAX:
                 PREFIXES[prefix] = (key, move)
@@ -194,17 +191,19 @@ def extract(work, max_games):
 
 
 def count(work):
-    """Per (position, move): games by band and result. Also the totals per position."""
+    """Per (position, move): games by band and result. Also the totals per position. Bands are set here,
+    so new BAND_EDGES need only a new count, not a new extract."""
     moves, positions = [], []
     for i in range(PARTS):
         rec = np.fromfile(os.path.join(work, f"part{i:02d}.rec"), dtype=RECORD)
         if len(rec) == 0:
             continue
-        rec = rec[np.lexsort((rec["c"], rec["m"], rec["k"]))]
+        rec = rec[np.lexsort((rec["m"], rec["k"]))]
+        code = np.searchsorted(np.array(BAND_EDGES), rec["r"], side="right") * 3 + rec["w"]
         new = np.ones(len(rec), bool)
         new[1:] = (rec["k"][1:] != rec["k"][:-1]) | (rec["m"][1:] != rec["m"][:-1])
         group = np.cumsum(new) - 1
-        counts = np.bincount(group * 12 + rec["c"], minlength=(group[-1] + 1) * 12).reshape(-1, 12)
+        counts = np.bincount(group * 3 * BANDS + code, minlength=(group[-1] + 1) * 3 * BANDS).reshape(-1, 3 * BANDS)
         keys, mvs = rec["k"][new], rec["m"][new]
         # Pairs seen fewer than 3 times can never pass a useful MIN_GAMES; dropping them keeps memory low.
         keep = counts.sum(1) >= 3
@@ -232,10 +231,11 @@ def varint(n, out):
 def write(work, out_path, min_games):
     """Keeps moves with at least min_games games in some band, and writes the book file.
 
-    Layout (big-endian): "RCOB", version u8, bands u8, band edges u16 x 3, positions u32,
+    Layout (big-endian): "RCOB", version u8, bands u8, Lichess band edges u16 x (bands - 1),
+    the same edges as Chess.com ratings u16 x (bands - 1), positions u32,
     then per position key u64 + data offset u32, sorted by unsigned key, then the data.
-    Data per position: 12 varint totals (band-major: white, draw, black), varint move count,
-    then per move: move code u16 and 12 varint counts. Moves are sorted by total games, most first.
+    Data per position: bands x 3 varint totals (band-major: white, draw, black), varint move count,
+    then per move: move code u16 and bands x 3 varint counts. Moves are sorted by total games, most first.
     """
     d = np.load(os.path.join(work, "counts.npz"))
     mk, mm, mc = d["mk"], d["mm"], d["mc"]
@@ -258,7 +258,8 @@ def write(work, out_path, min_games):
             data += struct.pack(">H", int(mm[j]))
             for c in mc[j]:
                 varint(int(c), data)
-    head = MAGIC + struct.pack(">BB3HI", VERSION, BANDS, *BAND_EDGES, len(starts))
+    edges = BANDS - 1
+    head = MAGIC + struct.pack(f">BB{edges}H{edges}HI", VERSION, BANDS, *BAND_EDGES, *CHESSCOM_EDGES, len(starts))
     with open(out_path, "wb") as f:
         f.write(head + index + data)
     size = len(head) + len(index) + len(data)
