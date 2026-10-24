@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -51,7 +52,7 @@ import com.uncosens.rocketchess.chess.SetupError
 
 /** Place pieces by hand, pick the side to move, then analyze from that position. */
 @Composable
-fun SetupScreen(onAnalyze: (pgn: String) -> Unit, onBack: () -> Unit) {
+fun SetupScreen(onAnalyze: (pgn: String) -> Unit, onPlay: (fen: String) -> Unit, onBack: () -> Unit) {
     BackHandler(onBack = onBack)
     var fen by rememberSaveable { mutableStateOf(GameLine.START_FEN) }
     // The piece letter to place, or ' ' to remove pieces.
@@ -86,6 +87,7 @@ fun SetupScreen(onAnalyze: (pgn: String) -> Unit, onBack: () -> Unit) {
             onClear = { fen = Setup.fen(emptyMap(), whiteToMove) },
             error = error,
             onAnalyze = { onAnalyze(Setup.pgn(fen)) },
+            onPlay = { onPlay(fen) },
         )
     }
 
@@ -123,6 +125,7 @@ private fun Controls(
     onClear: () -> Unit,
     error: SetupError?,
     onAnalyze: () -> Unit,
+    onPlay: () -> Unit,
 ) {
     val context = LocalContext.current
     val images = remember { PieceSetStore.images(context, PieceSetStore.load(context)) }
@@ -162,8 +165,14 @@ private fun Controls(
         }
         Text(stringResource(text), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
     }
-    Button(onClick = onAnalyze, enabled = error == null, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(16.dp)) {
-        Text(stringResource(R.string.analyze))
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Button(onClick = onAnalyze, enabled = error == null, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(16.dp)) {
+            Text(stringResource(R.string.analyze))
+        }
+        // Plays the engine from this position.
+        OutlinedButton(onClick = onPlay, enabled = error == null, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(16.dp)) {
+            Text(stringResource(R.string.play_engine))
+        }
     }
 }
 

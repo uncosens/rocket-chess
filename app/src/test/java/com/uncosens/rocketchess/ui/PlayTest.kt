@@ -30,6 +30,26 @@ class PlayTest {
     }
 
     @Test
+    fun gameFromASetUpPosition() {
+        // Black to move in a set-up position; the user plays Black.
+        val fen = "4k3/4p3/8/8/8/8/4P3/4K3 b - - 0 1"
+        val vm = PlayViewModel()
+        vm.prepare(fen)
+        vm.start(File("none"), EngineOptions(), white = false, elo = 1500)
+        assertFalse(vm.engineTurn)
+        vm.play("e7e5")
+        assertTrue(vm.engineTurn)
+        vm.resign()
+        val game = Pgn.parse(vm.pgn("You", "Stockfish 1500"))
+        assertEquals(fen, game.tags["FEN"])
+        assertEquals(listOf("e5"), GameLine.from(game).plies.map { it.san })
+        // With White as the user, the engine moves first here.
+        vm.prepare(fen)
+        vm.start(File("none"), EngineOptions(), white = true, elo = 1500)
+        assertTrue(vm.engineTurn)
+    }
+
+    @Test
     fun lookBackAndForward() {
         val vm = PlayViewModel()
         vm.start(File("none"), EngineOptions(), white = true, elo = 1500)

@@ -10,7 +10,8 @@ import com.github.bhlangonijr.chesslib.Side
 import com.github.bhlangonijr.chesslib.move.Move
 import com.uncosens.rocketchess.analysis.EngineOptions
 import com.uncosens.rocketchess.chess.GameLine
-import com.uncosens.rocketchess.chess.Position
+import com.uncosens.rocketchess.chess.Pgn
+import com.uncosens.rocketchess.chess.Setup
 import com.uncosens.rocketchess.engine.StockfishSession
 import com.uncosens.rocketchess.engine.Uci
 import java.io.File
@@ -61,8 +62,18 @@ class PlayViewModel : ViewModel() {
     /** Changes on each new game so a late engine reply is dropped. */
     private var gameId = 0
 
+    /** The position games start from: the normal start, or one from Set up board. */
+    var startFen by mutableStateOf(GameLine.START_FEN)
+        private set
+
     val engineTurn: Boolean
-        get() = line != null && result == null && ((line!!.plies.size % 2 == 0) != userWhite)
+        get() = line != null && result == null && ((line!!.positions.last().fen.split(' ')[1] == "w") != userWhite)
+
+    /** Clears any game and makes [fen] the start of the next one. */
+    fun prepare(fen: String) {
+        reset()
+        startFen = fen
+    }
 
     fun start(exe: File, opts: EngineOptions, white: Boolean, elo: Int) {
         close()
@@ -70,12 +81,18 @@ class PlayViewModel : ViewModel() {
         this.opts = opts
         userWhite = white
         this.elo = elo
-        board.loadFromFen(GameLine.START_FEN)
-        line = GameLine(emptyList(), listOf(Position(GameLine.START_FEN, null)))
-        result = null
+        board.loadFromFen(startFen)
+        // Built through the PGN reader so a check in the start position is marked.
+        line = GameLine.from(Pgn.parse(Setup.pgn(startFen)))
         resigned = false
         error = null
         viewPly = null
+        // A set-up position can already be over.
+        result = when {
+            board.isMated -> if (board.sideToMove == Side.WHITE) "0-1" else "1-0"
+            board.isDraw -> "1/2-1/2"
+            else -> null
+        }
     }
 
     /** The user's move. */
@@ -109,7 +126,7 @@ class PlayViewModel : ViewModel() {
         job = viewModelScope.launch(Dispatchers.IO) {
             try {
                 val s = sf ?: StockfishSession(exe).also { sf = it; setUp(it) }
-                s.send("position startpos" + if (moves.isEmpty()) "" else " moves $moves")
+                s.send("position fen $startFen" + if (moves.isEmpty()) "" else " moves $moves")
                 s.send("go movetime $MOVE_MS")
                 val best = Uci.parseBestMove(s.readUntil(SEARCH_TIMEOUT_MS) { it.startsWith("bestmove") }.last())
                 withContext(Dispatchers.Main) {
@@ -208,7 +225,7 @@ class PlayViewModel : ViewModel() {
         viewPly = null
         line = GameLine(l.plies.take(keep), l.positions.take(keep + 1))
         // Replay from the start so the board keeps the history for repetition draws.
-        board.loadFromFen(GameLine.START_FEN)
+        board.loadFromFen(startFen)
         for (p in line!!.plies) board.doMove(Move(p.uci, board.sideToMove))
     }
 
@@ -232,10 +249,19 @@ class PlayViewModel : ViewModel() {
             r != "*" -> "$winner won by checkmate"
             else -> null
         }
-        val moves = l.plies.mapIndexed { i, p -> if (i % 2 == 0) "${i / 2 + 1}. ${p.san}" else p.san }.joinToString(" ")
+        // Move numbers come from each position, so games from a set-up position number right too.
+        val moves = l.plies.mapIndexed { i, p ->
+            val (side, number) = l.positions[i].fen.split(' ').let { it[1] to it[5] }
+            when {
+                side == "w" -> "$number. ${p.san}"
+                i == 0 -> "$number... ${p.san}"
+                else -> p.san
+            }
+        }.joinToString(" ")
         return buildString {
             val date = java.text.SimpleDateFormat("yyyy.MM.dd", java.util.Locale.ROOT).format(java.util.Date())
             append("[Event \"Rocket Chess vs engine\"]\n[Date \"$date\"]\n[White \"$white\"]\n[Black \"$black\"]\n[Result \"$r\"]\n")
+            if (startFen != GameLine.START_FEN) append("[SetUp \"1\"]\n[FEN \"$startFen\"]\n")
             termination?.let { append("[Termination \"$it\"]\n") }
             append("\n$moves $r\n")
         }

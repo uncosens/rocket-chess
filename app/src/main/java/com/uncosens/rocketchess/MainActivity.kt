@@ -14,6 +14,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.uncosens.rocketchess.chess.GameLine
 import com.uncosens.rocketchess.data.Sources
 import com.uncosens.rocketchess.ui.AnalysisState
 import com.uncosens.rocketchess.ui.GameScreen
@@ -44,6 +45,8 @@ class MainActivity : ComponentActivity() {
                     var screen by rememberSaveable { mutableStateOf(LIBRARY) }
                     // The screen a game was opened from, so Back returns there.
                     var from by rememberSaveable { mutableStateOf(LIBRARY) }
+                    // The screen the engine game was opened from, so Back returns there.
+                    var playFrom by rememberSaveable { mutableStateOf(LIBRARY) }
                     val open: OpenGame = { pgn, key, owner, analysis ->
                         game.load(pgn, key, owner, analysis); from = screen; screen = GAME
                     }
@@ -64,11 +67,20 @@ class MainActivity : ComponentActivity() {
                             LICENSES -> LicensesScreen(onBack = { screen = SETTINGS })
                             SETTINGS -> SettingsScreen(onBack = { screen = LIBRARY }, onLicenses = { screen = LICENSES })
                             // Set-up positions open without being saved.
-                            SETUP -> SetupScreen(onAnalyze = { open(it, Sources.textKey(it), null, null) }, onBack = { screen = LIBRARY })
+                            SETUP -> SetupScreen(
+                                onAnalyze = { open(it, Sources.textKey(it), null, null) },
+                                // A new game from the set-up position replaces any game in progress.
+                                onPlay = { play.prepare(it); playFrom = SETUP; screen = PLAY },
+                                onBack = { screen = LIBRARY },
+                            )
                             // Games against the engine are saved once analyzed; "You" is the owner.
-                            PLAY -> PlayScreen(play, onAnalyze = { library.importText(it, Sources.ENGINE, open, getString(R.string.you)) }, onBack = { screen = LIBRARY })
+                            PLAY -> PlayScreen(play, onAnalyze = { library.importText(it, Sources.ENGINE, open, getString(R.string.you)) }, onBack = { screen = playFrom })
                             else -> LibraryScreen(
-                                library, onOpen = open, onOnline = { screen = ONLINE }, onSetup = { screen = SETUP }, onPlay = { screen = PLAY },
+                                library, onOpen = open, onOnline = { screen = ONLINE }, onSetup = { screen = SETUP }, onPlay = {
+                                    // A game in progress carries on; otherwise the next one starts normally.
+                                    if (play.line == null) play.prepare(GameLine.START_FEN)
+                                    playFrom = LIBRARY; screen = PLAY
+                                },
                                 onSettings = { screen = SETTINGS },
                             )
                         }
