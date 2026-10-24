@@ -90,15 +90,15 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: OpenGame, onOnline: () -> Unit, 
         }
         // Two per row so the labels fit on a phone.
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ImportButton(R.drawable.ic_paste, stringResource(R.string.paste_pgn), Modifier.weight(1f)) { pasting = true }
-            ImportButton(R.drawable.ic_file, stringResource(R.string.open_file), Modifier.weight(1f)) { openFile.launch(arrayOf("*/*")) }
+            // Paste and Open file share one dialog.
+            ImportButton(R.drawable.ic_paste, stringResource(R.string.paste_open), Modifier.weight(1f)) { pasting = true }
+            ImportButton(R.drawable.ic_board, stringResource(R.string.setup_board), Modifier.weight(1f), onClick = onSetup)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ImportButton(R.drawable.ic_board, stringResource(R.string.setup_board), Modifier.weight(1f), onClick = onSetup)
+            ImportButton(R.drawable.ic_book, stringResource(R.string.explorer_title), Modifier.weight(1f), onClick = onExplorer)
             // Same color as Play vs engine on Set up board.
             ImportButton(R.drawable.ic_engine, stringResource(R.string.play_engine), Modifier.weight(1f), MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.onSecondary, onPlay)
         }
-        ImportButton(R.drawable.ic_book, stringResource(R.string.explorer_title), Modifier.fillMaxWidth(), onClick = onExplorer)
         vm.error?.let { ErrorText(it) }
 
         Row(Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -143,7 +143,11 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: OpenGame, onOnline: () -> Unit, 
         }
     }
 
-    if (pasting) PasteDialog(onDismiss = { pasting = false }, onLoad = { pasting = false; vm.importText(it, Sources.PASTE, onOpen) })
+    if (pasting) PasteDialog(
+        onDismiss = { pasting = false },
+        onLoad = { pasting = false; vm.importText(it, Sources.PASTE, onOpen) },
+        onOpenFile = { pasting = false; openFile.launch(arrayOf("*/*")) },
+    )
 }
 
 @Composable

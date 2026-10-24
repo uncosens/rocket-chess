@@ -40,10 +40,10 @@ import java.text.NumberFormat
 
 /** "B90 Sicilian Defense: Najdorf Variation", or nothing. With [reserve], two lines are kept even with no name, so nothing below moves. */
 @Composable
-fun OpeningTitle(opening: Opening?, modifier: Modifier = Modifier, reserve: Boolean = false) {
+fun OpeningTitle(opening: Opening?, modifier: Modifier = Modifier, reserve: Boolean = false, placeholder: String = "") {
     if (opening == null && !reserve) return
     Text(
-        opening?.let { "${it.eco} ${it.name}" } ?: "",
+        opening?.let { "${it.eco} ${it.name}" } ?: placeholder,
         modifier = modifier,
         style = MaterialTheme.typography.bodyMedium,
         fontWeight = FontWeight.Medium,
@@ -134,9 +134,9 @@ fun ExplorerCard(vm: GameViewModel, line: GameLine) {
     if (position == null && vm.opening == null) return
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(18.dp)) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            OpeningTitle(vm.opening)
+            // "Opening explorer" until the first named position; two lines kept so the moves below stay put.
+            OpeningTitle(vm.opening, reserve = true, placeholder = stringResource(R.string.explorer_title))
             if (position != null) {
-                Text(stringResource(R.string.explorer_subtitle), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 BookMoves(fen, position, vm::play, limit = 3)
             }
         }
