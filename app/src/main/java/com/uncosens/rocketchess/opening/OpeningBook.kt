@@ -78,11 +78,12 @@ class OpeningBook(bytes: ByteArray) {
         return null
     }
 
-    /** How many plies of [line], from its start, are moves in the book. */
+    /** How many plies of [line], from its start, are book moves: each played in [BOOK_SHARE] or more of its position's games. */
     fun bookPlies(line: GameLine): Int {
         for (i in line.plies.indices) {
             val p = lookup(line.positions[i].fen) ?: return i
-            if (p.moves.none { it.uci == line.plies[i].uci }) return i
+            val m = p.moves.firstOrNull { it.uci == line.plies[i].uci } ?: return i
+            if (m.tally(null).games < p.tally(null).games * BOOK_SHARE) return i
         }
         return line.plies.size
     }
@@ -111,6 +112,8 @@ class OpeningBook(bytes: ByteArray) {
 
     companion object {
         private const val INDEX = 12
+        /** The file keeps rare moves too; a book move needs at least this share of the games. */
+        const val BOOK_SHARE = 0.01
 
         /** "e7e8q" from from | to << 6 | promotion << 12 (0 none, 1 N, 2 B, 3 R, 4 Q). */
         internal fun uci(code: Int): String {

@@ -50,6 +50,9 @@ class OpeningTest {
         assertEquals(5, book.bookPlies(line("1. e4 e5 2. Nf3 Nc6 3. Bc4")))
         assertEquals(3, book.bookPlies(line("1. e4 e5 2. Qh5 Ke7")))
         assertEquals(0, book.bookPlies(line("1. a3")))
+        // 1. f4 is in the file but has 0.86% of the games: below BOOK_SHARE. 1. e3 has 1.52%.
+        assertEquals(0, book.bookPlies(line("1. f4")))
+        assertEquals(1, book.bookPlies(line("1. e3")))
     }
 
     @Test

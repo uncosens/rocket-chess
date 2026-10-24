@@ -107,7 +107,7 @@ fun moveScore(loss: Double): Double =
     100 - AnalysisPolicy.ACCURACY_DROP * (1 - exp(-AnalysisPolicy.ACCURACY_DECAY * maxOf(0.0, loss)))
 
 /**
- * Book when the move and all moves before it are in the opening book, unless the engine
+ * Book when the move and all moves before it are book moves (OpeningBook.bookPlies), unless the engine
  * grades it Weak or worse. Accuracy does not change: it uses the win% loss, not the grade.
  */
 fun bookGrade(cls: MoveClass, inBook: Boolean): MoveClass =

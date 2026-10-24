@@ -131,6 +131,40 @@ Play blocks updates without 16 KB support from 2027-02-01 (see the Android page-
 - Checked on the Galaxy Tab S7: licenses screen, each license text, back navigation.
 - Not done: signing, AAB install through Play, run on a 16 KB page device.
 
+## Opening explorer and Book grade (2026-10-24)
+
+- Data: rated rapid games from the Lichess open database (CC0), `lichess_db_standard_rated_2026-09.pgn.zst`.
+  The download stopped after about 10 GB (connection reset), so the book holds the games of 2026-09-01 to about 2026-09-11:
+  5,519,855 games (abandoned games and games without both ratings left out). Only the first 30 plies of each game count.
+- Rating bands by the mean rating of the two players: under 1200 (1,314,336 games), 1200–1599 (2,083,236), 1600–1999 (1,791,501), 2000+ (330,782).
+  These are Lichess rapid ratings. The edges were picked from the rating spread, so each band has enough games.
+- `app/src/main/assets/opening/book.bin` (13,523,785 bytes, about 8.0 MB deflated in the APK; 263,631 positions, 489,939 moves) keeps a move
+  when it has 7 or more games in at least one band.
+  Each position also keeps its total games per band, so shares are out of all games, not only the kept moves.
+- Position key: the first 8 bytes of SHA-1 over the 12 piece bitboards, side to move, castling (only with king and rook at home)
+  and the en passant square (only when a capture there is legal). So move orders that reach the same position share stats.
+  `scripts/opening_book.py` and `opening/OpeningBook.kt` make the same key; `app/src/test/resources/opening-keys.tsv` checks it.
+- Opening names: `assets/opening/names.tsv` (3,865 names) from `lichess-org/chess-openings` (CC0, commit `a6189a3`).
+  A position shows the name of the deepest named position on its line.
+- Opening explorer screen (from the library): board, opening name, rating band chips (the pick is kept), and the moves played
+  with share, games and a White / draw / Black bar. Tap a move or play one on the board. Analyze opens the line for analysis; Play starts an engine game from it.
+- Analysis screen: a card with the opening name and the 3 most played moves of the shown position, for the picked band.
+- Book grade: a move is Book when it and all moves before it are book moves (each played in 1% or more of its position's games),
+  unless the engine grades it Weak, Mistake or Blunder. So 1. e4 e5 2. Qh5 Nc6 3. Bc4 Nf6?? stays a Blunder. Accuracy does not change.
+- Build (needs python-chess, numpy, zstandard; about 4,000 games/s on 4 cores):
+
+  ```sh
+  curl -sS https://database.lichess.org/standard/lichess_db_standard_rated_2026-09.pgn.zst \
+    | python scripts/opening_book.py extract WORK
+  python scripts/opening_book.py count WORK
+  python scripts/opening_book.py write WORK app/src/main/assets/opening/book.bin 7
+  python scripts/opening_book.py names CHESS_OPENINGS_DIR app/src/main/assets/opening/names.tsv
+  ```
+
+- Tests: 7 JVM tests in `opening/OpeningTest.kt` (keys vs the script, transpositions, reading a 6 KB test book, Book plies and the 1% rule,
+  move codes, names, Book grade rule). They and `ChessTest` were run with kotlinc and JUnit; the Gradle build and the screens were not run here.
+- Not checked yet: Gradle build, the screens on a device, load time on a phone.
+
 ## Sources checked
 
 | Source | Checked | Note |
