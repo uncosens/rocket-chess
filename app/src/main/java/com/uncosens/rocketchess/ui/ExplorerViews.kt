@@ -38,7 +38,7 @@ import com.uncosens.rocketchess.opening.OpeningData
 import com.uncosens.rocketchess.opening.Tally
 import java.text.NumberFormat
 
-/** "B90 Sicilian Defense: Najdorf Variation", or nothing. With [reserve], two lines are kept even with no name, so nothing below moves. */
+/** "B90 Sicilian Defense: Najdorf Variation", or nothing. With [reserve], one line is kept even with no name, so nothing below moves; a long name ends in "…". */
 @Composable
 fun OpeningTitle(opening: Opening?, modifier: Modifier = Modifier, reserve: Boolean = false, placeholder: String = "") {
     if (opening == null && !reserve) return
@@ -47,8 +47,7 @@ fun OpeningTitle(opening: Opening?, modifier: Modifier = Modifier, reserve: Bool
         modifier = modifier,
         style = MaterialTheme.typography.bodyMedium,
         fontWeight = FontWeight.Medium,
-        minLines = if (reserve) 2 else 1,
-        maxLines = 2,
+        maxLines = if (reserve) 1 else 2,
         overflow = TextOverflow.Ellipsis,
     )
 }
@@ -134,7 +133,7 @@ fun ExplorerCard(vm: GameViewModel, line: GameLine) {
     if (position == null && vm.opening == null) return
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(18.dp)) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            // "Opening explorer" until the first named position; two lines kept so the moves below stay put.
+            // "Opening explorer" until the first named position; one fixed line so the moves below stay put.
             OpeningTitle(vm.opening, reserve = true, placeholder = stringResource(R.string.explorer_title))
             if (position != null) {
                 BookMoves(fen, position, vm::play, limit = 3)
