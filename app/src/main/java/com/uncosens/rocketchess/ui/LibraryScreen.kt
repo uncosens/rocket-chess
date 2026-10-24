@@ -94,8 +94,9 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: OpenGame, onOnline: () -> Unit, 
             ImportButton(R.drawable.ic_file, stringResource(R.string.open_file), Modifier.weight(1f)) { openFile.launch(arrayOf("*/*")) }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ImportButton(R.drawable.ic_board, stringResource(R.string.setup_board), Modifier.weight(1f), onSetup)
-            ImportButton(R.drawable.ic_engine, stringResource(R.string.play_engine), Modifier.weight(1f), onPlay)
+            ImportButton(R.drawable.ic_board, stringResource(R.string.setup_board), Modifier.weight(1f), onClick = onSetup)
+            // Same color as Play vs engine on Set up board.
+            ImportButton(R.drawable.ic_engine, stringResource(R.string.play_engine), Modifier.weight(1f), MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.onSecondary, onPlay)
         }
         vm.error?.let { ErrorText(it) }
 
@@ -194,12 +195,19 @@ private fun sourceIcon(source: String) = when (source) {
 }
 
 @Composable
-private fun ImportButton(icon: Int, text: String, modifier: Modifier, onClick: () -> Unit) {
+private fun ImportButton(
+    icon: Int,
+    text: String,
+    modifier: Modifier,
+    container: Color = MaterialTheme.colorScheme.surfaceContainer,
+    content: Color = MaterialTheme.colorScheme.onSurface,
+    onClick: () -> Unit,
+) {
     FilledTonalButton(
         onClick = onClick,
         modifier = modifier.height(52.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.filledTonalButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        colors = ButtonDefaults.filledTonalButtonColors(containerColor = container, contentColor = content),
         contentPadding = PaddingValues(horizontal = 12.dp),
     ) {
         Icon(painterResource(icon), null, Modifier.size(18.dp))

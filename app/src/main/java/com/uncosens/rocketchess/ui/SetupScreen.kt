@@ -19,8 +19,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -129,7 +129,6 @@ private fun Controls(
 ) {
     val context = LocalContext.current
     val images = remember { PieceSetStore.images(context, PieceSetStore.load(context)) }
-    Text(stringResource(R.string.setup_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     for (row in listOf("KQRBNP", "kqrbnp")) {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             for (p in row) {
@@ -169,8 +168,14 @@ private fun Controls(
         Button(onClick = onAnalyze, enabled = error == null, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(16.dp)) {
             Text(stringResource(R.string.analyze))
         }
-        // Plays the engine from this position.
-        OutlinedButton(onClick = onPlay, enabled = error == null, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(16.dp)) {
+        // Plays the engine from this position; the secondary color sets it apart from Analyze.
+        Button(
+            onClick = onPlay,
+            enabled = error == null,
+            modifier = Modifier.weight(1f).height(52.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary, contentColor = MaterialTheme.colorScheme.onSecondary),
+        ) {
             Text(stringResource(R.string.play_engine))
         }
     }
