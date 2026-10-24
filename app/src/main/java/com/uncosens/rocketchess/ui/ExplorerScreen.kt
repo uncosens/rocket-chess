@@ -69,7 +69,14 @@ fun ExplorerScreen(vm: ExplorerViewModel, onAnalyze: (pgn: String) -> Unit, onPl
 @Composable
 private fun Header(vm: ExplorerViewModel, onBack: () -> Unit) {
     TopBar(stringResource(R.string.explorer_title), onBack, stringResource(R.string.explorer_subtitle)) {
-        SquareIconButton(R.drawable.ic_flip, stringResource(R.string.flip_board), { vm.flipped = !vm.flipped })
+        // Up here so the bottom row keeps room for the Analyze and Play labels on a phone.
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SquareIconButton(
+                R.drawable.ic_star, stringResource(R.string.show_best), vm::toggleBest,
+                container = if (vm.showBest) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainer,
+            )
+            SquareIconButton(R.drawable.ic_flip, stringResource(R.string.flip_board), { vm.flipped = !vm.flipped })
+        }
     }
 }
 
@@ -122,10 +129,6 @@ private fun Actions(vm: ExplorerViewModel, onAnalyze: (String) -> Unit, onPlay: 
         OutlinedButton(onClick = { onPlay(vm.fen) }, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(16.dp)) {
             Text(stringResource(R.string.explorer_play), maxLines = 1)
         }
-        SquareIconButton(
-            R.drawable.ic_star, stringResource(R.string.show_best), vm::toggleBest, size = 52.dp,
-            container = if (vm.showBest) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainer,
-        )
         SquareIconButton(R.drawable.ic_back, stringResource(R.string.nav_prev), { vm.goTo(vm.ply - 1) }, size = 52.dp, enabled = vm.ply > 0)
         SquareIconButton(R.drawable.ic_next, stringResource(R.string.nav_next), { vm.goTo(vm.ply + 1) }, size = 52.dp, enabled = vm.ply < vm.line.plies.size)
     }

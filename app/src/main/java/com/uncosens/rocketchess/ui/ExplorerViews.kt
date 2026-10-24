@@ -1,6 +1,7 @@
 package com.uncosens.rocketchess.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -38,17 +39,21 @@ import com.uncosens.rocketchess.opening.OpeningData
 import com.uncosens.rocketchess.opening.Tally
 import java.text.NumberFormat
 
-/** "B90 Sicilian Defense: Najdorf Variation", or nothing. With [reserve], one line is kept even with no name, so nothing below moves; a long name ends in "…". */
+/** "B90 Sicilian Defense: Najdorf Variation", or nothing. With [reserve], one line is kept even with no name, so nothing below moves; a long name scrolls sideways. */
 @Composable
 fun OpeningTitle(opening: Opening?, modifier: Modifier = Modifier, reserve: Boolean = false, placeholder: String = "") {
     if (opening == null && !reserve) return
+    val text = opening?.let { "${it.eco} ${it.name}" } ?: placeholder
+    // A new name starts scrolled to its beginning.
+    val scroll = remember(text) { ScrollState(0) }
     Text(
-        opening?.let { "${it.eco} ${it.name}" } ?: placeholder,
-        modifier = modifier,
+        text,
+        modifier = if (reserve) modifier.horizontalScroll(scroll) else modifier,
         style = MaterialTheme.typography.bodyMedium,
         fontWeight = FontWeight.Medium,
         maxLines = if (reserve) 1 else 2,
-        overflow = TextOverflow.Ellipsis,
+        softWrap = !reserve,
+        overflow = if (reserve) TextOverflow.Clip else TextOverflow.Ellipsis,
     )
 }
 

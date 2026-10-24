@@ -53,7 +53,6 @@
     <string name="versus">VS</string>
     <string name="no_games_vs">No games against %1$s.</string>
     <string name="search">Search</string>
-    <string name="online_note">The user name is sent to the chosen site to get its public games. The game you pick is saved on this device.</string>
     <string name="no_public_games">No public games found.</string>
     <string name="err_bad_name">Use 2–30 letters, digits, _ or -.</string>
     <string name="err_not_found">User not found.</string>
