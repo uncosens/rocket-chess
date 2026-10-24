@@ -17,6 +17,9 @@ import com.uncosens.rocketchess.analysis.EngineBudget
 import com.uncosens.rocketchess.analysis.EngineOptions
 import com.uncosens.rocketchess.analysis.PositionEval
 import com.uncosens.rocketchess.analysis.SavedAnalysis
+import com.uncosens.rocketchess.analysis.bookGrade
+import com.uncosens.rocketchess.opening.Opening
+import com.uncosens.rocketchess.opening.OpeningData
 import com.uncosens.rocketchess.engine.StockfishSession
 import java.io.File
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -269,7 +272,17 @@ class GameViewModel : ViewModel() {
         }
     }
 
-    fun grade(plyIndex: Int) = line?.let { Analyzer.grade(it, evals, plyIndex) }
+    /** Plies of [line], from its start, that follow the opening book. */
+    private val bookPlies: Int by derivedStateOf {
+        val l = line
+        val book = OpeningData.book
+        if (l == null || book == null) 0 else book.bookPlies(l)
+    }
+
+    fun grade(plyIndex: Int) = line?.let { Analyzer.grade(it, evals, plyIndex) }?.let { it.copy(cls = bookGrade(it.cls, plyIndex < bookPlies)) }
+
+    /** The opening name of the shown position, or the deepest named one before it. */
+    val opening: Opening? by derivedStateOf { line?.let { l -> OpeningData.names?.of(l, ply) } }
 
     /** The game's analysis as SavedAnalysis text if it has new results since the last save; marks it saved. */
     fun takeAnalysisToSave(): String? {

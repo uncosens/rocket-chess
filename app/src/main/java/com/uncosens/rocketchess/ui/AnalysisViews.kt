@@ -46,6 +46,7 @@ fun MoveClass.color(): Color = when (this) {
     MoveClass.Brilliant -> Color(0xFFA855F7)
     MoveClass.Great -> Color(0xFF6C7FE0)
     MoveClass.Best -> Color(0xFF1C93A8)
+    MoveClass.Book -> Color(0xFFA9845A)
     MoveClass.Good -> Color(0xFF9CCC65)
     MoveClass.Fine -> Color(0xFF8C96AB)
     MoveClass.Weak -> Color(0xFFE0A21F)
@@ -62,10 +63,10 @@ fun MoveClass.suffix(): String = when (this) {
     else -> ""
 }
 
-/** Text for the round grade badge, or null for no badge. */
+/** Text for the round grade badge, or null for no badge. Book draws its own mark on the board. */
 fun MoveClass.badge(): String? = when (this) {
     MoveClass.Best -> "★"
-    MoveClass.Good, MoveClass.Fine -> null
+    MoveClass.Book, MoveClass.Good, MoveClass.Fine -> null
     else -> suffix()
 }
 
@@ -75,6 +76,7 @@ fun MoveClass.label(): String = stringResource(
         MoveClass.Brilliant -> R.string.class_brilliant
         MoveClass.Great -> R.string.class_great
         MoveClass.Best -> R.string.class_best
+        MoveClass.Book -> R.string.class_book
         MoveClass.Good -> R.string.class_good
         MoveClass.Fine -> R.string.class_fine
         MoveClass.Weak -> R.string.class_weak

@@ -89,7 +89,7 @@ Play blocks updates without 16 KB support from 2027-02-01 (see the Android page-
   A sacrifice means the opponent can win the moved piece for a net 200+ (a minor piece for a pawn, or the exchange), by a static exchange on its square (`chess/Sacrifice.kt`).
 - Great (our own rule): PV1 that beats PV2 by 10+ points for the mover and changes the result between them
   (losing < 40% <= even <= 60% < winning; losing to even, even to winning, or losing to winning). A plain recapture (taking back on the square
-  the last move captured on) is never Great, and neither is any move before move 6 (we have no opening book).
+  the last move captured on) is never Great, and neither is any move before move 6 (early moves are mostly book moves).
   Brilliant wins over Great.
 - Accuracy is the mean of a score per move, kept to 0..100. Move score = `100 - 208 * (1 - exp(-0.059 * loss))`, where loss is win% lost
   on a flatter curve (`0.00177` instead of `0.00368208`); a negative loss counts as 0. Grades still use the normal curve.

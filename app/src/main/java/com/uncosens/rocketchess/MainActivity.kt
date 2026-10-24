@@ -16,7 +16,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.uncosens.rocketchess.chess.GameLine
 import com.uncosens.rocketchess.data.Sources
+import com.uncosens.rocketchess.opening.OpeningData
 import com.uncosens.rocketchess.ui.AnalysisState
+import com.uncosens.rocketchess.ui.ExplorerScreen
+import com.uncosens.rocketchess.ui.ExplorerViewModel
 import com.uncosens.rocketchess.ui.GameScreen
 import com.uncosens.rocketchess.ui.GameViewModel
 import com.uncosens.rocketchess.ui.LibraryScreen
@@ -34,6 +37,7 @@ class MainActivity : ComponentActivity() {
     private val game: GameViewModel by viewModels()
     private val library: LibraryViewModel by viewModels()
     private val play: PlayViewModel by viewModels()
+    private val explorer: ExplorerViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -41,6 +45,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             RocketTheme {
                 Surface(Modifier.fillMaxSize()) {
+                    LaunchedEffect(Unit) { OpeningData.load(applicationContext) }
                     // A few screens; a nav library is not worth it yet.
                     var screen by rememberSaveable { mutableStateOf(LIBRARY) }
                     // The screen a game was opened from, so Back returns there.
@@ -73,6 +78,13 @@ class MainActivity : ComponentActivity() {
                                 onPlay = { play.prepare(it); playFrom = SETUP; screen = PLAY },
                                 onBack = { screen = LIBRARY },
                             )
+                            // Like set-up positions, explorer lines open without being saved.
+                            EXPLORER -> ExplorerScreen(
+                                explorer,
+                                onAnalyze = { open(it, Sources.textKey(it), null, null) },
+                                onPlay = { play.prepare(it); playFrom = EXPLORER; screen = PLAY },
+                                onBack = { screen = LIBRARY },
+                            )
                             // Games against the engine are saved once analyzed; "You" is the owner.
                             PLAY -> PlayScreen(play, onAnalyze = { library.importText(it, Sources.ENGINE, open, getString(R.string.you)) }, onBack = { screen = playFrom })
                             else -> LibraryScreen(
@@ -81,6 +93,7 @@ class MainActivity : ComponentActivity() {
                                     if (play.line == null) play.prepare(GameLine.START_FEN)
                                     playFrom = LIBRARY; screen = PLAY
                                 },
+                                onExplorer = { screen = EXPLORER },
                                 onSettings = { screen = SETTINGS },
                             )
                         }
@@ -104,5 +117,6 @@ class MainActivity : ComponentActivity() {
         const val SETTINGS = "settings"
         const val SETUP = "setup"
         const val PLAY = "play"
+        const val EXPLORER = "explorer"
     }
 }
