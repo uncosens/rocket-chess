@@ -1,8 +1,7 @@
 """Builds the offline opening book (app/src/main/assets/opening/book.bin) from a Lichess game dump.
 
 Usage:
-  curl -sS https://database.lichess.org/standard/lichess_db_standard_rated_YYYY-MM.pgn.zst \\
-    | python scripts/opening_book.py extract WORK [MAX_GAMES]
+  scripts/lichess_dump.sh YYYY-MM | python scripts/opening_book.py extract WORK [MAX_GAMES]
   python scripts/opening_book.py count WORK
   python scripts/opening_book.py write WORK OUT.bin MIN_GAMES
   python scripts/opening_book.py names CHESS_OPENINGS_DIR OUT.tsv

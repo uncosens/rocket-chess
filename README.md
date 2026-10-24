@@ -133,13 +133,19 @@ Play blocks updates without 16 KB support from 2027-02-01 (see the Android page-
 
 ## Opening explorer and Book grade (2026-10-24)
 
-- Data: rated rapid games from the Lichess open database (CC0), `lichess_db_standard_rated_2026-09.pgn.zst`.
-  The download stopped after about 10 GB (connection reset), so the book holds the games of 2026-09-01 to about 2026-09-11:
-  5,519,855 games (abandoned games and games without both ratings left out). Only the first 30 plies of each game count.
-- Rating bands by the mean rating of the two players: under 1200 (1,314,336 games), 1200–1599 (2,083,236), 1600–1999 (1,791,501), 2000+ (330,782).
-  These are Lichess rapid ratings. The edges were picked from the rating spread, so each band has enough games.
-- `app/src/main/assets/opening/book.bin` (13,523,785 bytes, about 8.0 MB deflated in the APK; 263,631 positions, 489,939 moves) keeps a move
-  when it has 7 or more games in at least one band.
+- Data: all rated rapid games of `lichess_db_standard_rated_2026-09.pgn.zst` from the Lichess open database (CC0),
+  SHA-256 `1de8eb64…edec89`, the same as Lichess's list: 14,944,650 games (abandoned games and games without both ratings left out).
+  Only the first 30 plies of each game count.
+- Rating bands are by the mean Lichess rapid rating of the two players. The chips show them as Chess.com rapid ratings:
+  under 1200 (8,609,615 games), 1200–1500 (2,838,892), 1500–1800 (2,072,515), 1800–2100 (1,125,078), 2100+ (298,550).
+  The Lichess edges 1560, 1750, 1930 and 2140 are Chess.com 1200, 1500, 1800 and 2100 by the Lichess-to-Chess.com rapid fit
+  of https://github.com/theophile-wallez/lichess-chesscom-ratings (9,974 rapid pairs of same-named accounts, 2026-09).
+  It is a mean: one player can be about 100 points off it.
+- `scripts/lichess_dump.sh` downloads in 1 GiB pieces, three at a time, each resumed until complete (one connection was slow
+  and once broke off), and checks the SHA-256 at the end. The work files keep each game's mean rating, so new band edges need
+  only `count` and `write` again.
+- `app/src/main/assets/opening/book.bin` (14,496,337 bytes, about 8.9 MB deflated in the APK; 232,720 positions, 457,444 moves) keeps a move
+  when it has 18 or more games in at least one band.
   Each position also keeps its total games per band, so shares are out of all games, not only the kept moves.
 - Position key: the first 8 bytes of SHA-1 over the 12 piece bitboards, side to move, castling (only with king and rook at home)
   and the en passant square (only when a capture there is legal). So move orders that reach the same position share stats.
@@ -151,17 +157,16 @@ Play blocks updates without 16 KB support from 2027-02-01 (see the Android page-
 - Analysis screen: a card with the opening name and the 3 most played moves of the shown position, for the picked band.
 - Book grade: a move is Book when it and all moves before it are book moves (each played in 1% or more of its position's games),
   unless the engine grades it Weak, Mistake or Blunder. So 1. e4 e5 2. Qh5 Nc6 3. Bc4 Nf6?? stays a Blunder. Accuracy does not change.
-- Build (needs python-chess, numpy, zstandard; about 4,000 games/s on 4 cores):
+- Build (needs python-chess, numpy, zstandard; about 4,000 games/s on 4 cores, about 80 minutes for the month):
 
   ```sh
-  curl -sS https://database.lichess.org/standard/lichess_db_standard_rated_2026-09.pgn.zst \
-    | python scripts/opening_book.py extract WORK
+  scripts/lichess_dump.sh 2026-09 | python scripts/opening_book.py extract WORK
   python scripts/opening_book.py count WORK
-  python scripts/opening_book.py write WORK app/src/main/assets/opening/book.bin 7
+  python scripts/opening_book.py write WORK app/src/main/assets/opening/book.bin 18
   python scripts/opening_book.py names CHESS_OPENINGS_DIR app/src/main/assets/opening/names.tsv
   ```
 
-- Tests: 7 JVM tests in `opening/OpeningTest.kt` (keys vs the script, transpositions, reading a 6 KB test book, Book plies and the 1% rule,
+- Tests: 7 JVM tests in `opening/OpeningTest.kt` (keys vs the script, transpositions, reading an 8 KB test book, Book plies and the 1% rule,
   move codes, names, Book grade rule). They and `ChessTest` were run with kotlinc and JUnit; the Gradle build and the screens were not run here.
 - Not checked yet: Gradle build, the screens on a device, load time on a phone.
 
