@@ -21,6 +21,7 @@ import androidx.compose.ui.geometry.lerp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -268,8 +269,30 @@ fun ChessBoard(
         }
         val mark = grade?.badge()
         if (grade != null && mark != null && lastMove != null && index(lastMove.second) !in kings) badge(index(lastMove.second), grade.color(), mark)
+        if (grade == MoveClass.Book && lastMove != null && index(lastMove.second) !in kings) {
+            badge(index(lastMove.second), grade.color(), "")
+            drawBook(at(index(lastMove.second)) + Offset(sq * 0.8f, sq * 0.2f), sq)
+        }
         for ((i, m) in kings) badge(i, m.first, m.second)
     }
+}
+
+/** An open book in white, centered on [c], for the Book badge. */
+private fun DrawScope.drawBook(c: Offset, sq: Float) {
+    val w = sq * 0.1f
+    val h = sq * 0.08f
+    val path = Path().apply {
+        moveTo(c.x, c.y - h * 0.7f)
+        lineTo(c.x - w, c.y - h)
+        lineTo(c.x - w, c.y + h * 0.7f)
+        lineTo(c.x, c.y + h)
+        lineTo(c.x + w, c.y + h * 0.7f)
+        lineTo(c.x + w, c.y - h)
+        close()
+        moveTo(c.x, c.y - h * 0.7f)
+        lineTo(c.x, c.y + h)
+    }
+    drawPath(path, Color.White, style = Stroke(sq * 0.025f, join = StrokeJoin.Round))
 }
 
 /** A straight arrow between square centers, stopping short of the target center. */

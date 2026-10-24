@@ -38,6 +38,11 @@ Board images (assets/boards), from the Lichess project: https://github.com/liche
   wood4, maple, marble, blue-marble - the lila authors and pirouetti - GNU AGPL v3 or later (see AGPL-3.0).
   Combined with this GPL v3 app as allowed by section 13 of both licenses.
 
+Opening data (assets/opening)
+  book.bin - move statistics from the Lichess open database (https://database.lichess.org),
+    rated rapid games of 2026-09, released under CC0. Made by scripts/opening_book.py.
+  names.tsv - opening names from https://github.com/lichess-org/chess-openings, CC0.
+
 Fonts (res/font), under the SIL Open Font License 1.1 (see OFL-1.1)
   Unbounded - Copyright 2022 The Unbounded Project Authors (https://github.com/googlefonts/unbounded)
   IBM Plex Sans - Copyright 2017 IBM Corp. with Reserved Font Name "Plex"

@@ -89,7 +89,7 @@ Play blocks updates without 16 KB support from 2027-02-01 (see the Android page-
   A sacrifice means the opponent can win the moved piece for a net 200+ (a minor piece for a pawn, or the exchange), by a static exchange on its square (`chess/Sacrifice.kt`).
 - Great (our own rule): PV1 that beats PV2 by 10+ points for the mover and changes the result between them
   (losing < 40% <= even <= 60% < winning; losing to even, even to winning, or losing to winning). A plain recapture (taking back on the square
-  the last move captured on) is never Great, and neither is any move before move 6 (we have no opening book).
+  the last move captured on) is never Great, and neither is any move before move 6 (early moves are mostly book moves).
   Brilliant wins over Great.
 - Accuracy is the mean of a score per move, kept to 0..100. Move score = `100 - 208 * (1 - exp(-0.059 * loss))`, where loss is win% lost
   on a flatter curve (`0.00177` instead of `0.00368208`); a negative loss counts as 0. Grades still use the normal curve.
@@ -130,6 +130,45 @@ Play blocks updates without 16 KB support from 2027-02-01 (see the Android page-
 - Sizes: release APK (unsigned) 105,570,943 bytes, release AAB 88,691,646 bytes.
 - Checked on the Galaxy Tab S7: licenses screen, each license text, back navigation.
 - Not done: signing, AAB install through Play, run on a 16 KB page device.
+
+## Opening explorer and Book grade (2026-10-24)
+
+- Data: all rated rapid games of `lichess_db_standard_rated_2026-09.pgn.zst` from the Lichess open database (CC0),
+  SHA-256 `1de8eb64…edec89`, the same as Lichess's list: 14,944,650 games (abandoned games and games without both ratings left out).
+  Only the first 30 plies of each game count.
+- Rating bands are by the mean Lichess rapid rating of the two players. The chips show them as Chess.com rapid ratings:
+  under 1200 (8,609,615 games), 1200–1500 (2,838,892), 1500–1800 (2,072,515), 1800–2100 (1,125,078), 2100+ (298,550).
+  The Lichess edges 1560, 1750, 1930 and 2140 are Chess.com 1200, 1500, 1800 and 2100 by the Lichess-to-Chess.com rapid fit
+  of https://github.com/theophile-wallez/lichess-chesscom-ratings (9,974 rapid pairs of same-named accounts, 2026-09).
+  It is a mean: one player can be about 100 points off it.
+- `scripts/lichess_dump.sh` downloads in 1 GiB pieces, three at a time, each resumed until complete (one connection was slow
+  and once broke off), and checks the SHA-256 at the end. The work files keep each game's mean rating, so new band edges need
+  only `count` and `write` again.
+- `app/src/main/assets/opening/book.bin` (14,496,337 bytes, about 8.9 MB deflated in the APK; 232,720 positions, 457,444 moves) keeps a move
+  when it has 18 or more games in at least one band.
+  Each position also keeps its total games per band, so shares are out of all games, not only the kept moves.
+- Position key: the first 8 bytes of SHA-1 over the 12 piece bitboards, side to move, castling (only with king and rook at home)
+  and the en passant square (only when a capture there is legal). So move orders that reach the same position share stats.
+  `scripts/opening_book.py` and `opening/OpeningBook.kt` make the same key; `app/src/test/resources/opening-keys.tsv` checks it.
+- Opening names: `assets/opening/names.tsv` (3,865 names) from `lichess-org/chess-openings` (CC0, commit `a6189a3`).
+  A position shows the name of the deepest named position on its line.
+- Opening explorer screen (from the library): board, opening name, rating band chips (the pick is kept), and the moves played
+  with share, games and a White / draw / Black bar. Tap a move or play one on the board. Analyze opens the line for analysis; Play starts an engine game from it.
+- Analysis screen: a card with the opening name and the 3 most played moves of the shown position, for the picked band.
+- Book grade: a move is Book when it and all moves before it are book moves (each played in 1% or more of its position's games),
+  unless the engine grades it Weak, Mistake or Blunder. So 1. e4 e5 2. Qh5 Nc6 3. Bc4 Nf6?? stays a Blunder. Accuracy does not change.
+- Build (needs python-chess, numpy, zstandard; about 4,000 games/s on 4 cores, about 80 minutes for the month):
+
+  ```sh
+  scripts/lichess_dump.sh 2026-09 | python scripts/opening_book.py extract WORK
+  python scripts/opening_book.py count WORK
+  python scripts/opening_book.py write WORK app/src/main/assets/opening/book.bin 18
+  python scripts/opening_book.py names CHESS_OPENINGS_DIR app/src/main/assets/opening/names.tsv
+  ```
+
+- Tests: 7 JVM tests in `opening/OpeningTest.kt` (keys vs the script, transpositions, reading an 8 KB test book, Book plies and the 1% rule,
+  move codes, names, Book grade rule). They and `ChessTest` were run with kotlinc and JUnit; the Gradle build and the screens were not run here.
+- Not checked yet: Gradle build, the screens on a device, load time on a phone.
 
 ## Sources checked
 

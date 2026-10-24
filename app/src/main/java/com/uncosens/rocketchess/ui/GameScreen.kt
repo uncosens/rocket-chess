@@ -193,6 +193,7 @@ private fun Details(vm: GameViewModel, modifier: Modifier) {
         }
         MoveCard(vm, line)
         AnalysisStatus(vm)
+        ExplorerCard(vm, line)
         EvalCard(vm, line)
     }
 }
@@ -221,6 +222,7 @@ private fun MoveCard(vm: GameViewModel, line: GameLine) {
                 when (g?.cls) {
                     null, MoveClass.Good, MoveClass.Fine -> {}
                     MoveClass.Best -> Icon(painterResource(R.drawable.ic_star), null, Modifier.size(16.dp), tint = Color.White)
+                    MoveClass.Book -> Icon(painterResource(R.drawable.ic_book), null, Modifier.size(16.dp), tint = Color.White)
                     else -> Text(g.cls.suffix(), color = Color.White, fontWeight = FontWeight.Bold)
                 }
             }

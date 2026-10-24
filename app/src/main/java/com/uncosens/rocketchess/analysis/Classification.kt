@@ -18,7 +18,7 @@ sealed interface Eval {
     }
 }
 
-enum class MoveClass { Brilliant, Great, Best, Good, Fine, Weak, Mistake, Blunder }
+enum class MoveClass { Brilliant, Great, Best, Book, Good, Fine, Weak, Mistake, Blunder }
 
 /** All analysis numbers live here so UI code never repeats them. Not the official Lichess grading. */
 object AnalysisPolicy {
@@ -49,7 +49,7 @@ object AnalysisPolicy {
     const val EVEN_FROM = 40.0
     const val EVEN_UNTIL = 60.0
 
-    /** No Great before this move number: we have no opening book, and early moves are mostly book moves. */
+    /** No Great before this move number: early moves are mostly book moves. */
     const val GREAT_FROM_MOVE = 6
 
     /** Win% curve slope for grades and the eval graph (Lichess). */
@@ -105,6 +105,13 @@ fun isGreat(playedUci: String, bestUci: String?, moverWinBest: Double, moverWinS
  */
 fun moveScore(loss: Double): Double =
     100 - AnalysisPolicy.ACCURACY_DROP * (1 - exp(-AnalysisPolicy.ACCURACY_DECAY * maxOf(0.0, loss)))
+
+/**
+ * Book when the move and all moves before it are book moves (OpeningBook.bookPlies), unless the engine
+ * grades it Weak or worse. Accuracy does not change: it uses the win% loss, not the grade.
+ */
+fun bookGrade(cls: MoveClass, inBook: Boolean): MoveClass =
+    if (inBook && cls != MoveClass.Weak && cls != MoveClass.Mistake && cls != MoveClass.Blunder) MoveClass.Book else cls
 
 /**
  * Best when the played move is the engine's first choice (PV1). Otherwise by win% loss.

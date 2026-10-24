@@ -25,6 +25,7 @@
     <string name="class_brilliant">Brilliant</string>
     <string name="class_great">Great</string>
     <string name="class_best">Best</string>
+    <string name="class_book">Book</string>
     <string name="class_good">Good</string>
     <string name="class_fine">Fine</string>
     <string name="class_weak">Weak</string>
@@ -68,7 +69,7 @@
     <string name="licenses_stockfish">Analysis uses Stockfish %1$s by the Stockfish developers, under the GNU General Public License v3.0. It runs unmodified as a separate program. Its neural network is CC0-1.0, trained on Leela Chess Zero data (ODbL).</string>
     <string name="licenses_stockfish_source">Stockfish source code</string>
     <string name="licenses_libraries">Other libraries (AndroidX, Kotlin, OkHttp, Okio, kotlinx, chesslib, AndroidSVG, Apache Commons Lang and others) are under the Apache License 2.0. The full list is in the notices.</string>
-    <string name="licenses_assets">Piece images come from the Lichess project: cburnett by Colin M.L. Burnett and merida by Armando Hernandez Marroquin (GPLv2+), mpchess by Maxime Chupin (GPLv3+), chessnut by Alexis Luengas (Apache 2.0). Wood, maple, marble and blue marble boards are by the Lichess authors (AGPLv3+). Fonts Unbounded, IBM Plex Sans and JetBrains Mono are under the SIL Open Font License 1.1.</string>
+    <string name="licenses_assets">Piece images come from the Lichess project: cburnett by Colin M.L. Burnett and merida by Armando Hernandez Marroquin (GPLv2+), mpchess by Maxime Chupin (GPLv3+), chessnut by Alexis Luengas (Apache 2.0). Wood, maple, marble and blue marble boards are by the Lichess authors (AGPLv3+). Fonts Unbounded, IBM Plex Sans and JetBrains Mono are under the SIL Open Font License 1.1. Opening statistics come from the Lichess open database and opening names from lichess-org/chess-openings, both CC0.</string>
     <string name="licenses_build">App commit: %1$s\nStockfish commit: %2$s\nEngine SHA-256: %3$s</string>
     <string name="licenses_notices">Third-party notices</string>
     <string name="engine_settings">Engine settings</string>
@@ -133,4 +134,14 @@
     <string name="piece_rook">Rook</string>
     <string name="piece_bishop">Bishop</string>
     <string name="piece_knight">Knight</string>
+    <string name="explorer_title">Opening explorer</string>
+    <string name="explorer_subtitle">Lichess rapid games</string>
+    <string name="explorer_loading">Loading the opening book…</string>
+    <string name="explorer_no_games">No games from this position in the book.</string>
+    <string name="explorer_play">Play</string>
+    <string name="band_all">All ratings</string>
+    <string name="band_under">Under %1$d</string>
+    <string name="band_range">%1$d–%2$d</string>
+    <string name="band_over">%1$d+</string>
+    <string name="explorer_bands_note">Chess.com rapid ratings, converted from the Lichess rapid ratings of both players.</string>
 </resources>
