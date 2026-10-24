@@ -132,10 +132,7 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: OpenGame, onOnline: () -> Unit, 
                             AccuracyText(g.white, g.black, g.whiteAccuracy, g.blackAccuracy, g.owner)
                         }
                     }
-                    val outcome = outcomeColor(g.white, g.black, g.result, g.owner)
-                    Surface(color = outcome ?: MaterialTheme.colorScheme.surfaceContainer, contentColor = if (outcome != null) Color.White else MaterialTheme.colorScheme.onSurface, shape = RoundedCornerShape(8.dp)) {
-                        Text(g.result, Modifier.padding(horizontal = 8.dp, vertical = 4.dp), fontFamily = Mono, style = MaterialTheme.typography.bodySmall)
-                    }
+                    ResultChip(g.result, outcomeColor(g.white, g.black, g.result, g.owner))
                     IconButton(onClick = { vm.delete(g.id) }) {
                         Icon(painterResource(R.drawable.ic_delete), stringResource(R.string.delete), Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -171,6 +168,14 @@ private fun outcomeColor(white: String, black: String, result: String, owner: St
 
 private val WIN = Color(0xFF2EA043)
 private val LOSS = Color(0xFFD9363E)
+
+/** The result in a small rounded chip, filled with [outcome] when the user won or lost. */
+@Composable
+private fun ResultChip(result: String, outcome: Color?) {
+    Surface(color = outcome ?: MaterialTheme.colorScheme.surfaceContainer, contentColor = if (outcome != null) Color.White else MaterialTheme.colorScheme.onSurface, shape = RoundedCornerShape(8.dp)) {
+        Text(result, Modifier.padding(horizontal = 8.dp, vertical = 4.dp), fontFamily = Mono, style = MaterialTheme.typography.bodySmall)
+    }
+}
 
 /** The searched user's accuracy in an analyzed game; nothing when no searched user played it. */
 @Composable
@@ -289,11 +294,11 @@ fun OnlineScreen(vm: LibraryViewModel, onOpen: OpenGame, onBack: () -> Unit) {
                         Row(
                             Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable { vm.importRemote(g, onOpen) }.padding(vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
+                            val result = com.uncosens.rocketchess.remote.tag(g.pgn, "Result") ?: ""
                             Column(Modifier.weight(1f)) {
-                                val result = com.uncosens.rocketchess.remote.tag(g.pgn, "Result") ?: ""
-                                Text(stringResource(R.string.players_lines, rated(g.white, g.whiteElo), rated(g.black, g.blackElo)) + "  ")
-                                Text(result, fontFamily = Mono, color = outcomeColor(g.white, g.black, result, name.trim()) ?: Color.Unspecified)
+                                Text(stringResource(R.string.players_lines, rated(g.white, g.whiteElo), rated(g.black, g.blackElo)))
                                 Text(
                                     listOfNotNull(g.speed, DateFormat.getDateInstance().format(Date(g.endedAt))).joinToString(" · "),
                                     style = MaterialTheme.typography.bodySmall,
@@ -301,6 +306,7 @@ fun OnlineScreen(vm: LibraryViewModel, onOpen: OpenGame, onBack: () -> Unit) {
                                 )
                             }
                             accuracies[g.key]?.let { AccuracyText(g.white, g.black, it.whiteAccuracy, it.blackAccuracy, name.trim()) }
+                            ResultChip(result, outcomeColor(g.white, g.black, result, name.trim()))
                         }
                         HorizontalDivider()
                     }
