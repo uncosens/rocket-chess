@@ -38,15 +38,16 @@ import com.uncosens.rocketchess.opening.OpeningData
 import com.uncosens.rocketchess.opening.Tally
 import java.text.NumberFormat
 
-/** "B90 Sicilian Defense: Najdorf Variation", or nothing. */
+/** "B90 Sicilian Defense: Najdorf Variation", or nothing. With [reserve], two lines are kept even with no name, so nothing below moves. */
 @Composable
-fun OpeningTitle(opening: Opening?, modifier: Modifier = Modifier) {
-    opening ?: return
+fun OpeningTitle(opening: Opening?, modifier: Modifier = Modifier, reserve: Boolean = false) {
+    if (opening == null && !reserve) return
     Text(
-        "${opening.eco} ${opening.name}",
+        opening?.let { "${it.eco} ${it.name}" } ?: "",
         modifier = modifier,
         style = MaterialTheme.typography.bodyMedium,
         fontWeight = FontWeight.Medium,
+        minLines = if (reserve) 2 else 1,
         maxLines = 2,
         overflow = TextOverflow.Ellipsis,
     )
