@@ -49,6 +49,7 @@
     <string name="source_paste">Pasted</string>
     <string name="user_name">User name</string>
     <string name="opponent_name">Opponent (optional)</string>
+    <string name="versus">VS</string>
     <string name="no_games_vs">No games against %1$s.</string>
     <string name="search">Search</string>
     <string name="online_note">The user name is sent to the chosen site to get its public games. The game you pick is saved on this device.</string>

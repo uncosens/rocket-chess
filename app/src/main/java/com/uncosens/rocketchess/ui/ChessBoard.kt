@@ -49,8 +49,8 @@ private val TARGET = Color(0x59101828)
 private val LOST = Color(0xFFD9363E)
 private val WON = Color(0xFF2EA043)
 private val DRAWN = Color(0xFF8C96AB)
-// 50% faster than the old 220 ms.
-private const val MOVE_MS = 147
+// 80% of the speed at 147 ms.
+private const val MOVE_MS = 184
 
 /** Square name like "e4" to 0..63, a1 = 0. */
 private fun index(square: String) = (square[0] - 'a') + (square[1] - '1') * 8

@@ -17,6 +17,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -131,7 +132,8 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: OpenGame, onOnline: () -> Unit, 
                             AccuracyText(g.white, g.black, g.whiteAccuracy, g.blackAccuracy, g.owner)
                         }
                     }
-                    Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(8.dp)) {
+                    val outcome = outcomeColor(g.white, g.black, g.result, g.owner)
+                    Surface(color = outcome ?: MaterialTheme.colorScheme.surfaceContainer, contentColor = if (outcome != null) Color.White else MaterialTheme.colorScheme.onSurface, shape = RoundedCornerShape(8.dp)) {
                         Text(g.result, Modifier.padding(horizontal = 8.dp, vertical = 4.dp), fontFamily = Mono, style = MaterialTheme.typography.bodySmall)
                     }
                     IconButton(onClick = { vm.delete(g.id) }) {
@@ -156,6 +158,19 @@ private fun sourceLabel(source: String) = stringResource(
         else -> R.string.source_paste
     },
 )
+
+/** Green when [owner] won the game, red when they lost; null for a draw or when they did not play it. */
+private fun outcomeColor(white: String, black: String, result: String, owner: String?): Color? {
+    val side = userSide(white, black, owner) ?: return null
+    return when (result) {
+        "1-0" -> if (side) WIN else LOSS
+        "0-1" -> if (side) LOSS else WIN
+        else -> null
+    }
+}
+
+private val WIN = Color(0xFF2EA043)
+private val LOSS = Color(0xFFD9363E)
 
 /** The searched user's accuracy in an analyzed game; nothing when no searched user played it. */
 @Composable
@@ -197,7 +212,8 @@ fun OnlineScreen(vm: LibraryViewModel, onOpen: OpenGame, onBack: () -> Unit) {
     val context = LocalContext.current
     var source by rememberSaveable { mutableStateOf(Sources.CHESS_COM) }
     var name by rememberSaveable { mutableStateOf("") }
-    // Optional: show only the games played against this name.
+    // VS shows a second box: only the games played against that name.
+    var versus by rememberSaveable { mutableStateOf(false) }
     var opponent by rememberSaveable { mutableStateOf("") }
     // The user's own name on this site, from Settings.
     val myId = KnownUsers.myId(context, source)
@@ -227,6 +243,13 @@ fun OnlineScreen(vm: LibraryViewModel, onOpen: OpenGame, onBack: () -> Unit) {
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.weight(1f),
             )
+            FilledTonalButton(
+                onClick = { versus = !versus; if (!versus) opponent = "" },
+                modifier = Modifier.height(52.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = if (versus) ButtonDefaults.filledTonalButtonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
+                else ButtonDefaults.filledTonalButtonColors(),
+            ) { Text(stringResource(R.string.versus)) }
             // With an empty box, My ID fills in the name; once there is text, Search is back.
             if (name.isBlank() && myId.isNotEmpty()) {
                 Button(onClick = { name = myId }, modifier = Modifier.height(52.dp), shape = RoundedCornerShape(16.dp)) {
@@ -238,7 +261,7 @@ fun OnlineScreen(vm: LibraryViewModel, onOpen: OpenGame, onBack: () -> Unit) {
                 }
             }
         }
-        OutlinedTextField(
+        if (versus) OutlinedTextField(
             value = opponent,
             onValueChange = { opponent = it },
             label = { Text(stringResource(R.string.opponent_name)) },
@@ -268,7 +291,9 @@ fun OnlineScreen(vm: LibraryViewModel, onOpen: OpenGame, onBack: () -> Unit) {
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(Modifier.weight(1f)) {
-                                Text(stringResource(R.string.players_lines, rated(g.white, g.whiteElo), rated(g.black, g.blackElo)) + "  " + (com.uncosens.rocketchess.remote.tag(g.pgn, "Result") ?: ""))
+                                val result = com.uncosens.rocketchess.remote.tag(g.pgn, "Result") ?: ""
+                                Text(stringResource(R.string.players_lines, rated(g.white, g.whiteElo), rated(g.black, g.blackElo)) + "  ")
+                                Text(result, fontFamily = Mono, color = outcomeColor(g.white, g.black, result, name.trim()) ?: Color.Unspecified)
                                 Text(
                                     listOfNotNull(g.speed, DateFormat.getDateInstance().format(Date(g.endedAt))).joinToString(" · "),
                                     style = MaterialTheme.typography.bodySmall,
