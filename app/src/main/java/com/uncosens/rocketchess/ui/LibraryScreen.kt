@@ -132,7 +132,7 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: OpenGame, onOnline: () -> Unit, 
                             AccuracyText(g.white, g.black, g.whiteAccuracy, g.blackAccuracy, g.owner)
                         }
                     }
-                    ResultChip(g.result, outcomeColor(g.white, g.black, g.result, g.owner))
+                    ResultChip(g.white, g.black, g.result, g.owner)
                     IconButton(onClick = { vm.delete(g.id) }) {
                         Icon(painterResource(R.drawable.ic_delete), stringResource(R.string.delete), Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -156,26 +156,23 @@ private fun sourceLabel(source: String) = stringResource(
     },
 )
 
-/** Green when [owner] won the game, red when they lost; null for a draw or when they did not play it. */
-private fun outcomeColor(white: String, black: String, result: String, owner: String?): Color? {
-    val side = userSide(white, black, owner) ?: return null
-    return when (result) {
-        "1-0" -> if (side) WIN else LOSS
-        "0-1" -> if (side) LOSS else WIN
-        else -> null
+/** W (green) or L (red) when [owner] played the game, D for a draw; else the plain result. */
+@Composable
+private fun ResultChip(white: String, black: String, result: String, owner: String?) {
+    val side = userSide(white, black, owner)
+    val (text, fill) = when {
+        result == "1/2-1/2" -> "D" to null
+        side == null || (result != "1-0" && result != "0-1") -> result to null
+        (result == "1-0") == side -> "W" to WIN
+        else -> "L" to LOSS
+    }
+    Surface(color = fill ?: MaterialTheme.colorScheme.surfaceContainer, contentColor = if (fill != null) Color.White else MaterialTheme.colorScheme.onSurface, shape = RoundedCornerShape(8.dp)) {
+        Text(text, Modifier.padding(horizontal = 8.dp, vertical = 4.dp), fontFamily = Mono, style = MaterialTheme.typography.bodySmall)
     }
 }
 
 private val WIN = Color(0xFF2EA043)
 private val LOSS = Color(0xFFD9363E)
-
-/** The result in a small rounded chip, filled with [outcome] when the user won or lost. */
-@Composable
-private fun ResultChip(result: String, outcome: Color?) {
-    Surface(color = outcome ?: MaterialTheme.colorScheme.surfaceContainer, contentColor = if (outcome != null) Color.White else MaterialTheme.colorScheme.onSurface, shape = RoundedCornerShape(8.dp)) {
-        Text(result, Modifier.padding(horizontal = 8.dp, vertical = 4.dp), fontFamily = Mono, style = MaterialTheme.typography.bodySmall)
-    }
-}
 
 /** The searched user's accuracy in an analyzed game; nothing when no searched user played it. */
 @Composable
@@ -306,7 +303,7 @@ fun OnlineScreen(vm: LibraryViewModel, onOpen: OpenGame, onBack: () -> Unit) {
                                 )
                             }
                             accuracies[g.key]?.let { AccuracyText(g.white, g.black, it.whiteAccuracy, it.blackAccuracy, name.trim()) }
-                            ResultChip(result, outcomeColor(g.white, g.black, result, name.trim()))
+                            ResultChip(g.white, g.black, result, name.trim())
                         }
                         HorizontalDivider()
                     }
