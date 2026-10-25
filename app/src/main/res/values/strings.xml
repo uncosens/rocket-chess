@@ -158,7 +158,7 @@
     <string name="axis_defense">Defense</string>
     <string name="axis_tactics_note">Moves when one move was much better than the rest, or the opponent had just erred. Bigger chances count more.</string>
     <string name="axis_positional_note">Middlegame moves with no single right move.</string>
-    <string name="axis_opening_note">Moves up to move 12. Leaving the book is not marked down.</string>
+    <string name="axis_opening_note">Moves before the middlegame starts (Lichess rule: 10 or fewer pieces besides kings and pawns, a thin back rank, or mixed armies). Leaving the book is not marked down.</string>
     <string name="axis_endgame_note">All moves with 6 or fewer pieces left besides kings and pawns.</string>
     <string name="axis_defense_note">Moves when only one move saved you or you were in check, and moves that let the reply hit your king.</string>
     <string name="notes_title">Mistake Notes</string>

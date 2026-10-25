@@ -61,6 +61,14 @@ class ReportTest {
     }
 
     @Test
+    fun thinBackRankStartsTheMiddlegame() {
+        // White's back rank holds 3 pieces: Lichess calls this the middlegame, whatever the move number.
+        val l = line("[FEN \"rnbqkbnr/pppppppp/8/8/8/2NBBN2/PPPQPPPP/R3K2R w KQkq - 0 5\"]\n\n5. Rb1 *")
+        val m = PlayerReport.moves(l, listOf(pe(20, second = 10), pe(20)), userWhite = true).single()
+        assertEquals(Axis.Positional, m.axis)
+    }
+
+    @Test
     fun fewPiecesIsEndgame() {
         val l = line("[FEN \"8/5k2/8/8/8/8/R4K2/8 w - - 0 40\"]\n\n40. Ra7+ *")
         val m = PlayerReport.moves(l, listOf(pe(800, second = 790), pe(800)), userWhite = true).single()

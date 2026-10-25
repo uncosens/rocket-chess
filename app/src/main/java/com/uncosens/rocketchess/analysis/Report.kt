@@ -22,8 +22,6 @@ object ReportPolicy {
     const val MIN_COVERAGE = 0.9
     /** Endgame: at most this many pieces other than kings and pawns, both sides (Lichess's rule). */
     const val ENDGAME_PIECES = 6
-    /** Opening: moves up to this move number. */
-    const val OPENING_UNTIL = 12
     /** A position is critical when PV1 beats PV2 by this much win%. */
     const val CRITICAL_GAP = 10.0
     /** In a critical position, PV2 below this win% means only PV1 saves the game. */
@@ -32,8 +30,6 @@ object ReportPolicy {
     const val PUNISH_FROM = 10.0
     /** A non-critical move that loses this much and lets the reply hit the king is a king error. */
     const val KING_ERROR_FROM = 10.0
-    /** A chance counts as found when the move loses less than this. */
-    const val FOUND_BELOW = AnalysisPolicy.GOOD_BELOW
     /** One game adds at most this many moves' weight to an axis. */
     const val GAME_CAP = 30.0
     /** Pseudo moves that pull a small sample toward the overall accuracy. */
@@ -44,10 +40,8 @@ object ReportPolicy {
 
     /** Samples an axis needs before it gets a score. Endgame also needs [ENDGAME_GAMES] games. */
     fun needed(axis: Axis) = when (axis) {
-        Axis.Opening, Axis.Positional -> 100
-        Axis.Endgame -> 100
-        Axis.Tactics -> 30
-        Axis.Defense -> 30
+        Axis.Opening, Axis.Positional, Axis.Endgame -> 100
+        Axis.Tactics, Axis.Defense -> 30
     }
     const val ENDGAME_GAMES = 8
 }
@@ -74,6 +68,7 @@ object PlayerReport {
     /** The user's graded moves in one game, each in one axis. */
     fun moves(line: GameLine, evals: List<PositionEval?>, userWhite: Boolean): List<ReportMove> {
         val out = mutableListOf<ReportMove>()
+        val middle = middlegameStart(line)
         for (i in line.plies.indices) {
             val pos = line.positions[i]
             val fields = pos.fen.split(' ')
@@ -86,7 +81,7 @@ object PlayerReport {
             val gap = before.second?.let { win(before.eval) - win(it) } ?: 0.0
             val prev = evals.getOrNull(i - 1)
             val punish = if (i > 0 && prev != null) maxOf(0.0, win(before.eval) - win(prev.eval)) else 0.0
-            val found = line.plies[i].uci == before.best || loss < ReportPolicy.FOUND_BELOW
+            val found = line.plies[i].uci == before.best || loss < AnalysisPolicy.GOOD_BELOW
             // Taking back what was just taken, or the only legal move, is no real chance (a third of critical positions).
             val last = line.plies.getOrNull(i - 1)
             val trivial = (last != null && 'x' in last.san && before.best?.substring(2, 4) == last.to) || GameLine.legalMoves(pos.fen).size == 1
@@ -101,11 +96,57 @@ object PlayerReport {
                 !trivial && punish >= ReportPolicy.PUNISH_FROM -> add(Axis.Tactics, punish / ReportPolicy.PUNISH_FROM, chance = true)
                 loss >= ReportPolicy.KING_ERROR_FROM && hitsKing(line.positions[i + 1].fen, after, userWhite) ->
                     add(Axis.Defense, kingError = true)
-                (fields.getOrNull(5)?.toIntOrNull() ?: 1) <= ReportPolicy.OPENING_UNTIL -> add(Axis.Opening)
+                i < middle -> add(Axis.Opening)
                 else -> add(Axis.Positional)
             }
         }
         return out
+    }
+
+    /**
+     * Index of the first middlegame position, as Lichess's Divider (scalachess): at most 10 pieces
+     * besides kings and pawns, fewer than 4 pieces on either side's back rank, or mixed armies.
+     */
+    private fun middlegameStart(line: GameLine): Int = line.positions.indexOfFirst { p ->
+        // grid[0] is rank 1; '.' is an empty square.
+        val grid = p.fen.substringBefore(' ').split('/').reversed()
+            .map { row -> row.flatMap { c -> if (c.isDigit()) List(c.digitToInt()) { '.' } else listOf(c) } }
+        var mixed = 0
+        for (y in 0..6) for (x in 0..6) {
+            val region = listOf(grid[y][x], grid[y][x + 1], grid[y + 1][x], grid[y + 1][x + 1])
+            mixed += mixedness(y + 1, region.count { it.isUpperCase() }, region.count { it.isLowerCase() })
+        }
+        pieces(p.fen.substringBefore(' ')) <= 10 || grid[0].count { it.isUpperCase() } < 4 || grid[7].count { it.isLowerCase() } < 4 || mixed > 150
+    }.let { if (it < 0) line.positions.size else it }
+
+    /** Lichess's score for a 2x2 region on row [y] (1 to 7) with [white] and [black] pieces. */
+    private fun mixedness(y: Int, white: Int, black: Int): Int = when (white) {
+        0 -> when (black) {
+            1 -> 1 + y
+            2 -> if (y < 6) 2 + (6 - y) else 0
+            3, 4 -> if (y < 7) 3 + (7 - y) else 0
+            else -> 0
+        }
+        1 -> when (black) {
+            0 -> 1 + (8 - y)
+            1 -> 5 + abs(4 - y)
+            2 -> 4 + (7 - y)
+            3 -> 5 + (7 - y)
+            else -> 0
+        }
+        2 -> when (black) {
+            0 -> if (y > 2) 2 + (y - 2) else 0
+            1 -> 4 + (y - 1)
+            2 -> 7
+            else -> 0
+        }
+        3 -> when (black) {
+            0 -> if (y > 1) 3 + (y - 1) else 0
+            1 -> 5 + (y - 1)
+            else -> 0
+        }
+        4 -> if (black == 0 && y > 1) 3 + (y - 1) else 0
+        else -> 0
     }
 
     /** Pieces other than kings and pawns on the board part of a FEN. */
