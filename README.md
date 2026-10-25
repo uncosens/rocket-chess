@@ -133,19 +133,23 @@ Play blocks updates without 16 KB support from 2027-02-01 (see the Android page-
 
 ## Opening explorer and Book grade (2026-10-24)
 
-- Data: all rated rapid games of `lichess_db_standard_rated_2026-09.pgn.zst` from the Lichess open database (CC0),
-  SHA-256 `1de8eb64…edec89`, the same as Lichess's list: 14,944,650 games (abandoned games and games without both ratings left out).
+- Data: rated rapid games from the Lichess open database (CC0): all of 2026-09, plus the games with a mean rating of 1750+
+  (Chess.com 1500+) of 2026-06, 2026-07 and 2026-08, so the three higher bands have four months. 25,399,260 games
+  (abandoned games and games without both ratings left out). The SHA-256 of each month's file matched Lichess's list.
   Only the first 30 plies of each game count.
 - Rating bands are by the mean Lichess rapid rating of the two players. The chips show them as Chess.com rapid ratings:
-  under 1200 (8,609,615 games), 1200–1500 (2,838,892), 1500–1800 (2,072,515), 1800–2100 (1,125,078), 2100+ (298,550).
+  under 1200 (8,609,615 games, one month), 1200–1500 (2,838,892, one month), 1500–1800 (8,254,850, four months),
+  1800–2100 (4,500,279, four months), 2100+ (1,195,624, four months).
+  "All ratings" and the Book share add up all bands, so they lean more to the higher bands than one month of games would.
   The Lichess edges 1560, 1750, 1930 and 2140 are Chess.com 1200, 1500, 1800 and 2100 by the Lichess-to-Chess.com rapid fit
   of https://github.com/theophile-wallez/lichess-chesscom-ratings (9,974 rapid pairs of same-named accounts, 2026-09).
   It is a mean: one player can be about 100 points off it.
 - `scripts/lichess_dump.sh` downloads in 1 GiB pieces, three at a time, each resumed until complete (one connection was slow
   and once broke off), and checks the SHA-256 at the end. The work files keep each game's mean rating, so new band edges need
   only `count` and `write` again.
-- `app/src/main/assets/opening/book.bin` (14,496,337 bytes, about 8.9 MB deflated in the APK; 232,720 positions, 457,444 moves) keeps a move
-  when it has 18 or more games in at least one band.
+- `app/src/main/assets/opening/book.bin` (14,488,792 bytes, about 10.4 MB deflated in the APK; 236,293 positions, 440,645 moves) keeps a move
+  when it has 30 or more games in at least one band. Moves kept per band: 238,854 / 92,127 / 298,902 / 177,769 / 54,380
+  (with September alone and 18 games it was 410,780 / 159,322 / 125,211 / 74,559 / 23,050).
   Each position also keeps its total games per band, so shares are out of all games, not only the kept moves.
 - Position key: the first 8 bytes of SHA-1 over the 12 piece bitboards, side to move, castling (only with king and rook at home)
   and the en passant square (only when a capture there is legal). So move orders that reach the same position share stats.
@@ -157,12 +161,15 @@ Play blocks updates without 16 KB support from 2027-02-01 (see the Android page-
 - Analysis screen: a card with the opening name and the 3 most played moves of the shown position, for the picked band.
 - Book grade: a move is Book when it and all moves before it are book moves (each played in 1% or more of its position's games),
   unless the engine grades it Weak, Mistake or Blunder. So 1. e4 e5 2. Qh5 Nc6 3. Bc4 Nf6?? stays a Blunder. Accuracy does not change.
-- Build (needs python-chess, numpy, zstandard; about 4,000 games/s on 4 cores, about 80 minutes for the month):
+- Build (needs python-chess, numpy, zstandard; about 4,000 games/s on 4 cores, about 80 minutes for September and 15–20 minutes for each 1750+ month):
 
   ```sh
   scripts/lichess_dump.sh 2026-09 | python scripts/opening_book.py extract WORK
-  python scripts/opening_book.py count WORK
-  python scripts/opening_book.py write WORK app/src/main/assets/opening/book.bin 18
+  for m in 2026-08 2026-07 2026-06; do
+    scripts/lichess_dump.sh $m | python scripts/opening_book.py extract WORK-$m 0 1750
+  done
+  python scripts/opening_book.py count WORK WORK-2026-08 WORK-2026-07 WORK-2026-06
+  python scripts/opening_book.py write WORK app/src/main/assets/opening/book.bin 30
   python scripts/opening_book.py names CHESS_OPENINGS_DIR app/src/main/assets/opening/names.tsv
   ```
 

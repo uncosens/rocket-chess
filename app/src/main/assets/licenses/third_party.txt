@@ -27,7 +27,7 @@ Board images (assets/boards), from the Lichess project: https://github.com/liche
 
 Opening data (assets/opening)
   book.bin - move statistics from the Lichess open database (https://database.lichess.org),
-    rated rapid games of 2026-09, released under CC0. Made by scripts/opening_book.py.
+    rated rapid games of 2026-06 to 2026-09, released under CC0. Made by scripts/opening_book.py.
   names.tsv - opening names from https://github.com/lichess-org/chess-openings, CC0.
 
 Fonts (res/font), under the SIL Open Font License 1.1 (see OFL-1.1)
