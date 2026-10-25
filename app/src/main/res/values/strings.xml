@@ -145,7 +145,8 @@
     <string name="report_title">My Report</string>
     <string name="report_no_ids">Set your Chess.com or Lichess user name in Settings (My Accounts). The report uses the analyzed games of those names.</string>
     <string name="report_not_enough">The report needs %2$d fully analyzed games of yours. You have %1$d.</string>
-    <string name="report_summary">Combined from %1$d analyzed games (%2$d as White, %3$d as Black). Each score is the accuracy of your moves in that kind of position, 0 to 100.</string>
+    <string name="report_puzzles">Puzzles</string>
+    <string name="report_puzzles_title">%1$s Puzzles</string>
     <string name="report_footnote">An estimate from many games, not a rating. The small numbers are a likely range. Scores depend on your opponents and on the engine depth.</string>
     <string name="report_too_few">Too few (%1$d/%2$d)</string>
     <string name="report_samples">%1$d moves, %2$d games</string>

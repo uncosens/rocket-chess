@@ -14,6 +14,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import com.uncosens.rocketchess.chess.GameLine
 import com.uncosens.rocketchess.data.Sources
 import com.uncosens.rocketchess.opening.OpeningData
@@ -31,6 +32,9 @@ import com.uncosens.rocketchess.ui.LibraryViewModel
 import com.uncosens.rocketchess.ui.NotesScreen
 import com.uncosens.rocketchess.ui.NotesViewModel
 import com.uncosens.rocketchess.ui.OnlineScreen
+import com.uncosens.rocketchess.analysis.Axis
+import com.uncosens.rocketchess.ui.AXIS_NAMES
+import com.uncosens.rocketchess.ui.AXIS_THEMES
 import com.uncosens.rocketchess.ui.ReportScreen
 import com.uncosens.rocketchess.ui.ReportViewModel
 import com.uncosens.rocketchess.ui.RocketTheme
@@ -60,6 +64,8 @@ class MainActivity : ComponentActivity() {
                     var playFrom by rememberSaveable { mutableStateOf(LIBRARY) }
                     // The screen the explorer was opened from, so Back returns there.
                     var explorerFrom by rememberSaveable { mutableStateOf(LIBRARY) }
+                    // The My Report axis whose puzzles are open, or null for Mistake Notes.
+                    var puzzleAxis by rememberSaveable { mutableStateOf<String?>(null) }
                     val open: OpenGame = { pgn, key, owner, analysis ->
                         game.load(pgn, key, owner, analysis); from = screen; screen = GAME
                     }
@@ -95,9 +101,22 @@ class MainActivity : ComponentActivity() {
                                 onPlay = { play.prepare(it); playFrom = EXPLORER; screen = PLAY },
                                 onBack = { screen = explorerFrom },
                             )
-                            REPORT -> ReportScreen(report, onBack = { screen = LIBRARY })
-                            // Positions open for analysis without being saved.
-                            NOTES -> NotesScreen(notes, onAnalyze = { open(it, Sources.textKey(it), null, null) }, onBack = { screen = LIBRARY })
+                            REPORT -> ReportScreen(
+                                report,
+                                onPuzzles = { puzzleAxis = it.name; notes.load(AXIS_THEMES.getValue(it)); screen = NOTES },
+                                onBack = { screen = LIBRARY },
+                            )
+                            // Positions open for analysis without being saved. From My Report, Back returns there.
+                            NOTES -> {
+                                val axis = puzzleAxis?.let { Axis.valueOf(it) }
+                                NotesScreen(
+                                    notes,
+                                    onAnalyze = { open(it, Sources.textKey(it), null, null) },
+                                    onBack = { screen = if (axis != null) REPORT else LIBRARY },
+                                    title = axis?.let { stringResource(R.string.report_puzzles_title, stringResource(AXIS_NAMES.getValue(it))) }
+                                        ?: stringResource(R.string.notes_title),
+                                )
+                            }
                             // Games against the engine are saved once analyzed; "You" is the owner.
                             PLAY -> PlayScreen(play, onAnalyze = { library.importText(it, Sources.ENGINE, open, getString(R.string.you)) }, onBack = { screen = playFrom })
                             else -> LibraryScreen(
@@ -108,7 +127,7 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onExplorer = { explorerFrom = LIBRARY; screen = EXPLORER },
                                 onReport = { screen = REPORT },
-                                onNotes = { notes.load(); screen = NOTES },
+                                onNotes = { puzzleAxis = null; notes.load(); screen = NOTES },
                                 onSettings = { screen = SETTINGS },
                             )
                         }

@@ -36,11 +36,10 @@ import com.uncosens.rocketchess.chess.Setup
 
 /** The user's Mistakes and Blunders as puzzles, mixed with Lichess puzzles of the same kinds. Load with [NotesViewModel.load]. */
 @Composable
-fun NotesScreen(vm: NotesViewModel, onAnalyze: (pgn: String) -> Unit, onBack: () -> Unit) {
+fun NotesScreen(vm: NotesViewModel, onAnalyze: (pgn: String) -> Unit, onBack: () -> Unit, title: String = stringResource(R.string.notes_title)) {
     BackHandler(onBack = onBack)
     val drills = vm.drills
     val drill = vm.drill
-    val title = stringResource(R.string.notes_title)
 
     BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 16.dp, vertical = 8.dp)) {
         if (drill == null) {

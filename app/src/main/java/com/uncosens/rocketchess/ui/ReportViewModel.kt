@@ -57,7 +57,7 @@ class ReportViewModel(app: Application) : AndroidViewModel(app) {
                 if (evals.size != line.positions.size || evals.count { it != null } < ReportPolicy.MIN_COVERAGE * evals.size) return@mapNotNull null
                 // The same game saved twice (say pasted and searched) counts once.
                 if (!seen.add("${g.white.lowercase()}|${g.black.lowercase()}|${line.plies.joinToString(" ") { it.uci }}")) return@mapNotNull null
-                white to PlayerReport.moves(line, evals, white)
+                PlayerReport.moves(line, evals, white)
             }
             PlayerReport.build(games)?.let { ReportState.Ready(it) } ?: ReportState.NotEnough(games.size)
         }

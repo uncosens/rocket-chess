@@ -26,6 +26,8 @@ BAND = 100
 THEMES = {
     "mate", "mateIn1", "mateIn2", "mateIn3", "mateIn4", "mateIn5", "fork", "hangingPiece", "pin", "skewer",
     "discoveredAttack", "doubleCheck", "sacrifice", "deflection", "attraction", "endgame",
+    # My Report's puzzle buttons.
+    "opening", "middlegame", "quietMove", "defensiveMove",
 }
 
 

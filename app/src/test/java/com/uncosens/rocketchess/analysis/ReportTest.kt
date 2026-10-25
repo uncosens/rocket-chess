@@ -77,7 +77,7 @@ class ReportTest {
 
     @Test
     fun reportNeedsEnoughGamesAndSamples() {
-        val game = true to List(10) { ReportMove(Axis.Opening, 80.0, 1.0, chance = false, found = false, kingError = false) }
+        val game = List(10) { ReportMove(Axis.Opening, 80.0, 1.0, chance = false, found = false, kingError = false) }
         assertNull(PlayerReport.build(List(ReportPolicy.MIN_GAMES - 1) { game }))
         val r = PlayerReport.build(List(ReportPolicy.MIN_GAMES) { game })
         assertNotNull(r)

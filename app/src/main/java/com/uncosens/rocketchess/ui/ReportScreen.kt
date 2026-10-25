@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -46,7 +47,7 @@ import kotlin.math.sin
 
 /** Five skill scores from many analyzed games, as a radar chart and a list. */
 @Composable
-fun ReportScreen(vm: ReportViewModel, onBack: () -> Unit) {
+fun ReportScreen(vm: ReportViewModel, onPuzzles: (Axis) -> Unit, onBack: () -> Unit) {
     BackHandler(onBack = onBack)
     LaunchedEffect(Unit) { vm.load() }
     Column(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 16.dp, vertical = 8.dp)) {
@@ -63,7 +64,7 @@ fun ReportScreen(vm: ReportViewModel, onBack: () -> Unit) {
                     Note(stringResource(R.string.report_not_enough, s.games, ReportPolicy.MIN_GAMES))
                     LinearProgressIndicator({ s.games / ReportPolicy.MIN_GAMES.toFloat() }, Modifier.fillMaxWidth())
                 }
-                is ReportState.Ready -> Ready(s.report)
+                is ReportState.Ready -> Ready(s.report, onPuzzles)
             }
         }
     }
@@ -75,19 +76,27 @@ private fun Note(text: String) {
 }
 
 @Composable
-private fun Ready(r: Report) {
-    Note(stringResource(R.string.report_summary, r.games, r.white, r.black))
+private fun Ready(r: Report, onPuzzles: (Axis) -> Unit) {
     Radar(r.axes, Modifier.widthIn(max = 420.dp).fillMaxWidth().aspectRatio(1f))
-    for (a in r.axes) AxisRow(a, r)
+    for (a in r.axes) AxisRow(a, r) { onPuzzles(a.axis) }
     Note(stringResource(R.string.report_footnote))
 }
 
-private val AXIS_NAMES = mapOf(
+val AXIS_NAMES = mapOf(
     Axis.Tactics to R.string.axis_tactics,
     Axis.Positional to R.string.axis_positional,
     Axis.Opening to R.string.axis_opening,
     Axis.Endgame to R.string.axis_endgame,
     Axis.Defense to R.string.axis_defense,
+)
+
+/** Lichess puzzle themes behind each axis's Puzzles button. Lichess has no positional theme; quiet moves come closest. */
+val AXIS_THEMES = mapOf(
+    Axis.Tactics to setOf("fork", "pin", "skewer", "discoveredAttack", "deflection", "attraction", "hangingPiece", "sacrifice", "doubleCheck"),
+    Axis.Positional to setOf("quietMove"),
+    Axis.Opening to setOf("opening"),
+    Axis.Endgame to setOf("endgame"),
+    Axis.Defense to setOf("defensiveMove"),
 )
 
 private val AXIS_NOTES = mapOf(
@@ -100,7 +109,7 @@ private val AXIS_NOTES = mapOf(
 
 /** Name and score, then what it measures and how many samples it has. */
 @Composable
-private fun AxisRow(a: AxisScore, r: Report) {
+private fun AxisRow(a: AxisScore, r: Report, onPuzzles: () -> Unit) {
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(14.dp)) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -113,7 +122,10 @@ private fun AxisRow(a: AxisScore, r: Report) {
                     Text(stringResource(R.string.report_too_few, a.samples, a.needed), color = muted, style = MaterialTheme.typography.bodySmall)
                 }
             }
-            Text(stringResource(AXIS_NOTES.getValue(a.axis)), color = muted, style = MaterialTheme.typography.bodySmall)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(AXIS_NOTES.getValue(a.axis)), Modifier.weight(1f), color = muted, style = MaterialTheme.typography.bodySmall)
+                OutlinedButton(onPuzzles) { Text(stringResource(R.string.report_puzzles)) }
+            }
             val counts = buildList {
                 add(stringResource(R.string.report_samples, a.samples, a.games))
                 if (a.axis == Axis.Tactics || a.axis == Axis.Defense) add(stringResource(R.string.report_found, a.found, a.chances))

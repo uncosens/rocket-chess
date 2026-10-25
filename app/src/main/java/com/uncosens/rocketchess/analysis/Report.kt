@@ -62,7 +62,7 @@ data class AxisScore(
     val found: Int,
 )
 
-data class Report(val games: Int, val white: Int, val black: Int, val axes: List<AxisScore>, val kingErrors: Int, val movesBeforeEndgame: Int)
+data class Report(val axes: List<AxisScore>, val kingErrors: Int, val movesBeforeEndgame: Int)
 
 object PlayerReport {
     /** The user's graded moves in one game, each in one axis. */
@@ -171,14 +171,14 @@ object PlayerReport {
         }.getOrDefault(false)
     }
 
-    /** The report from each usable game's moves, with the user's color. Null below [ReportPolicy.MIN_GAMES]. */
-    fun build(games: List<Pair<Boolean, List<ReportMove>>>): Report? {
+    /** The report from each usable game's moves. Null below [ReportPolicy.MIN_GAMES]. */
+    fun build(games: List<List<ReportMove>>): Report? {
         if (games.size < ReportPolicy.MIN_GAMES) return null
-        val all = games.flatMap { it.second }
+        val all = games.flatten()
         val overall = all.map { it.score }.average().takeIf { !it.isNaN() } ?: return null
         val random = Random(1)
         val axes = Axis.entries.map { axis ->
-            val per = games.map { (_, m) -> m.filter { it.axis == axis } }.filter { it.isNotEmpty() }
+            val per = games.map { m -> m.filter { it.axis == axis } }.filter { it.isNotEmpty() }
             val samples = per.sumOf { it.size }
             val needed = ReportPolicy.needed(axis)
             val enough = samples >= needed && (axis != Axis.Endgame || per.size >= ReportPolicy.ENDGAME_GAMES)
@@ -190,7 +190,7 @@ object PlayerReport {
             AxisScore(axis, score(per, overall), runs[cut], runs[runs.size - 1 - cut], samples, needed, per.size, chances, found)
         }
         val beforeEnd = all.count { it.axis != Axis.Endgame }
-        return Report(games.size, games.count { it.first }, games.count { !it.first }, axes, all.count { it.kingError }, beforeEnd)
+        return Report(axes, all.count { it.kingError }, beforeEnd)
     }
 
     /** Weighted mean score, each game capped at [ReportPolicy.GAME_CAP] moves, pulled toward [overall]. */

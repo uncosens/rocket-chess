@@ -91,7 +91,8 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
 
     val drill: Drill? get() = drills?.getOrNull(index)
 
-    fun load() = viewModelScope.launch {
+    /** With [only], just Lichess puzzles of those themes; otherwise the user's mistakes and their puzzles. */
+    fun load(only: Set<String>? = null) = viewModelScope.launch {
         drills = null
         val c = getApplication<Application>()
         val ids = listOf(Sources.CHESS_COM, Sources.LICHESS).map { KnownUsers.myId(c, it) }.filter { it.isNotEmpty() }
@@ -119,7 +120,8 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
             val random = Random(System.currentTimeMillis())
             val used = solved.filter { it.startsWith(PUZZLE) }.map { it.removePrefix(PUZZLE) }.toMutableSet()
             fun next(themes: List<String>) = Puzzles.pick(all, r, themes.randomOrNull(random), used, random)?.also { used += it.id }?.let(::drillOf)
-            if (notes.isEmpty()) List(ALONE) { next(emptyList()) }.filterNotNull()
+            if (only != null) List(ALONE) { next(only.toList()) }.filterNotNull()
+            else if (notes.isEmpty()) List(ALONE) { next(emptyList()) }.filterNotNull()
             else (notes.map(::drillOf) + notes.mapNotNull { next(it.mistake.themes) }).shuffled(random)
         }
         index = 0
