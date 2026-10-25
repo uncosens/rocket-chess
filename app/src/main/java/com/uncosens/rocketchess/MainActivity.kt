@@ -96,7 +96,8 @@ class MainActivity : ComponentActivity() {
                                 onBack = { screen = explorerFrom },
                             )
                             REPORT -> ReportScreen(report, onBack = { screen = LIBRARY })
-                            NOTES -> NotesScreen(notes, onBack = { screen = LIBRARY })
+                            // Positions open for analysis without being saved.
+                            NOTES -> NotesScreen(notes, onAnalyze = { open(it, Sources.textKey(it), null, null) }, onBack = { screen = LIBRARY })
                             // Games against the engine are saved once analyzed; "You" is the owner.
                             PLAY -> PlayScreen(play, onAnalyze = { library.importText(it, Sources.ENGINE, open, getString(R.string.you)) }, onBack = { screen = playFrom })
                             else -> LibraryScreen(
@@ -107,7 +108,7 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onExplorer = { explorerFrom = LIBRARY; screen = EXPLORER },
                                 onReport = { screen = REPORT },
-                                onNotes = { screen = NOTES },
+                                onNotes = { notes.load(); screen = NOTES },
                                 onSettings = { screen = SETTINGS },
                             )
                         }

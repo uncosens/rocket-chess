@@ -182,14 +182,18 @@ Play blocks updates without 16 KB support from 2027-02-01 (see the Android page-
 - Mistake Notes (from the library) collects the user's Mistakes and Blunders from saved analyses each time it opens:
   online games of the My IDs in Settings, and games against the engine. Each is a puzzle from the position before the move;
   the engine's first choice counts, and its second when it loses less than 2% win.
-- After each mistake comes a Lichess puzzle of the same kind near the user's rating (median Elo tag of the last 20 own games,
-  1500 when none). The kind is guessed from the engine moves: a mate missed or allowed (mateIn1–5), then a fork,
-  then taking a piece nothing defends, first for the user's best move, then for the opponent's best reply. Unknown kind: any theme.
+- For each mistake one Lichess puzzle is added, near the user's rating (median Elo tag of the last 20 own games,
+  1500 when none), of one of the mistake's kinds picked at random. Kinds are guessed from the engine moves: a mate missed
+  or allowed (mateIn1–5), a fork, taking a piece nothing defends; for the user's best move and the opponent's best reply.
+  No kind seen: any theme. Mistakes and puzzles are shuffled together; after the last one they come again in a new order.
+- The screen shows only whether a puzzle is from the user's game or Lichess. A right move gets the Best badge;
+  a wrong move shows for a moment, then the board goes back.
+  Analyze opens the shown position for analysis.
 - Puzzles: `assets/puzzles/puzzles.tsv` (10,187,966 bytes, about 4.2 MB gzip), 100,000 of the 6,157,341 in
   `lichess_db_puzzle.csv.zst` of 2026-10-05 (CC0, SHA-256 `76335bfa…2f8d`). Kept: popularity 80+, 300+ plays,
   rating deviation 90 or less (2,885,049 puzzles), then about 3,900 per 100-point band from 399 to 3007.
   Only the themes the app shows are kept. Any mate counts on a mate's last move, as on Lichess.
-- Solved puzzles are kept on the device; unsolved mistakes come first and solved Lichess puzzles are not picked again.
+- Solved puzzles are kept on the device; solved Lichess puzzles are not picked again. Mistakes can come again.
 - Build (needs zstandard, under a minute):
 
   ```sh

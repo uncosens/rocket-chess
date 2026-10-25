@@ -10,7 +10,7 @@ import com.uncosens.rocketchess.chess.GameLine
  * A Mistake or Blunder the user made, as a puzzle: find a better move in [fen].
  * [answers] are the engine's first choice, plus its second when that loses less than Good's line.
  * [lastMove] is the opponent's move that led to [fen], as (from, to).
- * [theme] is the Lichess puzzle theme of the tactic missed or allowed, if one is seen.
+ * [themes] are the Lichess puzzle themes of the tactics missed or allowed that are seen.
  */
 data class Mistake(
     val fen: String,
@@ -18,7 +18,7 @@ data class Mistake(
     val answers: List<String>,
     val cls: MoveClass,
     val lastMove: Pair<String, String>?,
-    val theme: String? = null,
+    val themes: List<String> = emptyList(),
 ) {
     /** Same position and same wrong move: one puzzle, even if the game is saved twice. */
     val key: String get() = "$fen|$played"
@@ -36,24 +36,23 @@ object Mistakes {
             val best = before.best ?: return@mapNotNull null
             val second = before.secondBest?.takeIf { before.second != null && winLoss(before.eval, before.second, userWhite) < AnalysisPolicy.GOOD_BELOW }
             val last = line.plies.getOrNull(i - 1)
-            val theme = theme(line.positions[i].fen, best, before.eval, line.positions[i + 1].fen, after, userWhite)
-            Mistake(line.positions[i].fen, line.plies[i].uci, listOfNotNull(best, second).filter { it != line.plies[i].uci }, cls, last?.let { it.from to it.to }, theme)
+            val themes = themes(line.positions[i].fen, best, before.eval, line.positions[i + 1].fen, after, userWhite)
+            Mistake(line.positions[i].fen, line.plies[i].uci, listOfNotNull(best, second).filter { it != line.plies[i].uci }, cls, last?.let { it.from to it.to }, themes)
         }
 
     /**
-     * The tactic behind a mistake: a mate the user missed or allowed, then a fork, then a free piece,
-     * first from the user's best move in [fen], then from the opponent's best reply in [fenAfter].
+     * The tactics behind a mistake: a mate the user missed or allowed, a fork, a free piece. Looks at the
+     * user's best move in [fen] and the opponent's best reply in [fenAfter].
      */
-    fun theme(fen: String, best: String, eval: Eval, fenAfter: String, after: PositionEval, userWhite: Boolean): String? {
-        if (eval is Eval.Mate && eval.whiteWins == userWhite && eval.moves > 0) return mateTheme(eval.moves)
+    fun themes(fen: String, best: String, eval: Eval, fenAfter: String, after: PositionEval, userWhite: Boolean): List<String> {
+        val out = mutableSetOf<String>()
+        if (eval is Eval.Mate && eval.whiteWins == userWhite && eval.moves > 0) out += mateTheme(eval.moves)
         val e = after.eval
-        if (e is Eval.Mate && e.whiteWins != userWhite && e.moves > 0) return mateTheme(e.moves)
+        if (e is Eval.Mate && e.whiteWins != userWhite && e.moves > 0) out += mateTheme(e.moves)
         val reply = after.best
-        return when {
-            fork(fen, best) || (reply != null && fork(fenAfter, reply)) -> "fork"
-            hanging(fen, best) || (reply != null && hanging(fenAfter, reply)) -> "hangingPiece"
-            else -> null
-        }
+        if (fork(fen, best) || (reply != null && fork(fenAfter, reply))) out += "fork"
+        if (hanging(fen, best) || (reply != null && hanging(fenAfter, reply))) out += "hangingPiece"
+        return out.toList()
     }
 
     private fun mateTheme(moves: Int) = if (moves <= 5) "mateIn$moves" else "mate"

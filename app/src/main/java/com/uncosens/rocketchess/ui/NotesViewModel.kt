@@ -44,7 +44,7 @@ data class Drill(
 
 enum class Attempt { Solving, Wrong, Going, Solved, Shown }
 
-/** Mistake Notes: the user's Mistakes and Blunders, each followed by a Lichess puzzle of the same kind. */
+/** Mistake Notes: the user's Mistakes and Blunders and Lichess puzzles of the same kinds, mixed. */
 class NotesViewModel(app: Application) : AndroidViewModel(app) {
     private val dao = AppDatabase.get(app).games()
     private val prefs = app.getSharedPreferences("notes", Context.MODE_PRIVATE)
@@ -62,6 +62,9 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
     var lastMove by mutableStateOf<Pair<String, String>?>(null)
         private set
     var check by mutableStateOf<String?>(null)
+        private set
+    /** True when the last move shown is the user's right move, drawn with the Best badge. */
+    var right by mutableStateOf(false)
         private set
     /** Index into the drill's solution of the user's next move. */
     private var step = 0
@@ -109,15 +112,15 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
                 val line = runCatching { GameLine.from(pgn) }.getOrNull() ?: return@flatMap emptyList()
                 if (evals.size != line.positions.size) return@flatMap emptyList()
                 Mistakes.of(line, evals, white).map { MistakeNote(it, white, g.white, g.black, g.date) }
-            }.distinctBy { it.mistake.key }.sortedBy { it.mistake.key in solved }
+            }.distinctBy { it.mistake.key }
             val r = ratings.take(RATING_GAMES).sorted().let { if (it.isEmpty()) DEFAULT_RATING else it[it.size / 2] }
             withContext(Dispatchers.Main) { rating = r }
-            // Each mistake, then an unsolved puzzle of the same kind near the user's rating.
+            // One unsolved puzzle near the user's rating per mistake, of one of its kinds picked at random.
             val random = Random(System.currentTimeMillis())
             val used = solved.filter { it.startsWith(PUZZLE) }.map { it.removePrefix(PUZZLE) }.toMutableSet()
-            fun next(theme: String?) = Puzzles.pick(all, r, theme, used, random)?.also { used += it.id }?.let(::drillOf)
-            if (notes.isEmpty()) List(ALONE) { next(null) }.filterNotNull()
-            else notes.flatMap { listOfNotNull(drillOf(it), next(it.mistake.theme)) }
+            fun next(themes: List<String>) = Puzzles.pick(all, r, themes.randomOrNull(random), used, random)?.also { used += it.id }?.let(::drillOf)
+            if (notes.isEmpty()) List(ALONE) { next(emptyList()) }.filterNotNull()
+            else (notes.map(::drillOf) + notes.mapNotNull { next(it.mistake.themes) }).shuffled(random)
         }
         index = 0
         reset()
@@ -129,14 +132,31 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
         val after = GameLine.after(fen, uci) ?: return
         val last = step == d.solution.size - 1
         // As on Lichess, any mate in the last move counts.
-        val right = uci == d.solution[step] || (step == 0 && uci in d.firstAnswers) || (last && after.mate)
-        if (!right) {
+        val ok = uci == d.solution[step] || (step == 0 && uci in d.firstAnswers) || (last && after.mate)
+        if (!ok) {
             attempt = Attempt.Wrong
             tried = GameLine.san(fen, uci)
             misses++
+            // Show the wrong move for a moment, then go back.
+            val back = Triple(fen, lastMove, check)
+            val wasRight = right
+            show(uci, after.fen, after.check)
+            right = false
+            replying = true
+            val at = index
+            viewModelScope.launch {
+                delay(REPLY_MS)
+                if (index != at || attempt != Attempt.Wrong) return@launch
+                fen = back.first
+                lastMove = back.second
+                check = back.third
+                right = wasRight
+                replying = false
+            }
             return
         }
         show(uci, after.fen, after.check)
+        right = true
         step++
         tried = null
         if (step >= d.solution.size || after.mate) {
@@ -154,6 +174,7 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
             if (index != at || attempt == Attempt.Solving) return@launch
             val reply = d.solution[step]
             GameLine.after(fen, reply)?.let { show(reply, it.fen, it.check) }
+            right = false
             step++
             replying = false
         }
@@ -168,6 +189,8 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
     fun next() {
         val size = drills?.size ?: return
         if (size == 0) return
+        // After the last one, the same puzzles again in a new order.
+        if (index + 1 == size) drills = drills?.shuffled()
         index = (index + 1) % size
         reset()
     }
@@ -183,6 +206,7 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
         fen = d?.fen.orEmpty()
         lastMove = d?.lastMove
         check = null
+        right = false
         step = 0
         attempt = Attempt.Solving
         replying = false
