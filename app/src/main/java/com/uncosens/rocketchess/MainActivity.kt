@@ -111,7 +111,8 @@ class MainActivity : ComponentActivity() {
                                 val axis = puzzleAxis?.let { Axis.valueOf(it) }
                                 NotesScreen(
                                     notes,
-                                    onAnalyze = { open(it, Sources.textKey(it), null, null) },
+                                    // The owner is the user's side as named in Setup.pgn, so the board opens from that side.
+                                    onAnalyze = { pgn, white -> open(pgn, Sources.textKey(pgn), if (white) "White" else "Black", null) },
                                     onBack = { screen = if (axis != null) REPORT else LIBRARY },
                                     title = axis?.let { stringResource(R.string.report_puzzles_title, stringResource(AXIS_NAMES.getValue(it))) }
                                         ?: stringResource(R.string.notes_title),

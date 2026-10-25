@@ -36,7 +36,7 @@ import com.uncosens.rocketchess.chess.Setup
 
 /** The user's Mistakes and Blunders as puzzles, mixed with Lichess puzzles of the same kinds. Load with [NotesViewModel.load]. */
 @Composable
-fun NotesScreen(vm: NotesViewModel, onAnalyze: (pgn: String) -> Unit, onBack: () -> Unit, title: String = stringResource(R.string.notes_title)) {
+fun NotesScreen(vm: NotesViewModel, onAnalyze: (pgn: String, userWhite: Boolean) -> Unit, onBack: () -> Unit, title: String = stringResource(R.string.notes_title)) {
     BackHandler(onBack = onBack)
     val drills = vm.drills
     val drill = vm.drill
@@ -91,7 +91,7 @@ private fun Board(vm: NotesViewModel, drill: Drill, modifier: Modifier) {
 
 /** Whose puzzle it is, the task, the result and the buttons. */
 @Composable
-private fun Panel(vm: NotesViewModel, drill: Drill, onAnalyze: (pgn: String) -> Unit) {
+private fun Panel(vm: NotesViewModel, drill: Drill, onAnalyze: (pgn: String, userWhite: Boolean) -> Unit) {
     Text(stringResource(if (drill.note != null) R.string.notes_mine else R.string.notes_puzzle), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     Text(stringResource(if (drill.userWhite) R.string.notes_find_white else R.string.notes_find_black), style = MaterialTheme.typography.bodyLarge)
     when (vm.attempt) {
@@ -109,7 +109,7 @@ private fun Panel(vm: NotesViewModel, drill: Drill, onAnalyze: (pgn: String) -> 
         val done = vm.attempt == Attempt.Solved || vm.attempt == Attempt.Shown
         OutlinedButton(onClick = vm::showAnswer, enabled = !done && !vm.replying, modifier = Modifier.weight(1f).height(48.dp)) { Text(stringResource(R.string.notes_show)) }
         // The shown position, opened for analysis.
-        OutlinedButton(onClick = { onAnalyze(Setup.pgn(vm.fen)) }, enabled = !vm.replying, modifier = Modifier.weight(1f).height(48.dp)) { Text(stringResource(R.string.analyze)) }
+        OutlinedButton(onClick = { onAnalyze(Setup.pgn(vm.fen), drill.userWhite) }, enabled = !vm.replying, modifier = Modifier.weight(1f).height(48.dp)) { Text(stringResource(R.string.analyze)) }
         Button(onClick = vm::next, modifier = Modifier.weight(1f).height(48.dp)) { Text(stringResource(R.string.notes_next)) }
     }
 }
