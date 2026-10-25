@@ -9,6 +9,7 @@ Draft. Fill in every row before a release. Each row must match the shipped binar
 | Lichess open database (opening statistics in `assets/opening/book.bin`) | `lichess_db_standard_rated_2026-09.pgn.zst`, and 2026-06 to 2026-08 (mean rating 1750+ only) | CC0-1.0 | Counted by `scripts/opening_book.py` | https://database.lichess.org |
 | Lichess puzzle database (puzzles in `assets/puzzles/puzzles.tsv`) | `lichess_db_puzzle.csv.zst` of 2026-10-05, SHA-256 `76335bfa7d7c4a7f93c1366d81549e53951ebb79dd43d34904cab8f22d962f8d` | CC0-1.0 | 100,000 picked, themes cut, by `scripts/puzzle_set.py` | https://database.lichess.org/#puzzles |
 | chess-openings (opening names in `assets/opening/names.tsv`) | `a6189a30dc273ccb21fc2536a9a2fefd5592a67a` | CC0-1.0 | Keyed by position | https://github.com/lichess-org/chess-openings |
+| scalachess `Divider.scala` (game phase rule in `analysis/Report.kt`) | `a4988192e6531f92c806e1603a87467c729d5db1` | MIT, Copyright (c) 2012-2014 Thibault Duplessis | Ported to Kotlin | https://github.com/lichess-org/scalachess |
 | Stockfish NNUE net (embedded) | `nn-1a298aa575a0.nnue` | CC0-1.0 (networks repo); trained on Lc0 data under ODbL | No | https://github.com/official-stockfish/networks |
 
 Notes

@@ -106,6 +106,7 @@ object PlayerReport {
     /**
      * Index of the first middlegame position, as Lichess's Divider (scalachess): at most 10 pieces
      * besides kings and pawns, fewer than 4 pieces on either side's back rank, or mixed armies.
+     * Ported from scalachess, MIT, Copyright (c) 2012-2014 Thibault Duplessis (see THIRD_PARTY.md).
      */
     private fun middlegameStart(line: GameLine): Int = line.positions.indexOfFirst { p ->
         // grid[0] is rank 1; '.' is an empty square.
