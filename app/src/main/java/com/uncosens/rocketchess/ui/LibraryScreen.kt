@@ -167,7 +167,7 @@ private fun sourceLabel(source: String) = stringResource(
 private fun ResultChip(white: String, black: String, result: String, owner: String?) {
     val side = userSide(white, black, owner)
     val (text, fill) = when {
-        result == "1/2-1/2" -> "D" to null
+        result == "1/2-1/2" -> "D" to DRAW
         side == null || (result != "1-0" && result != "0-1") -> result to null
         (result == "1-0") == side -> "W" to WIN
         else -> "L" to LOSS
@@ -179,6 +179,7 @@ private fun ResultChip(white: String, black: String, result: String, owner: Stri
 
 private val WIN = Color(0xFF2EA043)
 private val LOSS = Color(0xFFD9363E)
+private val DRAW = Color(0xFF8C96AB)
 
 /** The searched user's accuracy in an analyzed game; nothing when no searched user played it. */
 @Composable

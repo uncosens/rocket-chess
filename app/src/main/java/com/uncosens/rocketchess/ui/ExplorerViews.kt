@@ -1,6 +1,7 @@
 package com.uncosens.rocketchess.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -25,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -118,7 +120,10 @@ fun BookMoves(fen: String, position: BookPosition, onMove: (String) -> Unit, lim
 @Composable
 fun ResultBar(t: Tally, modifier: Modifier = Modifier) {
     val games = maxOf(t.games, 1)
-    Row(modifier.height(18.dp).clip(RoundedCornerShape(4.dp))) {
+    // On a light background a gray outline keeps the white part visible.
+    val shape = RoundedCornerShape(4.dp)
+    val edge = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f) Color(0xFFB4BBC8) else MaterialTheme.colorScheme.outlineVariant
+    Row(modifier.height(18.dp).clip(shape).border(1.dp, edge, shape)) {
         for ((n, colors) in listOf(t.white to (Color(0xFFF2F2F2) to Color(0xFF14161B)), t.draws to (Color(0xFF8C96AB) to Color.White), t.black to (Color(0xFF2B2E33) to Color.White))) {
             if (n == 0) continue
             Box(Modifier.weight(n.toFloat()).fillMaxHeight().background(colors.first), contentAlignment = Alignment.Center) {
@@ -129,9 +134,9 @@ fun ResultBar(t: Tally, modifier: Modifier = Modifier) {
     }
 }
 
-/** Opening name and the most played book moves for the analysis screen. Nothing outside the book. */
+/** Opening name and the most played book moves for the analysis screen. Nothing outside the book. Tapping the name calls [onExplorer]. */
 @Composable
-fun ExplorerCard(vm: GameViewModel, line: GameLine) {
+fun ExplorerCard(vm: GameViewModel, line: GameLine, onExplorer: () -> Unit) {
     val book = OpeningData.book ?: return
     val fen = line.positions[vm.ply].fen
     val position = remember(book, fen) { book.lookup(fen) }
@@ -139,7 +144,8 @@ fun ExplorerCard(vm: GameViewModel, line: GameLine) {
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(18.dp)) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             // "Opening explorer" until the first named position; one fixed line so the moves below stay put.
-            OpeningTitle(vm.opening, reserve = true, placeholder = stringResource(R.string.explorer_title))
+            // Tap the name to walk this line in the opening explorer.
+            OpeningTitle(vm.opening, Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).clickable(onClick = onExplorer), reserve = true, placeholder = stringResource(R.string.explorer_title))
             if (position != null) {
                 BookMoves(fen, position, vm::play, limit = 3)
             }

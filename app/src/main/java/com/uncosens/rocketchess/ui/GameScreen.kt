@@ -61,7 +61,7 @@ import com.uncosens.rocketchess.chess.GameLine
 import com.uncosens.rocketchess.engine.StockfishSession
 
 @Composable
-fun GameScreen(vm: GameViewModel, onBack: () -> Unit) {
+fun GameScreen(vm: GameViewModel, onBack: () -> Unit, onExplorer: (GameLine, Int) -> Unit) {
     val context = LocalContext.current
     val exe = remember { StockfishSession.binary(context) }
     val onAnalyze = { EngineOptionsStore.load(context).let { vm.analyze(exe, it, EngineBudget.forDevice(context, it)) } }
@@ -85,7 +85,7 @@ fun GameScreen(vm: GameViewModel, onBack: () -> Unit) {
                 BoardBlock(vm, Modifier.size(side))
                 Column(Modifier.weight(1f)) {
                     Header(vm, onBack)
-                    Details(vm, Modifier.weight(1f))
+                    Details(vm, Modifier.weight(1f), onExplorer)
                     Footer(vm, onAnalyze, onReanalyze)
                 }
             }
@@ -96,7 +96,7 @@ fun GameScreen(vm: GameViewModel, onBack: () -> Unit) {
             Column {
                 Header(vm, onBack)
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) { BoardBlock(vm, Modifier.size(side)) }
-                Details(vm, Modifier.weight(1f))
+                Details(vm, Modifier.weight(1f), onExplorer)
                 Footer(vm, onAnalyze, onReanalyze)
             }
         }
@@ -186,7 +186,7 @@ private fun Board(vm: GameViewModel, modifier: Modifier) {
 
 /** Selected move, analysis status and the eval graph. Scrolls when space is short. */
 @Composable
-private fun Details(vm: GameViewModel, modifier: Modifier) {
+private fun Details(vm: GameViewModel, modifier: Modifier, onExplorer: (GameLine, Int) -> Unit) {
     Column(modifier.padding(top = 6.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         vm.error?.let { ErrorText(it) }
         val line = vm.line
@@ -196,7 +196,7 @@ private fun Details(vm: GameViewModel, modifier: Modifier) {
         }
         MoveCard(vm, line)
         AnalysisStatus(vm)
-        ExplorerCard(vm, line)
+        ExplorerCard(vm, line) { onExplorer(line, vm.ply) }
         EvalCard(vm, line)
     }
 }

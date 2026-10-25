@@ -52,6 +52,8 @@ class MainActivity : ComponentActivity() {
                     var from by rememberSaveable { mutableStateOf(LIBRARY) }
                     // The screen the engine game was opened from, so Back returns there.
                     var playFrom by rememberSaveable { mutableStateOf(LIBRARY) }
+                    // The screen the explorer was opened from, so Back returns there.
+                    var explorerFrom by rememberSaveable { mutableStateOf(LIBRARY) }
                     val open: OpenGame = { pgn, key, owner, analysis ->
                         game.load(pgn, key, owner, analysis); from = screen; screen = GAME
                     }
@@ -67,7 +69,9 @@ class MainActivity : ComponentActivity() {
                     val saved = rememberSaveableStateHolder()
                     saved.SaveableStateProvider(screen) {
                         when (screen) {
-                            GAME -> GameScreen(game, onBack = { game.stopAnalysis(); screen = from })
+                            GAME -> GameScreen(game, onBack = { game.stopAnalysis(); screen = from }, onExplorer = { line, ply ->
+                                if (explorer.open(line, ply)) { explorerFrom = GAME; screen = EXPLORER }
+                            })
                             ONLINE -> OnlineScreen(library, onOpen = open, onBack = { screen = LIBRARY })
                             LICENSES -> LicensesScreen(onBack = { screen = SETTINGS })
                             SETTINGS -> SettingsScreen(onBack = { screen = LIBRARY }, onLicenses = { screen = LICENSES })
@@ -83,7 +87,7 @@ class MainActivity : ComponentActivity() {
                                 explorer,
                                 onAnalyze = { open(it, Sources.textKey(it), null, null) },
                                 onPlay = { play.prepare(it); playFrom = EXPLORER; screen = PLAY },
-                                onBack = { screen = LIBRARY },
+                                onBack = { screen = explorerFrom },
                             )
                             // Games against the engine are saved once analyzed; "You" is the owner.
                             PLAY -> PlayScreen(play, onAnalyze = { library.importText(it, Sources.ENGINE, open, getString(R.string.you)) }, onBack = { screen = playFrom })
@@ -93,7 +97,7 @@ class MainActivity : ComponentActivity() {
                                     if (play.line == null) play.prepare(GameLine.START_FEN)
                                     playFrom = LIBRARY; screen = PLAY
                                 },
-                                onExplorer = { screen = EXPLORER },
+                                onExplorer = { explorerFrom = LIBRARY; screen = EXPLORER },
                                 onSettings = { screen = SETTINGS },
                             )
                         }

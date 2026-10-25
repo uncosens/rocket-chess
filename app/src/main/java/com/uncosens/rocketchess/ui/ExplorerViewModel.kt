@@ -46,6 +46,14 @@ class ExplorerViewModel : ViewModel() {
         ply++
     }
 
+    /** Shows [game] at [at], keeping its later moves for Next. False when it does not start from the start position. */
+    fun open(game: GameLine, at: Int): Boolean {
+        if (game.positions[0].fen.split(" ").take(4) != GameLine.START_FEN.split(" ").take(4)) return false
+        line = game
+        ply = at
+        return true
+    }
+
     fun goTo(index: Int) {
         ply = index.coerceIn(0, line.plies.size)
     }
@@ -53,7 +61,7 @@ class ExplorerViewModel : ViewModel() {
     /** The moves up to the shown position as a PGN, to open for analysis. */
     fun pgn(): String {
         val moves = line.plies.take(ply).mapIndexed { i, p -> if (i % 2 == 0) "${i / 2 + 1}. ${p.san}" else p.san }
-        return "[Event \"Opening explorer\"]\n[White \"White\"]\n[Black \"Black\"]\n[Result \"*\"]\n\n${(moves + "*").joinToString(" ")}\n"
+        return "[Event \"Opening Explorer\"]\n[White \"White\"]\n[Black \"Black\"]\n[Result \"*\"]\n\n${(moves + "*").joinToString(" ")}\n"
     }
 
     fun toggleBest() {
