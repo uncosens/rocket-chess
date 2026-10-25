@@ -37,4 +37,25 @@ class MistakesTest {
         val l = line("1. e4 e5 *")
         assertTrue(Mistakes.of(l, listOf(pe(30, "d2d4"), pe(20), pe(20)), userWhite = true).isEmpty())
     }
+    private val quiet = pe(0)
+
+    @Test
+    fun missedOrAllowedMateIsAMateTheme() {
+        assertEquals("mateIn2", Mistakes.theme(START, "e2e4", Eval.Mate(true, 2), START, quiet, userWhite = true))
+        // The reply mates the user in one.
+        val after = PositionEval(Eval.Mate(false, 1), "d8h4", null, 14)
+        assertEquals("mateIn1", Mistakes.theme(START, "e2e4", Eval.Cp(0), START, after, userWhite = true))
+    }
+
+    @Test
+    fun forkAndFreePiece() {
+        assertEquals("fork", Mistakes.theme("r3k3/8/8/1N6/8/8/8/4K3 w - - 0 1", "b5c7", Eval.Cp(500), START, quiet, userWhite = true))
+        assertEquals("hangingPiece", Mistakes.theme("4k3/8/8/3n4/8/8/8/3QK3 w - - 0 1", "d1d5", Eval.Cp(300), START, quiet, userWhite = true))
+        // A defended knight is no free piece.
+        assertEquals(null, Mistakes.theme("4k3/8/4p3/3n4/8/8/8/3QK3 w - - 0 1", "d1d5", Eval.Cp(0), START, quiet, userWhite = true))
+    }
+
+    private companion object {
+        const val START = GameLine.START_FEN
+    }
 }

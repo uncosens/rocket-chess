@@ -68,7 +68,7 @@
     <string name="licenses_stockfish">Analysis uses Stockfish %1$s by the Stockfish developers, under the GNU General Public License v3.0. It runs unmodified as a separate program. Its neural network is CC0-1.0, trained on Leela Chess Zero data (ODbL).</string>
     <string name="licenses_stockfish_source">Stockfish source code</string>
     <string name="licenses_libraries">Other libraries (AndroidX, Kotlin, OkHttp, Okio, kotlinx, chesslib, AndroidSVG, Apache Commons Lang and others) are under the Apache License 2.0. The full list is in the notices.</string>
-    <string name="licenses_assets">Piece images come from the Lichess project: cburnett by Colin M.L. Burnett and merida by Armando Hernandez Marroquin (GPLv2+), mpchess by Maxime Chupin (GPLv3+), chessnut by Alexis Luengas (Apache 2.0). Wood, maple, marble and blue marble boards are by the Lichess authors (AGPLv3+). Fonts Unbounded, IBM Plex Sans and JetBrains Mono are under the SIL Open Font License 1.1. Opening statistics come from the Lichess open database and opening names from lichess-org/chess-openings, both CC0.</string>
+    <string name="licenses_assets">Piece images come from the Lichess project: cburnett by Colin M.L. Burnett and merida by Armando Hernandez Marroquin (GPLv2+), mpchess by Maxime Chupin (GPLv3+), chessnut by Alexis Luengas (Apache 2.0). Wood, maple, marble and blue marble boards are by the Lichess authors (AGPLv3+). Fonts Unbounded, IBM Plex Sans and JetBrains Mono are under the SIL Open Font License 1.1. Opening statistics and puzzles come from the Lichess open database and opening names from lichess-org/chess-openings, all CC0.</string>
     <string name="licenses_build">App commit: %1$s\nStockfish commit: %2$s\nEngine SHA-256: %3$s</string>
     <string name="licenses_notices">Third-Party Notices</string>
     <string name="engine_settings">Engine Settings</string>
@@ -163,7 +163,7 @@
     <string name="axis_defense_note">Moves when only one move saved you or you were in check, and moves that let the reply hit your king.</string>
     <string name="notes_title">Mistake Notes</string>
     <string name="notes_progress">%1$d / %2$d · %3$d solved</string>
-    <string name="notes_empty">No mistakes yet. Mistakes and Blunders from your analyzed games show up here.</string>
+    <string name="notes_empty">No puzzles found.</string>
     <string name="notes_no_ids">Only games against the engine are used. Set your Chess.com or Lichess user name in Settings (My Accounts) to add your online games.</string>
     <string name="notes_task">You played %1$s (%2$s). Find a better move.</string>
     <string name="notes_wrong">%1$s is not it. Try again.</string>
@@ -171,4 +171,25 @@
     <string name="notes_answer">Answer: %1$s</string>
     <string name="notes_show">Show Answer</string>
     <string name="notes_next">Next</string>
+    <string name="notes_puzzle">Lichess puzzle · %1$d</string>
+    <string name="notes_find_white">Find the best move for White.</string>
+    <string name="notes_find_black">Find the best move for Black.</string>
+    <string name="notes_theme">Tactic: %1$s</string>
+    <string name="notes_going">Good move. Keep going.</string>
+    <string name="theme_mate_in_1">Mate in 1</string>
+    <string name="theme_mate_in_2">Mate in 2</string>
+    <string name="theme_mate_in_3">Mate in 3</string>
+    <string name="theme_mate_in_4">Mate in 4</string>
+    <string name="theme_mate_in_5">Mate in 5</string>
+    <string name="theme_mate">Mate</string>
+    <string name="theme_fork">Fork</string>
+    <string name="theme_hanging_piece">Hanging Piece</string>
+    <string name="theme_pin">Pin</string>
+    <string name="theme_skewer">Skewer</string>
+    <string name="theme_discovered_attack">Discovered Attack</string>
+    <string name="theme_double_check">Double Check</string>
+    <string name="theme_sacrifice">Sacrifice</string>
+    <string name="theme_deflection">Deflection</string>
+    <string name="theme_attraction">Attraction</string>
+    <string name="theme_endgame">Endgame</string>
 </resources>

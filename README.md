@@ -177,6 +177,26 @@ Play blocks updates without 16 KB support from 2027-02-01 (see the Android page-
   move codes, names, Book grade rule). They and `ChessTest` were run with kotlinc and JUnit; the Gradle build and the screens were not run here.
 - Not checked yet: Gradle build, the screens on a device, load time on a phone.
 
+## Mistake Notes and puzzles (2026-10-25)
+
+- Mistake Notes (from the library) collects the user's Mistakes and Blunders from saved analyses each time it opens:
+  online games of the My IDs in Settings, and games against the engine. Each is a puzzle from the position before the move;
+  the engine's first choice counts, and its second when it loses less than 2% win.
+- After each mistake comes a Lichess puzzle of the same kind near the user's rating (median Elo tag of the last 20 own games,
+  1500 when none). The kind is guessed from the engine moves: a mate missed or allowed (mateIn1–5), then a fork,
+  then taking a piece nothing defends, first for the user's best move, then for the opponent's best reply. Unknown kind: any theme.
+- Puzzles: `assets/puzzles/puzzles.tsv` (10,187,966 bytes, about 4.2 MB gzip), 100,000 of the 6,157,341 in
+  `lichess_db_puzzle.csv.zst` of 2026-10-05 (CC0, SHA-256 `76335bfa…2f8d`). Kept: popularity 80+, 300+ plays,
+  rating deviation 90 or less (2,885,049 puzzles), then about 3,900 per 100-point band from 399 to 3007.
+  Only the themes the app shows are kept. Any mate counts on a mate's last move, as on Lichess.
+- Solved puzzles are kept on the device; unsolved mistakes come first and solved Lichess puzzles are not picked again.
+- Build (needs zstandard, under a minute):
+
+  ```sh
+  curl -L -o lichess_db_puzzle.csv.zst https://database.lichess.org/lichess_db_puzzle.csv.zst
+  python scripts/puzzle_set.py lichess_db_puzzle.csv.zst app/src/main/assets/puzzles/puzzles.tsv
+  ```
+
 ## Sources checked
 
 | Source | Checked | Note |

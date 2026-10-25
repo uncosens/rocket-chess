@@ -55,6 +55,13 @@ class GameLine(val plies: List<Ply>, val positions: List<Position>) {
             MoveList(fen).apply { add(move) }.toSanArray()[0]
         }.getOrDefault(uci)
 
+        /** The position after [uci] in [fen]. Null if the move is not legal there. */
+        fun after(fen: String, uci: String): Position? = runCatching {
+            val board = Board().apply { loadFromFen(fen) }
+            board.doMove(board.legalMoves().first { uciOf(it) == uci })
+            position(board)
+        }.getOrNull()
+
         /** Legal moves in a position, in UCI. Empty if the FEN cannot be read. */
         fun legalMoves(fen: String): List<String> =
             runCatching { Board().apply { loadFromFen(fen) }.legalMoves().map(::uciOf) }.getOrDefault(emptyList())

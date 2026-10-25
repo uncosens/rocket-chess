@@ -43,6 +43,10 @@ Opening data (assets/opening)
     rated rapid games of 2026-06 to 2026-09, released under CC0. Made by scripts/opening_book.py.
   names.tsv - opening names from https://github.com/lichess-org/chess-openings, CC0.
 
+Puzzles (assets/puzzles)
+  puzzles.tsv - 100,000 puzzles from the Lichess puzzle database (https://database.lichess.org/#puzzles),
+    released under CC0. Picked by scripts/puzzle_set.py.
+
 Fonts (res/font), under the SIL Open Font License 1.1 (see OFL-1.1)
   Unbounded - Copyright 2022 The Unbounded Project Authors (https://github.com/googlefonts/unbounded)
   IBM Plex Sans - Copyright 2017 IBM Corp. with Reserved Font Name "Plex"

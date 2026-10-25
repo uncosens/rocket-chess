@@ -34,30 +34,30 @@ import com.uncosens.rocketchess.R
 import com.uncosens.rocketchess.analysis.MoveClass
 import com.uncosens.rocketchess.chess.GameLine
 
-/** The user's Mistakes and Blunders as puzzles: find a better move than the one played. */
+/** The user's Mistakes and Blunders as puzzles, each followed by a Lichess puzzle of the same kind. */
 @Composable
 fun NotesScreen(vm: NotesViewModel, onBack: () -> Unit) {
     BackHandler(onBack = onBack)
     LaunchedEffect(Unit) { vm.load() }
-    val notes = vm.notes
-    val note = vm.note
+    val drills = vm.drills
+    val drill = vm.drill
     val title = stringResource(R.string.notes_title)
-    val subtitle = notes?.takeIf { it.isNotEmpty() }?.let { stringResource(R.string.notes_progress, vm.index + 1, it.size, it.count { n -> n.mistake.key in vm.solved }) }
+    val subtitle = drills?.takeIf { it.isNotEmpty() }?.let { stringResource(R.string.notes_progress, vm.index + 1, it.size, it.count { d -> d.key in vm.solved }) }
 
     BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 16.dp, vertical = 8.dp)) {
-        if (note == null) {
+        if (drill == null) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 TopBar(title, onBack)
-                if (notes == null) LinearProgressIndicator(Modifier.fillMaxWidth()) else Hint(stringResource(R.string.notes_empty))
+                if (drills == null) LinearProgressIndicator(Modifier.fillMaxWidth()) else Hint(stringResource(R.string.notes_empty))
                 if (vm.noIds) Hint(stringResource(R.string.notes_no_ids))
             }
         } else if (maxWidth > maxHeight) {
             val side = maxHeight - 16.dp
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                Puzzle(vm, note, Modifier.padding(top = 8.dp).size(side))
+                Board(vm, drill, Modifier.padding(top = 8.dp).size(side))
                 Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     TopBar(title, onBack, subtitle)
-                    Panel(vm, note)
+                    Panel(vm, drill)
                 }
             }
         } else {
@@ -65,25 +65,25 @@ fun NotesScreen(vm: NotesViewModel, onBack: () -> Unit) {
             val side = minOf(maxWidth, LocalConfiguration.current.screenWidthDp.dp * 0.9f)
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 TopBar(title, onBack, subtitle)
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) { Puzzle(vm, note, Modifier.size(side)) }
-                Panel(vm, note)
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) { Board(vm, drill, Modifier.size(side)) }
+                Panel(vm, drill)
             }
         }
     }
 }
 
 @Composable
-private fun Puzzle(vm: NotesViewModel, note: MistakeNote, modifier: Modifier) {
-    val m = note.mistake
+private fun Board(vm: NotesViewModel, drill: Drill, modifier: Modifier) {
+    val open = (vm.attempt == Attempt.Solving || vm.attempt == Attempt.Wrong || vm.attempt == Attempt.Going) && !vm.replying
     // A new input after each wrong try clears the selected piece.
-    val input = key(vm.misses) { rememberMoveInput(m.fen, enabled = vm.attempt == Attempt.Solving || vm.attempt == Attempt.Wrong) { vm.play(it) } }
+    val input = key(vm.misses) { rememberMoveInput(vm.fen, enabled = open) { vm.play(it) } }
     ChessBoard(
-        fen = m.fen,
-        lastMove = m.lastMove,
-        check = null,
+        fen = vm.fen,
+        lastMove = vm.lastMove,
+        check = vm.check,
         description = stringResource(R.string.notes_title),
         modifier = modifier.clip(RoundedCornerShape(12.dp)),
-        flipped = !note.userWhite,
+        flipped = !drill.userWhite,
         arrow = vm.arrow?.let { it.substring(0, 2) to it.substring(2, 4) },
         selected = input.selected,
         targets = input.targets,
@@ -91,24 +91,59 @@ private fun Puzzle(vm: NotesViewModel, note: MistakeNote, modifier: Modifier) {
     )
 }
 
-/** Game, task, result and buttons. */
+/** Where the puzzle comes from, the task, the result and the buttons. */
 @Composable
-private fun Panel(vm: NotesViewModel, note: MistakeNote) {
-    val m = note.mistake
-    Text(stringResource(R.string.players, note.white, note.black) + " · " + note.date, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    Text(stringResource(R.string.notes_task, GameLine.san(m.fen, m.played), m.cls.label()), style = MaterialTheme.typography.bodyLarge)
+private fun Panel(vm: NotesViewModel, drill: Drill) {
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    val note = drill.note
+    val puzzle = drill.puzzle
+    val theme = (note?.mistake?.theme ?: puzzle?.themes?.firstOrNull { it in THEME_NAMES })?.let { stringResource(THEME_NAMES.getValue(it)) }
+    if (note != null) {
+        val m = note.mistake
+        Text(stringResource(R.string.players, note.white, note.black) + " · " + note.date, style = MaterialTheme.typography.bodySmall, color = muted)
+        Text(stringResource(R.string.notes_task, GameLine.san(m.fen, m.played), m.cls.label()), style = MaterialTheme.typography.bodyLarge)
+        theme?.let { Text(stringResource(R.string.notes_theme, it), style = MaterialTheme.typography.bodySmall, color = muted) }
+    } else if (puzzle != null) {
+        Text(stringResource(R.string.notes_puzzle, puzzle.rating) + (theme?.let { " · $it" } ?: ""), style = MaterialTheme.typography.bodySmall, color = muted)
+        Text(stringResource(if (drill.userWhite) R.string.notes_find_white else R.string.notes_find_black), style = MaterialTheme.typography.bodyLarge)
+    }
     when (vm.attempt) {
         Attempt.Solving -> {}
-        Attempt.Wrong -> Text(stringResource(R.string.notes_wrong, vm.tried.orEmpty()), color = m.cls.color(), fontWeight = FontWeight.Medium)
+        Attempt.Wrong -> Text(stringResource(R.string.notes_wrong, vm.tried.orEmpty()), color = MoveClass.Mistake.color(), fontWeight = FontWeight.Medium)
+        Attempt.Going -> Text(stringResource(R.string.notes_going), color = MoveClass.Best.color(), fontWeight = FontWeight.Medium)
         Attempt.Solved -> Text(stringResource(R.string.notes_solved), color = MoveClass.Best.color(), fontWeight = FontWeight.Medium)
-        Attempt.Shown -> Text(stringResource(R.string.notes_answer, m.answers.joinToString(" / ") { GameLine.san(m.fen, it) }), fontWeight = FontWeight.Medium)
+        Attempt.Shown -> {
+            // At the first move, every move that counts.
+            val moves = if (vm.fen == drill.fen) drill.firstAnswers else listOfNotNull(vm.arrow)
+            Text(stringResource(R.string.notes_answer, moves.joinToString(" / ") { GameLine.san(vm.fen, it) }), fontWeight = FontWeight.Medium)
+        }
     }
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         val done = vm.attempt == Attempt.Solved || vm.attempt == Attempt.Shown
-        OutlinedButton(onClick = vm::showAnswer, enabled = !done, modifier = Modifier.weight(1f).height(48.dp)) { Text(stringResource(R.string.notes_show)) }
+        OutlinedButton(onClick = vm::showAnswer, enabled = !done && !vm.replying, modifier = Modifier.weight(1f).height(48.dp)) { Text(stringResource(R.string.notes_show)) }
         Button(onClick = vm::next, modifier = Modifier.weight(1f).height(48.dp)) { Text(stringResource(R.string.notes_next)) }
     }
 }
+
+/** Names for the Lichess themes the puzzle set keeps. */
+private val THEME_NAMES = mapOf(
+    "mateIn1" to R.string.theme_mate_in_1,
+    "mateIn2" to R.string.theme_mate_in_2,
+    "mateIn3" to R.string.theme_mate_in_3,
+    "mateIn4" to R.string.theme_mate_in_4,
+    "mateIn5" to R.string.theme_mate_in_5,
+    "mate" to R.string.theme_mate,
+    "fork" to R.string.theme_fork,
+    "hangingPiece" to R.string.theme_hanging_piece,
+    "pin" to R.string.theme_pin,
+    "skewer" to R.string.theme_skewer,
+    "discoveredAttack" to R.string.theme_discovered_attack,
+    "doubleCheck" to R.string.theme_double_check,
+    "sacrifice" to R.string.theme_sacrifice,
+    "deflection" to R.string.theme_deflection,
+    "attraction" to R.string.theme_attraction,
+    "endgame" to R.string.theme_endgame,
+)
 
 @Composable
 private fun Hint(text: String) {
