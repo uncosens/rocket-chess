@@ -1,8 +1,8 @@
 """Builds the offline opening book (app/src/main/assets/opening/book.bin) from a Lichess game dump.
 
 Usage:
-  scripts/lichess_dump.sh YYYY-MM | python scripts/opening_book.py extract WORK [MAX_GAMES]
-  python scripts/opening_book.py count WORK
+  scripts/lichess_dump.sh YYYY-MM | python scripts/opening_book.py extract WORK [MAX_GAMES [MIN_RATING]]
+  python scripts/opening_book.py count WORK [MORE_WORK ...]
   python scripts/opening_book.py write WORK OUT.bin MIN_GAMES
   python scripts/opening_book.py names CHESS_OPENINGS_DIR OUT.tsv
   python scripts/opening_book.py vectors OUT.tsv
@@ -78,6 +78,7 @@ def parse_game(text):
     we, be = header(text, "WhiteElo"), header(text, "BlackElo")
     if result is None or not (we and be and we.isdigit() and be.isdigit()):
         return None
+    rating = (int(we) + int(be)) // 2
     if header(text, "Termination") == "Abandoned" or header(text, "FEN"):
         return None
     body = text[text.find("\n\n") + 2:]
@@ -90,7 +91,7 @@ def parse_game(text):
         sans.append(tok.rstrip("?!"))
         if len(sans) == MAX_PLY:
             break
-    return (int(we) + int(be)) // 2, result, sans
+    return rating, result, sans
 
 
 # Per worker: move prefix ("e4 e5 Nf3") -> (key before its last move, that move).
@@ -148,12 +149,20 @@ def games_from(stream):
         yield rest if rest.startswith(b"[Event ") else b"[Event " + rest
 
 
-def rapid_batches(stream, max_games, size=2000):
-    """Batches of rated rapid game texts; stops after max_games of them."""
+ELO = re.compile(rb'^\[(?:White|Black)Elo "(\d+)"\]', re.M)
+
+
+def rapid_batches(stream, max_games, min_rating=0, size=2000):
+    """Batches of rated rapid game texts; stops after max_games of them.
+    With min_rating, games below that mean rating are dropped here, before any decoding."""
     batch, n = [], 0
     for raw in games_from(stream):
         if not raw.startswith(b'[Event "Rated Rapid'):
             continue
+        if min_rating:
+            elos = ELO.findall(raw, 0, raw.find(b"\n\n"))
+            if len(elos) != 2 or (int(elos[0]) + int(elos[1])) // 2 < min_rating:
+                continue
         batch.append(raw.decode("utf-8", "replace"))
         n += 1
         if len(batch) == size:
@@ -165,7 +174,9 @@ def rapid_batches(stream, max_games, size=2000):
         yield batch
 
 
-def extract(work, max_games):
+def extract(work, max_games, min_rating):
+    """Appends records to WORK. With min_rating, only games whose mean rating reaches it are kept,
+    to add games for the higher bands from more months. max_games 0 reads all."""
     import zstandard
     os.makedirs(work, exist_ok=True)
     files = [open(os.path.join(work, f"part{i:02d}.rec"), "ab") for i in range(PARTS)]
@@ -173,7 +184,7 @@ def extract(work, max_games):
     n_games = n_rec = 0
     with multiprocessing.Pool() as pool:
         try:
-            for i, rec in enumerate(pool.imap(records, rapid_batches(reader, max_games), chunksize=1), 1):
+            for i, rec in enumerate(pool.imap(records, rapid_batches(reader, max_games, min_rating), chunksize=1), 1):
                 part = (rec["k"] >> np.uint64(58)).astype(np.int64)
                 for p in np.unique(part):
                     rec[part == p].tofile(files[p])
@@ -189,12 +200,13 @@ def extract(work, max_games):
     print(f"done: {n_rec} records", flush=True)
 
 
-def count(work):
+def count(work, more=()):
     """Per (position, move): games by band and result. Also the totals per position. Bands are set here,
-    so new BAND_EDGES need only a new count, not a new extract."""
+    so new BAND_EDGES need only a new count, not a new extract. Records of [more] work folders
+    (e.g. other months) are added; counts.npz goes to [work]."""
     moves, positions = [], []
     for i in range(PARTS):
-        rec = np.fromfile(os.path.join(work, f"part{i:02d}.rec"), dtype=RECORD)
+        rec = np.concatenate([np.fromfile(os.path.join(w, f"part{i:02d}.rec"), dtype=RECORD) for w in (work, *more)])
         if len(rec) == 0:
             continue
         rec = rec[np.lexsort((rec["m"], rec["k"]))]
@@ -316,9 +328,9 @@ def vectors(out_path):
 if __name__ == "__main__":
     cmd, args = sys.argv[1], sys.argv[2:]
     if cmd == "extract":
-        extract(args[0], int(args[1]) if len(args) > 1 else 0)
+        extract(args[0], int(args[1]) if len(args) > 1 else 0, int(args[2]) if len(args) > 2 else 0)
     elif cmd == "count":
-        count(args[0])
+        count(args[0], args[1:])
     elif cmd == "write":
         write(args[0], args[1], int(args[2]))
     elif cmd == "names":
