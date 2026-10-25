@@ -29,6 +29,8 @@ import com.uncosens.rocketchess.ui.PlayScreen
 import com.uncosens.rocketchess.ui.PlayViewModel
 import com.uncosens.rocketchess.ui.LibraryViewModel
 import com.uncosens.rocketchess.ui.OnlineScreen
+import com.uncosens.rocketchess.ui.ReportScreen
+import com.uncosens.rocketchess.ui.ReportViewModel
 import com.uncosens.rocketchess.ui.RocketTheme
 import com.uncosens.rocketchess.ui.SettingsScreen
 import com.uncosens.rocketchess.ui.SetupScreen
@@ -38,6 +40,7 @@ class MainActivity : ComponentActivity() {
     private val library: LibraryViewModel by viewModels()
     private val play: PlayViewModel by viewModels()
     private val explorer: ExplorerViewModel by viewModels()
+    private val report: ReportViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -89,6 +92,7 @@ class MainActivity : ComponentActivity() {
                                 onPlay = { play.prepare(it); playFrom = EXPLORER; screen = PLAY },
                                 onBack = { screen = explorerFrom },
                             )
+                            REPORT -> ReportScreen(report, onBack = { screen = LIBRARY })
                             // Games against the engine are saved once analyzed; "You" is the owner.
                             PLAY -> PlayScreen(play, onAnalyze = { library.importText(it, Sources.ENGINE, open, getString(R.string.you)) }, onBack = { screen = playFrom })
                             else -> LibraryScreen(
@@ -98,6 +102,7 @@ class MainActivity : ComponentActivity() {
                                     playFrom = LIBRARY; screen = PLAY
                                 },
                                 onExplorer = { explorerFrom = LIBRARY; screen = EXPLORER },
+                                onReport = { screen = REPORT },
                                 onSettings = { screen = SETTINGS },
                             )
                         }
@@ -122,5 +127,6 @@ class MainActivity : ComponentActivity() {
         const val SETUP = "setup"
         const val PLAY = "play"
         const val EXPLORER = "explorer"
+        const val REPORT = "report"
     }
 }

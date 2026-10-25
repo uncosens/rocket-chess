@@ -142,4 +142,23 @@
     <string name="band_under">-%1$d</string>
     <string name="band_range">%1$d–%2$d</string>
     <string name="band_over">%1$d+</string>
+    <string name="report_title">My Report</string>
+    <string name="report_no_ids">Set your Chess.com or Lichess user name in Settings (My Accounts). The report uses the analyzed games of those names.</string>
+    <string name="report_not_enough">The report needs %2$d fully analyzed games of yours. You have %1$d.</string>
+    <string name="report_summary">Combined from %1$d analyzed games (%2$d as White, %3$d as Black). Each score is the accuracy of your moves in that kind of position, 0 to 100.</string>
+    <string name="report_footnote">An estimate from many games, not a rating. The small numbers are a likely range. Scores depend on your opponents and on the engine depth.</string>
+    <string name="report_too_few">Too few (%1$d/%2$d)</string>
+    <string name="report_samples">%1$d moves, %2$d games</string>
+    <string name="report_found">found %1$d/%2$d</string>
+    <string name="report_king_errors">king errors %1$d in %2$d moves</string>
+    <string name="axis_tactics">Tactics</string>
+    <string name="axis_positional">Positional</string>
+    <string name="axis_opening">Opening</string>
+    <string name="axis_endgame">Endgame</string>
+    <string name="axis_defense">Defense</string>
+    <string name="axis_tactics_note">Moves when one move was much better than the rest, or the opponent had just erred. Bigger chances count more.</string>
+    <string name="axis_positional_note">Middlegame moves with no single right move.</string>
+    <string name="axis_opening_note">Moves up to move 12. Leaving the book is not marked down.</string>
+    <string name="axis_endgame_note">All moves with 6 or fewer pieces left besides kings and pawns.</string>
+    <string name="axis_defense_note">Moves when only one move saved you or you were in check, and moves that let the reply hit your king.</string>
 </resources>

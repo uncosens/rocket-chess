@@ -68,7 +68,7 @@ import java.util.Date
 
 /** Saved games and the ways to add one. */
 @Composable
-fun LibraryScreen(vm: LibraryViewModel, onOpen: OpenGame, onOnline: () -> Unit, onSetup: () -> Unit, onPlay: () -> Unit, onExplorer: () -> Unit, onSettings: () -> Unit) {
+fun LibraryScreen(vm: LibraryViewModel, onOpen: OpenGame, onOnline: () -> Unit, onSetup: () -> Unit, onPlay: () -> Unit, onExplorer: () -> Unit, onReport: () -> Unit, onSettings: () -> Unit) {
     val games by vm.games.collectAsState()
     var pasting by rememberSaveable { mutableStateOf(false) }
     val openFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -99,6 +99,7 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: OpenGame, onOnline: () -> Unit, 
             // Same color as Play vs engine on Set up board.
             ImportButton(R.drawable.ic_engine, stringResource(R.string.play_engine), Modifier.weight(1f), MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.onSecondary, onPlay)
         }
+        ImportButton(R.drawable.ic_radar, stringResource(R.string.report_title), Modifier.fillMaxWidth(), onClick = onReport)
         vm.error?.let { ErrorText(it) }
 
         Row(Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
