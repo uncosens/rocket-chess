@@ -34,10 +34,37 @@ val LocalBoardColors = staticCompositionLocalOf { NightBoard }
 // The Rocket board keeps its "Night Launch" colors in both dark and light mode.
 private val NightBoard = BoardColors(Color(0xFFCBD2E1), Color(0xFF59678A), Color(0xFFF2B48F), Color(0xFFC98765))
 
+/** A button color and the text color on it. */
+data class Accent(val color: Color, val on: Color)
+
+/** Colors of the main screen's feature buttons; Play also colors the other Play buttons, Notes the Next button. */
+data class Accents(val explorer: Accent, val play: Accent, val report: Accent, val notes: Accent)
+
+private val DarkInk = Color(0xFF002324)
+// Mauve, Lime, Dusty Sky and Khaki next to the terracotta primary.
+private val NightAccents = Accents(
+    explorer = Accent(Color(0xFFE5DDDE), DarkInk),
+    play = Accent(Color(0xFFEBFACF), DarkInk),
+    report = Accent(Color(0xFF9DB9D3), DarkInk),
+    notes = Accent(Color(0xFFA1AD95), DarkInk),
+)
+
+private val Sapphire = Color(0xFF082567)
+private val Glaucous = Color(0xFF6082B6)
+private val SolarFlare = Color(0xFFFFF785)
+// Light glaucous and light solar tints, then the full colors.
+private val DayAccents = Accents(
+    explorer = Accent(Color(0xFFDCE4F2), Sapphire),
+    play = Accent(Color(0xFFFFFBC9), Sapphire),
+    report = Accent(Glaucous, Color.White),
+    notes = Accent(SolarFlare, Sapphire),
+)
+
+val LocalAccents = staticCompositionLocalOf { NightAccents }
+
 private val Night = darkColorScheme(
-    primary = Color(0xFFFF6B35),
+    primary = Color(0xFFE07A5F),
     onPrimary = Color.White,
-    // Rocket flame blue: Play vs engine buttons.
     secondary = Color(0xFF3D7BFF),
     onSecondary = Color.White,
     background = Color(0xFF0B1020),
@@ -57,23 +84,24 @@ private val Night = darkColorScheme(
 )
 
 private val Day = lightColorScheme(
-    primary = Color(0xFF2F54EB),
-    onPrimary = Color.White,
-    secondary = Color(0xFFFF6B35),
+    primary = Sapphire,
+    onPrimary = SolarFlare,
+    secondary = Glaucous,
     onSecondary = Color.White,
-    background = Color(0xFFF5F6F8),
-    onBackground = Color(0xFF12151C),
-    surface = Color(0xFFF5F6F8),
-    onSurface = Color(0xFF12151C),
-    onSurfaceVariant = Color(0xFF5D6474),
-    surfaceContainerLow = Color.White,
-    surfaceContainer = Color.White,
-    surfaceContainerHigh = Color(0xFFEEF0F4),
-    surfaceContainerHighest = Color(0xFFE3E6EC),
-    secondaryContainer = Color(0xFFE9EDFD),
-    onSecondaryContainer = Color(0xFF12151C),
-    outline = Color(0xFFE3E6EC),
-    outlineVariant = Color(0xFFE3E6EC),
+    // Cool stone background; plain buttons and cards a step lighter.
+    background = Color(0xFFECECE8),
+    onBackground = Sapphire,
+    surface = Color(0xFFECECE8),
+    onSurface = Sapphire,
+    onSurfaceVariant = Color(0xFF5A6B8C),
+    surfaceContainerLow = Color(0xFFF6F6F3),
+    surfaceContainer = Color(0xFFF6F6F3),
+    surfaceContainerHigh = Color(0xFFE2E2DD),
+    surfaceContainerHighest = Color(0xFFD9D9D3),
+    secondaryContainer = Color(0xFFF6F6F3),
+    onSecondaryContainer = Sapphire,
+    outline = Color(0xFFD9D9D3),
+    outlineVariant = Color(0xFFD9D9D3),
     error = Color(0xFFC62828),
 )
 
@@ -143,7 +171,7 @@ fun RocketTheme(content: @Composable () -> Unit) {
             isAppearanceLightNavigationBars = !dark
         }
     }
-    CompositionLocalProvider(LocalBoardColors provides NightBoard) {
+    CompositionLocalProvider(LocalBoardColors provides NightBoard, LocalAccents provides if (dark) NightAccents else DayAccents) {
         MaterialTheme(colorScheme = if (dark) Night else Day, typography = Type, content = content)
     }
 }

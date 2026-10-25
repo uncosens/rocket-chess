@@ -5,7 +5,7 @@
     android:height="34dp"
     android:viewportWidth="100"
     android:viewportHeight="100">
-    <path android:fillColor="#FF6B35" android:pathData="M0 0h100v100h-100z" />
+    <path android:fillColor="#E07A5F" android:pathData="M0 0h100v100h-100z" />
     <path android:fillColor="#D65A2D" android:pathData="M50 0h50v50h-50z M0 50h50v50h-50z" />
     <group android:rotation="45" android:scaleX="0.897" android:scaleY="0.897" android:pivotX="50" android:pivotY="61" android:translateY="-11">
         <path android:fillColor="#3D7BFF" android:pathData="M38 88C38 94 39 99 40 103C42 101 43.5 100.5 45 100.6C46.5 106 48 110 50 114C52 110 53.5 106 55 100.6C56.5 100.5 58 101 60 103C61 99 62 94 62 88Z" />

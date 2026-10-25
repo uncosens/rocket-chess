@@ -17,7 +17,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -126,7 +127,12 @@ private fun Actions(vm: ExplorerViewModel, onAnalyze: (String) -> Unit, onPlay: 
         Button(onClick = { onAnalyze(vm.pgn()) }, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(16.dp)) {
             Text(stringResource(R.string.analyze), maxLines = 1)
         }
-        OutlinedButton(onClick = { onPlay(vm.fen) }, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(16.dp)) {
+        FilledTonalButton(
+            onClick = { onPlay(vm.fen) },
+            modifier = Modifier.weight(1f).height(52.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.filledTonalButtonColors(containerColor = LocalAccents.current.play.color, contentColor = LocalAccents.current.play.on),
+        ) {
             Text(stringResource(R.string.explorer_play), maxLines = 1)
         }
         SquareIconButton(R.drawable.ic_back, stringResource(R.string.nav_prev), { vm.goTo(vm.ply - 1) }, size = 52.dp, enabled = vm.ply > 0)

@@ -168,13 +168,13 @@ private fun Controls(
         Button(onClick = onAnalyze, enabled = error == null, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(16.dp)) {
             Text(stringResource(R.string.analyze))
         }
-        // Plays the engine from this position; the secondary color sets it apart from Analyze.
+        // Plays the engine from this position; lime like the other Play buttons.
         Button(
             onClick = onPlay,
             enabled = error == null,
             modifier = Modifier.weight(1f).height(52.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary, contentColor = MaterialTheme.colorScheme.onSecondary),
+            colors = ButtonDefaults.buttonColors(containerColor = LocalAccents.current.play.color, contentColor = LocalAccents.current.play.on),
         ) {
             Text(stringResource(R.string.play_engine))
         }

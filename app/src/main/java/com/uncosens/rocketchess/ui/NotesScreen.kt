@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -109,8 +110,8 @@ private fun Panel(vm: NotesViewModel, drill: Drill, onAnalyze: (pgn: String, use
         val done = vm.attempt == Attempt.Solved || vm.attempt == Attempt.Shown
         OutlinedButton(onClick = vm::showAnswer, enabled = !done && !vm.replying, modifier = Modifier.weight(1f).height(48.dp)) { Text(stringResource(R.string.notes_show)) }
         // The shown position, opened for analysis.
-        OutlinedButton(onClick = { onAnalyze(Setup.pgn(vm.fen), drill.userWhite) }, enabled = !vm.replying, modifier = Modifier.weight(1f).height(48.dp)) { Text(stringResource(R.string.analyze)) }
-        Button(onClick = vm::next, modifier = Modifier.weight(1f).height(48.dp)) { Text(stringResource(R.string.notes_next)) }
+        Button(onClick = { onAnalyze(Setup.pgn(vm.fen), drill.userWhite) }, enabled = !vm.replying, modifier = Modifier.weight(1f).height(48.dp)) { Text(stringResource(R.string.analyze)) }
+        Button(onClick = vm::next, modifier = Modifier.weight(1f).height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = LocalAccents.current.notes.color, contentColor = LocalAccents.current.notes.on)) { Text(stringResource(R.string.notes_next)) }
     }
 }
 

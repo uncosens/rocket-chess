@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -124,7 +124,7 @@ private fun AxisRow(a: AxisScore, r: Report, onPuzzles: () -> Unit) {
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(AXIS_NOTES.getValue(a.axis)), Modifier.weight(1f), color = muted, style = MaterialTheme.typography.bodySmall)
-                OutlinedButton(onPuzzles) { Text(stringResource(R.string.report_puzzles)) }
+                Button(onPuzzles) { Text(stringResource(R.string.report_puzzles)) }
             }
             val counts = buildList {
                 add(stringResource(R.string.report_samples, a.samples, a.games))

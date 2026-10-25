@@ -95,13 +95,13 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: OpenGame, onOnline: () -> Unit, 
             ImportButton(R.drawable.ic_board, stringResource(R.string.setup_board), Modifier.weight(1f), onClick = onSetup)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ImportButton(R.drawable.ic_book, stringResource(R.string.explorer_title), Modifier.weight(1f), onClick = onExplorer)
-            // Same color as Play vs engine on Set up board.
-            ImportButton(R.drawable.ic_engine, stringResource(R.string.play_engine), Modifier.weight(1f), MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.onSecondary, onPlay)
+            val accents = LocalAccents.current
+            ImportButton(R.drawable.ic_book, stringResource(R.string.explorer_title), Modifier.weight(1f), accents.explorer.color, accents.explorer.on, onExplorer)
+            ImportButton(R.drawable.ic_engine, stringResource(R.string.play_engine), Modifier.weight(1f), accents.play.color, accents.play.on, onPlay)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ImportButton(R.drawable.ic_radar, stringResource(R.string.report_title), Modifier.weight(1f), onClick = onReport)
-            ImportButton(R.drawable.ic_notes, stringResource(R.string.notes_title), Modifier.weight(1f), onClick = onNotes)
+            ImportButton(R.drawable.ic_radar, stringResource(R.string.report_title), Modifier.weight(1f), LocalAccents.current.report.color, LocalAccents.current.report.on, onReport)
+            ImportButton(R.drawable.ic_notes, stringResource(R.string.notes_title), Modifier.weight(1f), LocalAccents.current.notes.color, LocalAccents.current.notes.on, onNotes)
         }
         vm.error?.let { ErrorText(it) }
 
