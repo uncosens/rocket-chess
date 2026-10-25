@@ -29,7 +29,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -128,7 +131,19 @@ fun ResultBar(t: Tally, modifier: Modifier = Modifier) {
             if (n == 0) continue
             Box(Modifier.weight(n.toFloat()).fillMaxHeight().background(colors.first), contentAlignment = Alignment.Center) {
                 val pct = 100 * n / games
-                if (pct >= 15) Text("$pct", color = colors.second, fontSize = 10.sp, fontFamily = Mono, maxLines = 1)
+                // No font padding and a line as tall as the text, so the number sits in the middle.
+                if (pct >= 15) Text(
+                    "$pct",
+                    color = colors.second,
+                    maxLines = 1,
+                    style = TextStyle(
+                        fontSize = 10.sp,
+                        lineHeight = 10.sp,
+                        fontFamily = Mono,
+                        platformStyle = PlatformTextStyle(includeFontPadding = false),
+                        lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.Both),
+                    ),
+                )
             }
         }
     }

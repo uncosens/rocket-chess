@@ -67,15 +67,15 @@ fun SquareIconButton(
     }
 }
 
-/** Back button, a centered title, an optional subtitle and an optional button on the right. */
+/** Back button, a centered title, an optional subtitle and an optional button on the right, which should be [buttonSize]. */
 @Composable
-fun TopBar(title: String, onBack: () -> Unit, subtitle: String? = null, action: (@Composable () -> Unit)? = null) {
-    Row(Modifier.fillMaxWidth().height(52.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        SquareIconButton(R.drawable.ic_back, stringResource(R.string.cd_back), onBack)
+fun TopBar(title: String, onBack: () -> Unit, subtitle: String? = null, buttonSize: Dp = 44.dp, action: (@Composable () -> Unit)? = null) {
+    Row(Modifier.fillMaxWidth().height(buttonSize + 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        SquareIconButton(R.drawable.ic_back, stringResource(R.string.cd_back), onBack, size = buttonSize)
         Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             subtitle?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1) }
         }
-        if (action != null) action() else Spacer(Modifier.size(44.dp))
+        if (action != null) action() else Spacer(Modifier.size(buttonSize))
     }
 }

@@ -50,6 +50,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.uncosens.rocketchess.R
@@ -82,7 +84,7 @@ fun GameScreen(vm: GameViewModel, onBack: () -> Unit, onExplorer: (GameLine, Int
         if (maxWidth > maxHeight) {
             val side = maxHeight - 72.dp
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                BoardBlock(vm, Modifier.size(side))
+                BoardBlock(vm, side)
                 Column(Modifier.weight(1f)) {
                     Header(vm, onBack)
                     Details(vm, Modifier.weight(1f), onExplorer)
@@ -95,7 +97,7 @@ fun GameScreen(vm: GameViewModel, onBack: () -> Unit, onExplorer: (GameLine, Int
             val side = minOf(maxWidth, LocalConfiguration.current.screenWidthDp.dp * 0.9f)
             Column {
                 Header(vm, onBack)
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) { BoardBlock(vm, Modifier.size(side)) }
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) { BoardBlock(vm, side) }
                 Details(vm, Modifier.weight(1f), onExplorer)
                 Footer(vm, onAnalyze, onReanalyze)
             }
@@ -109,36 +111,43 @@ private fun Header(vm: GameViewModel, onBack: () -> Unit) {
     val title = tags?.let { stringResource(R.string.players, it["White"] ?: "?", it["Black"] ?: "?") } ?: ""
     val subtitle = listOfNotNull(tags?.get("Event")?.takeIf { it.isNotBlank() && it != "?" }, vm.game?.result)
         .joinToString(" · ").ifEmpty { null }
-    TopBar(title, onBack, subtitle) {
-        SquareIconButton(R.drawable.ic_flip, stringResource(R.string.flip_board), { vm.flipped = !vm.flipped })
+    // Smaller buttons leave more room below the board.
+    TopBar(title, onBack, subtitle, buttonSize = 36.dp) {
+        SquareIconButton(R.drawable.ic_flip, stringResource(R.string.flip_board), { vm.flipped = !vm.flipped }, size = 36.dp)
     }
 }
 
-/** The top player's name, the board, the bottom player's name. */
+/** Both players on one line above the board (White left, Black right), then the board. */
 @Composable
-private fun BoardBlock(vm: GameViewModel, modifier: Modifier) {
+private fun BoardBlock(vm: GameViewModel, side: Dp) {
     val tags = vm.game?.tags
     val black = tags?.get("Black") ?: stringResource(R.string.side_black)
     val white = tags?.get("White") ?: stringResource(R.string.side_white)
     val fen = vm.line?.positions?.getOrNull(vm.ply)?.fen ?: GameLine.START_FEN
     val (whiteEdge, blackEdge) = remember(fen) { materialEdge(fen) }
     Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        if (vm.flipped) PlayerRow(white, true, whiteEdge) else PlayerRow(black, false, blackEdge)
-        Board(vm, modifier.clip(RoundedCornerShape(12.dp)))
-        if (vm.flipped) PlayerRow(black, false, blackEdge) else PlayerRow(white, true, whiteEdge)
+        Row(Modifier.width(side).height(24.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            PlayerRow(white, true, whiteEdge, Modifier.weight(1f))
+            PlayerRow(black, false, blackEdge, Modifier.weight(1f), end = true)
+        }
+        Board(vm, Modifier.size(side).clip(RoundedCornerShape(12.dp)))
     }
 }
 
-/** Color dot, name, then the pieces this side is up and its point lead. */
+/** Color dot, name, then the pieces this side is up and its point lead. With [end], it sits on the right. */
 @Composable
-internal fun PlayerRow(name: String, white: Boolean, edge: MaterialEdge) {
-    Row(Modifier.height(24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+internal fun PlayerRow(name: String, white: Boolean, edge: MaterialEdge, modifier: Modifier = Modifier, end: Boolean = false) {
+    Row(
+        modifier.height(24.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp, if (end) Alignment.End else Alignment.Start),
+    ) {
         Box(
             Modifier.size(12.dp).clip(RoundedCornerShape(4.dp))
                 .background(if (white) Color.White else Color(0xFF14161B))
                 .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(4.dp)),
         )
-        Text(name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, maxLines = 1)
+        Text(name, Modifier.weight(1f, fill = false), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
         val muted = MaterialTheme.colorScheme.onSurfaceVariant
         // U+FE0E asks for the text form of the chess symbols, not emoji.
         if (edge.pieces.isNotEmpty()) Text(edge.pieces.map { GLYPHS.getValue(it) + "\uFE0E" }.joinToString(""), color = muted, fontSize = 16.sp)

@@ -138,8 +138,8 @@
     <string name="explorer_loading">Loading the opening book…</string>
     <string name="explorer_no_games">No games from this position in the book.</string>
     <string name="explorer_play">Play</string>
-    <string name="band_all">All ratings</string>
-    <string name="band_under">Under %1$d</string>
+    <string name="band_all">All</string>
+    <string name="band_under">-%1$d</string>
     <string name="band_range">%1$d–%2$d</string>
     <string name="band_over">%1$d+</string>
 </resources>
