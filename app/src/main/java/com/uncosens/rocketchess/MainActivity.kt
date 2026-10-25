@@ -28,6 +28,8 @@ import com.uncosens.rocketchess.ui.OpenGame
 import com.uncosens.rocketchess.ui.PlayScreen
 import com.uncosens.rocketchess.ui.PlayViewModel
 import com.uncosens.rocketchess.ui.LibraryViewModel
+import com.uncosens.rocketchess.ui.NotesScreen
+import com.uncosens.rocketchess.ui.NotesViewModel
 import com.uncosens.rocketchess.ui.OnlineScreen
 import com.uncosens.rocketchess.ui.ReportScreen
 import com.uncosens.rocketchess.ui.ReportViewModel
@@ -41,6 +43,7 @@ class MainActivity : ComponentActivity() {
     private val play: PlayViewModel by viewModels()
     private val explorer: ExplorerViewModel by viewModels()
     private val report: ReportViewModel by viewModels()
+    private val notes: NotesViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -93,6 +96,7 @@ class MainActivity : ComponentActivity() {
                                 onBack = { screen = explorerFrom },
                             )
                             REPORT -> ReportScreen(report, onBack = { screen = LIBRARY })
+                            NOTES -> NotesScreen(notes, onBack = { screen = LIBRARY })
                             // Games against the engine are saved once analyzed; "You" is the owner.
                             PLAY -> PlayScreen(play, onAnalyze = { library.importText(it, Sources.ENGINE, open, getString(R.string.you)) }, onBack = { screen = playFrom })
                             else -> LibraryScreen(
@@ -103,6 +107,7 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onExplorer = { explorerFrom = LIBRARY; screen = EXPLORER },
                                 onReport = { screen = REPORT },
+                                onNotes = { screen = NOTES },
                                 onSettings = { screen = SETTINGS },
                             )
                         }
@@ -128,5 +133,6 @@ class MainActivity : ComponentActivity() {
         const val PLAY = "play"
         const val EXPLORER = "explorer"
         const val REPORT = "report"
+        const val NOTES = "notes"
     }
 }

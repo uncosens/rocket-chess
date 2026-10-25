@@ -50,8 +50,8 @@ data class GameSummary(
     val owner: String?,
 )
 
-/** What My Report needs from a game with a saved analysis. */
-data class AnalyzedGame(val source: String, val white: String, val black: String, val pgn: String, val owner: String?, val analysis: String)
+/** What My Report and Mistake Notes need from a game with a saved analysis. */
+data class AnalyzedGame(val source: String, val white: String, val black: String, val date: String, val pgn: String, val owner: String?, val analysis: String)
 
 data class KeyAccuracy(val sourceKey: String, val whiteAccuracy: Double?, val blackAccuracy: Double?)
 
@@ -73,7 +73,7 @@ interface GameDao {
     @Query("UPDATE games SET whiteAccuracy = :white, blackAccuracy = :black WHERE sourceKey = :key")
     suspend fun setAccuracy(key: String, white: Double?, black: Double?)
 
-    @Query("SELECT source, white, black, pgn, owner, analysis FROM games WHERE analysis IS NOT NULL")
+    @Query("SELECT source, white, black, date, pgn, owner, analysis FROM games WHERE analysis IS NOT NULL ORDER BY analyzedAt DESC")
     suspend fun analyzed(): List<AnalyzedGame>
 
     @Query("SELECT analysis FROM games WHERE sourceKey = :key")

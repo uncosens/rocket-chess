@@ -161,4 +161,14 @@
     <string name="axis_opening_note">Moves up to move 12. Leaving the book is not marked down.</string>
     <string name="axis_endgame_note">All moves with 6 or fewer pieces left besides kings and pawns.</string>
     <string name="axis_defense_note">Moves when only one move saved you or you were in check, and moves that let the reply hit your king.</string>
+    <string name="notes_title">Mistake Notes</string>
+    <string name="notes_progress">%1$d / %2$d · %3$d solved</string>
+    <string name="notes_empty">No mistakes yet. Mistakes and Blunders from your analyzed games show up here.</string>
+    <string name="notes_no_ids">Only games against the engine are used. Set your Chess.com or Lichess user name in Settings (My Accounts) to add your online games.</string>
+    <string name="notes_task">You played %1$s (%2$s). Find a better move.</string>
+    <string name="notes_wrong">%1$s is not it. Try again.</string>
+    <string name="notes_solved">Correct!</string>
+    <string name="notes_answer">Answer: %1$s</string>
+    <string name="notes_show">Show Answer</string>
+    <string name="notes_next">Next</string>
 </resources>

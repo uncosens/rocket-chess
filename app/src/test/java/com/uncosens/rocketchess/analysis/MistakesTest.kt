@@ -1,0 +1,40 @@
+package com.uncosens.rocketchess.analysis
+
+import com.uncosens.rocketchess.chess.GameLine
+import com.uncosens.rocketchess.chess.Pgn
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class MistakesTest {
+    private fun line(pgn: String) = GameLine.from(Pgn.parse(pgn))
+    private fun pe(cp: Int, best: String? = null, second: Int? = null, secondBest: String? = null) =
+        PositionEval(Eval.Cp(cp), best, second?.let { Eval.Cp(it) }, 14, secondBest)
+
+    @Test
+    fun onlyTheUsersMistakesAndBlunders() {
+        val l = line("1. e4 e5 2. Qh5 Nc6 3. Qxf7+ *")
+        // White's 2. Qh5 drops 300 cp (Blunder); Black's 2...Nc6 drops a lot too but is not the user's move.
+        val evals = listOf(pe(30), pe(30), pe(30, "g1f3", 20, "b1c3"), pe(-300), pe(500), pe(500))
+        val m = Mistakes.of(l, evals, userWhite = true)
+        assertEquals(1, m.size)
+        assertEquals("d1h5", m[0].played)
+        assertEquals(MoveClass.Blunder, m[0].cls)
+        // PV2 is close to PV1, so both count as answers.
+        assertEquals(listOf("g1f3", "b1c3"), m[0].answers)
+        assertEquals("e7" to "e5", m[0].lastMove)
+    }
+
+    @Test
+    fun farSecondChoiceIsNoAnswer() {
+        val l = line("1. e4 e5 2. Qh5 *")
+        val evals = listOf(pe(30), pe(30), pe(30, "g1f3", -100, "b1c3"), pe(-300))
+        assertEquals(listOf("g1f3"), Mistakes.of(l, evals, userWhite = true).single().answers)
+    }
+
+    @Test
+    fun smallLossIsNoMistake() {
+        val l = line("1. e4 e5 *")
+        assertTrue(Mistakes.of(l, listOf(pe(30, "d2d4"), pe(20), pe(20)), userWhite = true).isEmpty())
+    }
+}
