@@ -12,6 +12,10 @@ object PuzzlePolicy {
     const val MAX_MOVES = 3
     /** The line must win at least this much material (pawn = 1) unless it mates. */
     const val MIN_GAIN = 2
+    /** Where the line ends the user must have at least this win%: a clear win, not a trade back to even. */
+    const val WIN_FROM = 60.0
+    /** Or, when the user was below this win% before the opponent's mistake, back to [EVEN_FROM] is enough. */
+    const val COMEBACK_BELOW = 30.0
     /** Search depth for checking a puzzle line, deeper than the game analysis. */
     const val DEPTH = 18
 }
@@ -37,25 +41,34 @@ object MistakePuzzles {
 
     /**
      * The puzzle line from [fen]: user move, best reply, and so on, up to [PuzzlePolicy.MAX_MOVES] user moves.
-     * Every user move must be the only move ([onlyMove] on a fresh [search]); the line ends on a user move
-     * once it mates or the best reply leaves the user [PuzzlePolicy.MIN_GAIN] or more material up.
-     * Null when that does not happen in time.
+     * The first move must be the only move ([onlyMove] on a fresh [search]). The line ends on a user move when
+     * it mates, when the best reply leaves the user [PuzzlePolicy.MIN_GAIN] or more material up, when the next
+     * user move is not the only move, or after the last move. Except for mate, the user must then have
+     * [PuzzlePolicy.WIN_FROM] win% or more, or [PuzzlePolicy.EVEN_FROM] in a [comeback]; otherwise null.
+     * A [comeback] is a position where the user was losing before the opponent's mistake.
      */
-    fun line(fen: String, search: (String) -> PositionEval): List<String>? {
+    fun line(fen: String, comeback: Boolean = false, search: (String) -> PositionEval): List<String>? {
         val userWhite = fen.split(' ')[1] == "w"
+        val enough = if (comeback) PuzzlePolicy.EVEN_FROM else PuzzlePolicy.WIN_FROM
         val start = material(fen, userWhite)
         val line = mutableListOf<String>()
         var pos = fen
         repeat(PuzzlePolicy.MAX_MOVES) {
             val e = search(pos)
             val best = e.best ?: return null
-            if (!onlyMove(e.eval, e.second, userWhite)) return null
+            if (!onlyMove(e.eval, e.second, userWhite)) {
+                // The user's last move stands as the end, when it already wins clearly (or holds a comeback).
+                return if (line.isNotEmpty() && win(e.eval, userWhite) >= enough) line.dropLast(1) else null
+            }
             line += best
             val after = GameLine.after(pos, best) ?: return null
             if (after.mate) return line
-            val reply = search(after.fen).best ?: return null
+            val r = search(after.fen)
+            val reply = r.best ?: return null
             val next = GameLine.after(after.fen, reply) ?: return null
-            if (material(next.fen, userWhite) - start >= PuzzlePolicy.MIN_GAIN) return line
+            val winning = win(r.eval, userWhite) >= enough
+            if (winning && material(next.fen, userWhite) - start >= PuzzlePolicy.MIN_GAIN) return line
+            if (line.size == 2 * PuzzlePolicy.MAX_MOVES - 1) return if (winning) line else null
             line += reply
             pos = next.fen
         }

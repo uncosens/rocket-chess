@@ -36,7 +36,7 @@ class MistakePuzzlesTest {
     @Test
     fun mateEndsTheLine() {
         val s = searches(pe(Eval.Mate(true, 1), "a1a8", Eval.Cp(0)))
-        assertEquals(listOf("a1a8"), MistakePuzzles.line("6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1", s))
+        assertEquals(listOf("a1a8"), MistakePuzzles.line("6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1", search = s))
     }
 
     @Test
@@ -47,18 +47,51 @@ class MistakePuzzlesTest {
             pe(Eval.Cp(500), "c7a8", Eval.Cp(0)),
             pe(Eval.Cp(500), "d7c8"),
         )
-        assertEquals(listOf("b5c7", "e8d7", "c7a8"), MistakePuzzles.line("r3k3/8/8/1N6/8/8/8/4K3 w - - 0 1", s))
+        assertEquals(listOf("b5c7", "e8d7", "c7a8"), MistakePuzzles.line("r3k3/8/8/1N6/8/8/8/4K3 w - - 0 1", search = s))
     }
 
     @Test
-    fun noSecondOnlyMoveOrNoGainIsNoPuzzle() {
-        // After Nc7+ Kd7, two moves win the rook back: no single answer, and nothing won yet.
+    fun lineEndsBeforeAMoveThatIsNotTheOnlyOne() {
+        // After Nc7+ Kd7, two moves keep the win: the puzzle is Nc7+ alone, as White clearly wins.
         val s = searches(
             pe(Eval.Cp(500), "b5c7", Eval.Cp(0)),
             pe(Eval.Cp(500), "e8d7"),
             pe(Eval.Cp(500), "c7a8", Eval.Cp(450)),
         )
-        assertNull(MistakePuzzles.line("r3k3/8/8/1N6/8/8/8/4K3 w - - 0 1", s))
+        assertEquals(listOf("b5c7"), MistakePuzzles.line("r3k3/8/8/1N6/8/8/8/4K3 w - - 0 1", search = s))
+    }
+
+    @Test
+    fun noClearWinIsNoPuzzle() {
+        // Same cut, but White is only a little better there.
+        val s = searches(
+            pe(Eval.Cp(0), "b5c7", Eval.Cp(-200)),
+            pe(Eval.Cp(50), "e8d7"),
+            pe(Eval.Cp(50), "c7a8", Eval.Cp(0)),
+        )
+        assertNull(MistakePuzzles.line("r3k3/8/8/1N6/8/8/8/4K3 w - - 0 1", search = s))
+    }
+
+    @Test
+    fun tradeBackToEvenIsNoPuzzle() {
+        // Qxd5 wins a rook, but the fake engine says it is only even: no clear win, so no end there.
+        val s = searches(
+            pe(Eval.Cp(0), "d1d5", Eval.Cp(-200)),
+            pe(Eval.Cp(0), "e8e7"),
+            pe(Eval.Cp(0), "d5e5", Eval.Cp(0)),
+        )
+        assertNull(MistakePuzzles.line("4k3/8/8/3r4/8/8/8/3QK3 w - - 0 1", search = s))
+    }
+
+    @Test
+    fun comebackToEvenIsAPuzzle() {
+        // Same as above, but the user was losing before the opponent's mistake: even is enough.
+        val s = searches(
+            pe(Eval.Cp(0), "d1d5", Eval.Cp(-200)),
+            pe(Eval.Cp(0), "e8e7"),
+            pe(Eval.Cp(0), "d5e5", Eval.Cp(0)),
+        )
+        assertEquals(listOf("d1d5"), MistakePuzzles.line("4k3/8/8/3r4/8/8/8/3QK3 w - - 0 1", comeback = true, search = s))
     }
 
     @Test

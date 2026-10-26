@@ -8,7 +8,8 @@ import java.io.File
  * line's moves, or "-" when the position makes no puzzle.
  */
 object PuzzleLines {
-    private fun file(c: Context) = File(c.filesDir, "puzzle_lines.tsv")
+    // A new name when the puzzle rule changes, so old results are checked again.
+    private fun file(c: Context) = File(c.filesDir, "puzzle_lines_3.tsv")
 
     /** Each checked key with its line; an empty line means no puzzle. */
     fun load(c: Context): Map<String, List<String>> = runCatching {

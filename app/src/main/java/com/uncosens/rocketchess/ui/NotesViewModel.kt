@@ -185,7 +185,7 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
             val engine = runCatching { PuzzleChecker(StockfishSession.binary(c), EngineOptionsStore.load(c).copy(threads = 1)) }.getOrNull()
             try {
                 for (n in todo) {
-                    val line = (engine ?: break).line(n.mistake.fen)
+                    val line = (engine ?: break).line(n.mistake.fen, n.mistake.comeback)
                     PuzzleLines.save(c, n.mistake.key, line)
                     withContext(Dispatchers.Main) {
                         checking--

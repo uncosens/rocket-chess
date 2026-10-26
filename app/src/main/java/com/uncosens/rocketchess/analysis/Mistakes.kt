@@ -11,6 +11,7 @@ import com.uncosens.rocketchess.chess.GameLine
  * [answers] is the engine's first choice; [MistakePuzzles.line] checks it deeper and adds the follow-up.
  * [lastMove] is the opponent's move that led to [fen], as (from, to).
  * [themes] are the Lichess puzzle themes of the tactics missed or allowed that are seen.
+ * [comeback]: the user was below [PuzzlePolicy.COMEBACK_BELOW] win% before the opponent's last move.
  */
 data class Mistake(
     val fen: String,
@@ -19,6 +20,7 @@ data class Mistake(
     val cls: MoveClass,
     val lastMove: Pair<String, String>?,
     val themes: List<String> = emptyList(),
+    val comeback: Boolean = false,
 ) {
     /** Same position and same wrong move: one puzzle, even if the game is saved twice. */
     val key: String get() = "$fen|$played"
@@ -38,7 +40,8 @@ object Mistakes {
             val last = line.plies.getOrNull(i - 1)
             if (MistakePuzzles.trivial(line.positions[i].fen, best, last?.uci, last != null && 'x' in last.san)) return@mapNotNull null
             val themes = themes(line.positions[i].fen, best, before.eval, line.positions[i + 1].fen, after, userWhite)
-            Mistake(line.positions[i].fen, line.plies[i].uci, listOf(best), cls, last?.let { it.from to it.to }, themes)
+            val comeback = evals.getOrNull(i - 1)?.let { whiteWinPercent(it.eval).let { w -> if (userWhite) w else 100 - w } < PuzzlePolicy.COMEBACK_BELOW } ?: false
+            Mistake(line.positions[i].fen, line.plies[i].uci, listOf(best), cls, last?.let { it.from to it.to }, themes, comeback)
         }
 
     /**
