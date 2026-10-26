@@ -29,4 +29,17 @@ class PuzzlesTest {
         assert(p == "b" || p == "c")
         assertEquals("b", Puzzles.pick(all, 1500, "mateIn2", emptySet(), Random(1))?.id)
     }
+
+    @Test
+    fun convertsToChessComScale() {
+        assertEquals(1200, Puzzles.toChessCom(1500))
+        assertEquals(2600, Puzzles.toChessCom(2600))
+        assertEquals(1500, Puzzles.toLichess(Puzzles.toChessCom(1500)))
+    }
+
+    @Test
+    fun puzzlePgnHasItsMoves() {
+        val pgn = com.uncosens.rocketchess.chess.Setup.pgn("8/8/8/8/8/8/8/K6k b - - 0 1", listOf("h1h2", "a1a2"))
+        assert(pgn.trimEnd().endsWith("1... Kh2 2. Ka2 *")) { pgn }
+    }
 }

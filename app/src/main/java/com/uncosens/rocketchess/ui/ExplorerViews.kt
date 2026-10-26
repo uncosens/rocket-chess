@@ -42,7 +42,6 @@ import com.uncosens.rocketchess.opening.BookPosition
 import com.uncosens.rocketchess.opening.Opening
 import com.uncosens.rocketchess.opening.OpeningData
 import com.uncosens.rocketchess.opening.Tally
-import java.text.NumberFormat
 
 /** "B90 Sicilian Defense: Najdorf Variation", or nothing. With [reserve], one line is kept even with no name, so nothing below moves; a long name scrolls sideways. */
 @Composable
@@ -90,7 +89,6 @@ fun BookMoves(fen: String, position: BookPosition, onMove: (String) -> Unit, lim
         Text(stringResource(R.string.explorer_no_games), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         return
     }
-    val format = NumberFormat.getIntegerInstance()
     Column {
         for (m in moves) {
             val t = m.tally(band)
@@ -105,13 +103,6 @@ fun BookMoves(fen: String, position: BookPosition, onMove: (String) -> Unit, lim
                     Modifier.width(40.dp),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    format.format(t.games),
-                    Modifier.width(64.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
                 )
                 ResultBar(t, Modifier.weight(1f))
             }

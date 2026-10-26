@@ -49,7 +49,21 @@ object Setup {
         return if (other.isKingAttacked) SetupError.CHECK else null
     }
 
-    /** A PGN with no moves that starts from [fen]. */
-    fun pgn(fen: String) =
-        "[Event \"Set up position\"]\n[White \"White\"]\n[Black \"Black\"]\n[SetUp \"1\"]\n[FEN \"$fen\"]\n[Result \"*\"]\n\n*\n"
+    /** A PGN that starts from [fen], with [moves] (UCI) played from there. */
+    fun pgn(fen: String, moves: List<String> = emptyList()): String {
+        val f = fen.split(' ')
+        var number = f.getOrNull(5)?.toIntOrNull() ?: 1
+        var white = f[1] == "w"
+        var at = fen
+        val text = buildString {
+            for ((i, uci) in moves.withIndex()) {
+                if (white) append("$number. ") else if (i == 0) append("$number... ")
+                append(GameLine.san(at, uci)).append(' ')
+                at = GameLine.after(at, uci)?.fen ?: break
+                if (!white) number++
+                white = !white
+            }
+        }
+        return "[Event \"Set up position\"]\n[White \"White\"]\n[Black \"Black\"]\n[SetUp \"1\"]\n[FEN \"$fen\"]\n[Result \"*\"]\n\n$text*\n"
+    }
 }

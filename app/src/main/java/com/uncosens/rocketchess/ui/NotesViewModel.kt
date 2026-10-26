@@ -24,8 +24,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** A mistake with the game it came from. */
-data class MistakeNote(val mistake: Mistake, val userWhite: Boolean, val white: String, val black: String, val date: String)
+/** A mistake with the game it came from; [ply] is the mistake's index in [line]. */
+data class MistakeNote(val mistake: Mistake, val userWhite: Boolean, val white: String, val black: String, val date: String, val line: GameLine, val ply: Int)
 
 /**
  * One puzzle to solve: a mistake of the user's or a Lichess puzzle. [solution] is the user's move,
@@ -43,6 +43,9 @@ data class Drill(
 )
 
 enum class Attempt { Solving, Wrong, Going, Solved, Shown }
+
+/** Which puzzles Mistake Notes shows. */
+enum class Mix { Mine, Puzzles, Both }
 
 /** Mistake Notes: the user's Mistakes and Blunders and Lichess puzzles of the same kinds, mixed. */
 class NotesViewModel(app: Application) : AndroidViewModel(app) {
@@ -88,12 +91,26 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var solved by mutableStateOf(emptySet<String>())
         private set
+    /** Chosen puzzle rating on the Chess.com scale; 0 picks from the user's games. */
+    var chosenRating by mutableStateOf(0)
+        private set
+    var mix by mutableStateOf(Mix.Both)
+        private set
+    /** The themes of the last [load], when it was for one Report axis. */
+    var only by mutableStateOf<Set<String>?>(null)
+        private set
+    /** A position of a My Game drill's game shown while stepping back; null shows the puzzle. */
+    var historyPly by mutableStateOf<Int?>(null)
+        private set
 
     val drill: Drill? get() = drills?.getOrNull(index)
 
     /** With [only], just Lichess puzzles of those themes; otherwise the user's mistakes and their puzzles. */
     fun load(only: Set<String>? = null) = viewModelScope.launch {
         drills = null
+        this@NotesViewModel.only = only
+        chosenRating = prefs.getInt(RATING, 0)
+        mix = Mix.entries.firstOrNull { it.name == prefs.getString(MIX, null) } ?: Mix.Both
         val c = getApplication<Application>()
         val ids = listOf(Sources.CHESS_COM, Sources.LICHESS).map { KnownUsers.myId(c, it) }.filter { it.isNotEmpty() }
         noIds = ids.isEmpty()
@@ -109,20 +126,28 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
                 val white = userSide(g.white, g.black, owner) ?: return@flatMap emptyList()
                 val evals = SavedAnalysis.decode(g.analysis)?.second ?: return@flatMap emptyList()
                 val pgn = runCatching { Pgn.parse(g.pgn) }.getOrNull() ?: return@flatMap emptyList()
-                pgn.tags[if (white) "WhiteElo" else "BlackElo"]?.toIntOrNull()?.let { ratings += it }
+                // Puzzles are on the Lichess scale.
+                pgn.tags[if (white) "WhiteElo" else "BlackElo"]?.toIntOrNull()?.let { ratings += if (g.source == Sources.CHESS_COM) Puzzles.toLichess(it) else it }
                 val line = runCatching { GameLine.from(pgn) }.getOrNull() ?: return@flatMap emptyList()
                 if (evals.size != line.positions.size) return@flatMap emptyList()
-                Mistakes.of(line, evals, white).map { MistakeNote(it, white, g.white, g.black, g.date) }
+                Mistakes.of(line, evals, white).map { m ->
+                    MistakeNote(m, white, g.white, g.black, g.date, line, line.positions.indexOfFirst { it.fen == m.fen })
+                }
             }.distinctBy { it.mistake.key }
-            val r = ratings.take(RATING_GAMES).sorted().let { if (it.isEmpty()) DEFAULT_RATING else it[it.size / 2] }
+            val auto = ratings.take(RATING_GAMES).sorted().let { if (it.isEmpty()) DEFAULT_RATING else it[it.size / 2] }
+            val r = if (chosenRating > 0) Puzzles.toLichess(chosenRating) else auto
             withContext(Dispatchers.Main) { rating = r }
             // One unsolved puzzle near the user's rating per mistake, of one of its kinds picked at random.
             val random = Random(System.currentTimeMillis())
             val used = solved.filter { it.startsWith(PUZZLE) }.map { it.removePrefix(PUZZLE) }.toMutableSet()
             fun next(themes: List<String>) = Puzzles.pick(all, r, themes.randomOrNull(random), used, random)?.also { used += it.id }?.let(::drillOf)
-            if (only != null) List(ALONE) { next(only.toList()) }.filterNotNull()
-            else if (notes.isEmpty()) List(ALONE) { next(emptyList()) }.filterNotNull()
-            else (notes.map(::drillOf) + notes.mapNotNull { next(it.mistake.themes) }).shuffled(random)
+            when {
+                only != null -> List(ALONE) { next(only.toList()) }.filterNotNull()
+                mix == Mix.Mine -> notes.map(::drillOf).shuffled(random)
+                notes.isEmpty() -> List(ALONE) { next(emptyList()) }.filterNotNull()
+                mix == Mix.Puzzles -> notes.mapNotNull { next(it.mistake.themes) }.shuffled(random)
+                else -> (notes.map(::drillOf) + notes.mapNotNull { next(it.mistake.themes) }).shuffled(random)
+            }
         }
         index = 0
         reset()
@@ -182,6 +207,24 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** Saves the puzzle settings and loads puzzles with them. */
+    fun setSettings(rating: Int, mix: Mix) {
+        prefs.edit().putInt(RATING, rating).putString(MIX, mix.name).apply()
+        load(only)
+    }
+
+    /** One move back in a My Game drill's game. */
+    fun historyBack() {
+        val n = drill?.note ?: return
+        historyPly = ((historyPly ?: n.ply) - 1).coerceAtLeast(0)
+    }
+
+    /** One move forward; reaching the mistake shows the puzzle again. */
+    fun historyForward() {
+        val n = drill?.note ?: return
+        historyPly = historyPly?.let { it + 1 }?.takeIf { it < n.ply }
+    }
+
     fun showAnswer() {
         val d = drill ?: return
         attempt = Attempt.Shown
@@ -214,6 +257,7 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
         replying = false
         tried = null
         arrow = null
+        historyPly = null
     }
 
     private fun drillOf(n: MistakeNote) = Drill(n.mistake.key, n.mistake.fen, n.mistake.lastMove, n.userWhite, listOf(n.mistake.answers.first()), n.mistake.answers, note = n)
@@ -227,6 +271,8 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
 
     companion object {
         private const val SOLVED = "solved"
+        private const val RATING = "rating"
+        private const val MIX = "mix"
         /** Key prefix of Lichess puzzles in the solved set. */
         private const val PUZZLE = "p:"
         const val DEFAULT_RATING = 1500

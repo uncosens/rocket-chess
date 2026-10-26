@@ -105,9 +105,9 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: OpenGame, onOnline: () -> Unit, 
         }
         vm.error?.let { ErrorText(it) }
 
-        Row(Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.height(32.dp), verticalAlignment = Alignment.CenterVertically) {
             SectionLabel(stringResource(R.string.saved_games, games.size), Modifier.weight(1f))
-            if (games.isNotEmpty()) TextButton(onClick = vm::deleteAll) { Text(stringResource(R.string.delete_all)) }
+            if (games.isNotEmpty()) TextButton(onClick = vm::deleteAll, contentPadding = PaddingValues(horizontal = 8.dp)) { Text(stringResource(R.string.delete_all)) }
         }
         if (games.isEmpty()) Text(stringResource(R.string.no_saved_games), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         LazyColumn(Modifier.weight(1f)) {

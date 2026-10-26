@@ -84,6 +84,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
                 owner = owner,
             ),
         )
+        dao.pruneGames(KEEP_GAMES)
         // A copy saved earlier without an owner gets one now.
         owner?.let { dao.setOwnerIfMissing(key, it) }
         error = null
@@ -188,6 +189,8 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         // ponytail: whole file in memory, capped. Stream games if big databases are ever needed.
         const val MAX_FILE_BYTES = 5 * 1024 * 1024
         const val KEEP_ANALYSES = 1000
+        /** Saved games kept; past this the oldest are deleted. */
+        const val KEEP_GAMES = 1000
     }
 }
 

@@ -89,6 +89,10 @@ interface GameDao {
     )
     suspend fun pruneAnalyses(keep: Int)
 
+    /** Keeps only the [keep] newest saved games, in list order; older ones are deleted. */
+    @Query("DELETE FROM games WHERE id NOT IN (SELECT id FROM games ORDER BY importedAt DESC, id DESC LIMIT :keep)")
+    suspend fun pruneGames(keep: Int)
+
     /** Makes [name] the owner of every saved game it played that has no owner yet. */
     @Query("UPDATE games SET owner = :name WHERE owner IS NULL AND (lower(white) = lower(:name) OR lower(black) = lower(:name))")
     suspend fun claimOwner(name: String)

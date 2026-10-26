@@ -67,11 +67,12 @@ fun GameScreen(vm: GameViewModel, onBack: () -> Unit, onExplorer: (GameLine, Int
     val context = LocalContext.current
     val exe = remember { StockfishSession.binary(context) }
     val onAnalyze = { EngineOptionsStore.load(context).let { vm.analyze(exe, it, EngineBudget.forDevice(context, it)) } }
-    // A finished run can be redone only once the engine settings differ from the ones it used.
+    // A finished run can be redone only once depth or hash differ from the ones it used.
+    // The engine count follows free memory and each engine has one thread, so it does not change results.
     val opts = EngineOptionsStore.load(context)
     val ran = (vm.analysis as? AnalysisState.Done)?.settings
     val engines = remember(opts, ran) { EngineBudget.forDevice(context, opts) }
-    val changed = ran != null && (ran.depth != opts.depth || ran.threads != engines || ran.hashMb != opts.hashMb)
+    val changed = ran != null && (ran.depth != opts.depth || ran.hashMb != opts.hashMb)
     val onReanalyze = if (changed) ({ vm.analyze(exe, opts, engines, fresh = true) }) else null
     BackHandler(onBack = onBack)
     // A newly opened game is analyzed right away. Keyed on the state too: reopening the same

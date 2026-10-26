@@ -79,7 +79,6 @@ private fun Note(text: String) {
 private fun Ready(r: Report, onPuzzles: (Axis) -> Unit) {
     Radar(r.axes, Modifier.widthIn(max = 420.dp).fillMaxWidth().aspectRatio(1f))
     for (a in r.axes) AxisRow(a, r) { onPuzzles(a.axis) }
-    Note(stringResource(R.string.report_footnote))
 }
 
 val AXIS_NAMES = mapOf(
@@ -117,7 +116,6 @@ private fun AxisRow(a: AxisScore, r: Report, onPuzzles: () -> Unit) {
                 Text(stringResource(AXIS_NAMES.getValue(a.axis)), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
                 if (a.score != null) {
                     Text("${a.score.roundToInt()}", fontFamily = Mono, fontWeight = FontWeight.SemiBold)
-                    Text("  ${a.low!!.roundToInt()}–${a.high!!.roundToInt()}", fontFamily = Mono, color = muted, style = MaterialTheme.typography.bodySmall)
                 } else {
                     Text(stringResource(R.string.report_too_few, a.samples, a.needed), color = muted, style = MaterialTheme.typography.bodySmall)
                 }
@@ -174,7 +172,7 @@ private fun Radar(axes: List<AxisScore>, modifier: Modifier) {
             val band = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx())))
             drawPath(ring(axes.map { it.low }), accent.copy(alpha = 0.6f), style = band)
             drawPath(ring(axes.map { it.high }), accent.copy(alpha = 0.6f), style = band)
-            drawPath(ring(axes.map { it.score }), accent.copy(alpha = 0.22f))
+            drawPath(ring(axes.map { it.score }), accent.copy(alpha = 0.5f))
             drawPath(ring(axes.map { it.score }), accent, style = Stroke(2.dp.toPx()))
         }
         axes.forEachIndexed { i, a -> a.score?.let { drawCircle(accent, 4.dp.toPx(), at(i, it)) } }
