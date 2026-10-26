@@ -7,8 +7,8 @@ import com.github.bhlangonijr.chesslib.Square
 import com.uncosens.rocketchess.chess.GameLine
 
 /**
- * A Mistake or Blunder the user made, as a puzzle: find a better move in [fen].
- * [answers] are the engine's first choice, plus its second when that loses less than Good's line.
+ * A Mistake or Blunder the user made, as a puzzle: find the one good move in [fen].
+ * [answers] is the engine's first choice; [MistakePuzzles.line] checks it deeper and adds the follow-up.
  * [lastMove] is the opponent's move that led to [fen], as (from, to).
  * [themes] are the Lichess puzzle themes of the tactics missed or allowed that are seen.
  */
@@ -25,7 +25,7 @@ data class Mistake(
 }
 
 object Mistakes {
-    /** The user's Mistakes and Blunders in one analyzed game, in game order. */
+    /** The user's Mistakes and Blunders in one analyzed game where only one move was good, in game order. */
     fun of(line: GameLine, evals: List<PositionEval?>, userWhite: Boolean): List<Mistake> =
         line.plies.indices.mapNotNull { i ->
             if ((line.positions[i].fen.split(' ')[1] == "w") != userWhite) return@mapNotNull null
@@ -34,10 +34,11 @@ object Mistakes {
             val before = evals[i] ?: return@mapNotNull null
             val after = evals[i + 1] ?: return@mapNotNull null
             val best = before.best ?: return@mapNotNull null
-            val second = before.secondBest?.takeIf { before.second != null && winLoss(before.eval, before.second, userWhite) < AnalysisPolicy.GOOD_BELOW }
+            if (!MistakePuzzles.onlyMove(before.eval, before.second, userWhite)) return@mapNotNull null
             val last = line.plies.getOrNull(i - 1)
+            if (MistakePuzzles.trivial(line.positions[i].fen, best, last?.uci, last != null && 'x' in last.san)) return@mapNotNull null
             val themes = themes(line.positions[i].fen, best, before.eval, line.positions[i + 1].fen, after, userWhite)
-            Mistake(line.positions[i].fen, line.plies[i].uci, listOfNotNull(best, second).filter { it != line.plies[i].uci }, cls, last?.let { it.from to it.to }, themes)
+            Mistake(line.positions[i].fen, line.plies[i].uci, listOf(best), cls, last?.let { it.from to it.to }, themes)
         }
 
     /**

@@ -84,7 +84,7 @@ fun isBrilliant(playedUci: String, bestUci: String?, sacrifice: Boolean, loss: D
         moverWinBefore < AnalysisPolicy.WINNING_FROM && moverWinBefore - loss >= AnalysisPolicy.SOUND_FROM
 
 /** 0 losing, 1 about even, 2 winning, from the mover's win%. */
-private fun outcome(moverWin: Double): Int = when {
+internal fun outcome(moverWin: Double): Int = when {
     moverWin < AnalysisPolicy.EVEN_FROM -> 0
     moverWin <= AnalysisPolicy.EVEN_UNTIL -> 1
     else -> 2

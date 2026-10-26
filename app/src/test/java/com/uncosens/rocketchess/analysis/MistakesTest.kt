@@ -14,22 +14,30 @@ class MistakesTest {
     @Test
     fun onlyTheUsersMistakesAndBlunders() {
         val l = line("1. e4 e5 2. Qh5 Nc6 3. Qxf7+ *")
-        // White's 2. Qh5 drops 300 cp (Blunder); Black's 2...Nc6 drops a lot too but is not the user's move.
-        val evals = listOf(pe(30), pe(30), pe(30, "g1f3", 20, "b1c3"), pe(-300), pe(500), pe(500))
+        // White's 2. Qh5 drops 330 cp (Blunder); Black's 2...Nc6 drops a lot too but is not the user's move.
+        val evals = listOf(pe(30), pe(30), pe(30, "g1f3", -200, "b1c3"), pe(-300), pe(500), pe(500))
         val m = Mistakes.of(l, evals, userWhite = true)
         assertEquals(1, m.size)
         assertEquals("d1h5", m[0].played)
         assertEquals(MoveClass.Blunder, m[0].cls)
-        // PV2 is close to PV1, so both count as answers.
-        assertEquals(listOf("g1f3", "b1c3"), m[0].answers)
+        assertEquals(listOf("g1f3"), m[0].answers)
         assertEquals("e7" to "e5", m[0].lastMove)
     }
 
     @Test
-    fun farSecondChoiceIsNoAnswer() {
+    fun closeSecondChoiceIsNoPuzzle() {
         val l = line("1. e4 e5 2. Qh5 *")
-        val evals = listOf(pe(30), pe(30), pe(30, "g1f3", -100, "b1c3"), pe(-300))
-        assertEquals(listOf("g1f3"), Mistakes.of(l, evals, userWhite = true).single().answers)
+        // Nf3 and Nc3 are both fine, so the position has no single answer.
+        val evals = listOf(pe(30), pe(30), pe(30, "g1f3", 20, "b1c3"), pe(-300))
+        assertTrue(Mistakes.of(l, evals, userWhite = true).isEmpty())
+    }
+
+    @Test
+    fun recaptureIsNoPuzzle() {
+        val l = line("1. e4 d5 2. exd5 a6 *")
+        // Taking back on d5 was the only good move, but it is too easy.
+        val evals = listOf(pe(30), pe(30), pe(30), pe(0, "d8d5", 300, "g8f6"), pe(300))
+        assertTrue(Mistakes.of(l, evals, userWhite = false).isEmpty())
     }
 
     @Test
