@@ -100,7 +100,7 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var solved by mutableStateOf(emptySet<String>())
         private set
-    /** Chosen puzzle rating on the Chess.com scale; 0 picks from the user's games. */
+    /** Chosen puzzle rating on the Lichess scale; 0 picks from the user's games. */
     var chosenRating by mutableStateOf(0)
         private set
     var mix by mutableStateOf(Mix.Both)
@@ -152,7 +152,7 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
             val notes = found.mapNotNull { n -> lines[n.mistake.key]?.takeIf { it.isNotEmpty() }?.let { n.copy(solution = it) } }
             unchecked = found.filter { it.mistake.key !in lines }
             val auto = ratings.take(RATING_GAMES).sorted().let { if (it.isEmpty()) DEFAULT_RATING else it[it.size / 2] }
-            val r = if (chosenRating > 0) Puzzles.toLichess(chosenRating) else auto
+            val r = if (chosenRating > 0) chosenRating else auto
             withContext(Dispatchers.Main) { rating = r }
             // One unsolved puzzle near the user's rating per mistake, of one of its kinds picked at random.
             val random = Random(System.currentTimeMillis())

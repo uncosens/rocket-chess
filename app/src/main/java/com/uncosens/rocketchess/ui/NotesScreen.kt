@@ -43,7 +43,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.uncosens.rocketchess.R
 import com.uncosens.rocketchess.analysis.MoveClass
-import com.uncosens.rocketchess.analysis.Puzzles
 import com.uncosens.rocketchess.chess.GameLine
 import com.uncosens.rocketchess.chess.Setup
 
@@ -113,7 +112,7 @@ private fun Board(vm: NotesViewModel, drill: Drill, modifier: Modifier) {
 /** Whose puzzle it is, the task, the result and the buttons. */
 @Composable
 private fun Panel(vm: NotesViewModel, drill: Drill, onAnalyze: (pgn: String, userWhite: Boolean) -> Unit) {
-    val kind = drill.puzzle?.let { stringResource(R.string.notes_puzzle_rating, Puzzles.toChessCom(it.rating)) } ?: stringResource(R.string.notes_mine)
+    val kind = drill.puzzle?.let { stringResource(R.string.notes_puzzle_rating, it.rating) } ?: stringResource(R.string.notes_mine)
     Text(kind, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     Text(stringResource(if (drill.userWhite) R.string.notes_find_white else R.string.notes_find_black), style = MaterialTheme.typography.bodyLarge)
     when (vm.attempt) {
@@ -144,11 +143,11 @@ private fun Panel(vm: NotesViewModel, drill: Drill, onAnalyze: (pgn: String, use
     }
 }
 
-/** Puzzle rating (Chess.com scale) and which puzzles to show. */
+/** Puzzle rating (Lichess scale) and which puzzles to show. */
 @Composable
 private fun SettingsDialog(vm: NotesViewModel, onDismiss: () -> Unit) {
     var custom by remember { mutableStateOf(vm.chosenRating > 0) }
-    var rating by remember { mutableIntStateOf(if (vm.chosenRating > 0) vm.chosenRating else 1200) }
+    var rating by remember { mutableIntStateOf(if (vm.chosenRating > 0) vm.chosenRating else 1500) }
     var mix by remember { mutableStateOf(vm.mix) }
     AlertDialog(
         onDismissRequest = onDismiss,

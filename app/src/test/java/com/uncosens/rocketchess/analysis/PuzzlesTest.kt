@@ -31,10 +31,9 @@ class PuzzlesTest {
     }
 
     @Test
-    fun convertsToChessComScale() {
-        assertEquals(1200, Puzzles.toChessCom(1500))
-        assertEquals(2600, Puzzles.toChessCom(2600))
-        assertEquals(1500, Puzzles.toLichess(Puzzles.toChessCom(1500)))
+    fun convertsChessComToLichess() {
+        assertEquals(1500, Puzzles.toLichess(1200))
+        assertEquals(2600, Puzzles.toLichess(2600))
     }
 
     @Test

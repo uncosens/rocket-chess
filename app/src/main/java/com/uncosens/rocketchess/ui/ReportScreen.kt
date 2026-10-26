@@ -78,7 +78,7 @@ private fun Note(text: String) {
 @Composable
 private fun Ready(r: Report, onPuzzles: (Axis) -> Unit) {
     Radar(r.axes, Modifier.widthIn(max = 420.dp).fillMaxWidth().aspectRatio(1f))
-    for (a in r.axes) AxisRow(a, r) { onPuzzles(a.axis) }
+    for (a in r.axes) AxisRow(a) { onPuzzles(a.axis) }
 }
 
 val AXIS_NAMES = mapOf(
@@ -108,7 +108,7 @@ private val AXIS_NOTES = mapOf(
 
 /** Name and score, then what it measures and how many samples it has. */
 @Composable
-private fun AxisRow(a: AxisScore, r: Report, onPuzzles: () -> Unit) {
+private fun AxisRow(a: AxisScore, onPuzzles: () -> Unit) {
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(14.dp)) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -127,7 +127,6 @@ private fun AxisRow(a: AxisScore, r: Report, onPuzzles: () -> Unit) {
             val counts = buildList {
                 add(stringResource(R.string.report_samples, a.samples, a.games))
                 if (a.axis == Axis.Tactics || a.axis == Axis.Defense) add(stringResource(R.string.report_found, a.found, a.chances))
-                if (a.axis == Axis.Defense) add(stringResource(R.string.report_king_errors, r.kingErrors, r.movesBeforeEndgame))
             }
             Text(counts.joinToString(" · "), color = muted, style = MaterialTheme.typography.bodySmall, fontFamily = Mono)
         }
@@ -135,8 +134,8 @@ private fun AxisRow(a: AxisScore, r: Report, onPuzzles: () -> Unit) {
 }
 
 /**
- * Five spokes, 0 at the center and 100 at the rim. Scored axes get a point and dashed rings for the
- * interval; an axis without enough data gets a dashed spoke and "?", never a point at 0.
+ * Five spokes, 0 at the center and 100 at the rim. Scores are joined by a filled line; an axis
+ * without enough data gets a dashed spoke and "?".
  */
 @Composable
 private fun Radar(axes: List<AxisScore>, modifier: Modifier) {
@@ -168,14 +167,9 @@ private fun Radar(axes: List<AxisScore>, modifier: Modifier) {
         }
         val scored = axes.count { it.score != null }
         if (scored >= 3) {
-            // The interval: thin dashed rings through the low and high ends.
-            val band = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx())))
-            drawPath(ring(axes.map { it.low }), accent.copy(alpha = 0.6f), style = band)
-            drawPath(ring(axes.map { it.high }), accent.copy(alpha = 0.6f), style = band)
             drawPath(ring(axes.map { it.score }), accent.copy(alpha = 0.5f))
             drawPath(ring(axes.map { it.score }), accent, style = Stroke(2.dp.toPx()))
         }
-        axes.forEachIndexed { i, a -> a.score?.let { drawCircle(accent, 4.dp.toPx(), at(i, it)) } }
         // Labels just outside the rim: the name, then the score or "?".
         axes.forEachIndexed { i, a ->
             val value = a.score?.roundToInt()?.toString() ?: "?"

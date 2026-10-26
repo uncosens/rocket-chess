@@ -18,12 +18,9 @@ object Puzzles {
     }.toList()
 
     /**
-     * A rough Chess.com rating for a Lichess rating: about 350 lower at 1300, the same from 2500 up.
-     * No site publishes a puzzle rating table, so this is an estimate.
+     * A rough Lichess rating for a Chess.com rating: about 350 higher at 950, the same from 2500 up.
+     * No site publishes a conversion table, so this is an estimate.
      */
-    fun toChessCom(lichess: Int): Int = if (lichess >= SAME_FROM) lichess else (SAME_FROM - (SAME_FROM - lichess) * GAP).roundToInt().coerceAtLeast(100)
-
-    /** The Lichess rating that [toChessCom] maps to [chessCom]. */
     fun toLichess(chessCom: Int): Int = if (chessCom >= SAME_FROM) chessCom else (SAME_FROM - (SAME_FROM - chessCom) / GAP).roundToInt()
 
     private const val SAME_FROM = 2500
