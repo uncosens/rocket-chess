@@ -87,4 +87,21 @@ class ReportTest {
         // No tactics moves at all: not scored, not zero.
         assertNull(r.axes.first { it.axis == Axis.Tactics }.score)
     }
+
+    @Test
+    fun cacheKeepsEachGamesPart() {
+        val moves = listOf(
+            ReportMove(Axis.Tactics, 87.5, 1.7, chance = true, found = false, kingError = false),
+            ReportMove(Axis.Defense, -12.25, 1.0, chance = false, found = true, kingError = true),
+        )
+        val entries = mapOf(
+            "chesscom:1" to ReportEntry(1700000000000, "unCoSens", true, "a|b|e2e4 e7e5", moves),
+            // A game the report leaves out keeps no moves.
+            "pgn:ab12" to ReportEntry(5, "unCoSens", false, "", emptyList()),
+        )
+        assertEquals(entries, ReportCache.decode(ReportCache.encode(entries)))
+        // Text from another version is dropped, so every game is worked out again.
+        assertEquals(emptyMap<String, ReportEntry>(), ReportCache.decode(ReportCache.encode(entries).replaceFirst("v${ReportCache.VERSION}", "v0")))
+        assertEquals(emptyMap<String, ReportEntry>(), ReportCache.decode(""))
+    }
 }

@@ -53,6 +53,11 @@ data class GameSummary(
 /** What My Report and Mistake Notes need from a game with a saved analysis. */
 data class AnalyzedGame(val source: String, val white: String, val black: String, val date: String, val pgn: String, val owner: String?, val analysis: String)
 
+/** An analyzed game without its PGN and analysis text, for My Report to see what changed. */
+data class AnalyzedHead(val sourceKey: String, val source: String, val white: String, val black: String, val owner: String?, val analyzedAt: Long?)
+
+data class PgnAnalysis(val pgn: String, val analysis: String)
+
 data class KeyAccuracy(val sourceKey: String, val whiteAccuracy: Double?, val blackAccuracy: Double?)
 
 @Dao
@@ -75,6 +80,12 @@ interface GameDao {
 
     @Query("SELECT source, white, black, date, pgn, owner, analysis FROM games WHERE analysis IS NOT NULL ORDER BY analyzedAt DESC")
     suspend fun analyzed(): List<AnalyzedGame>
+
+    @Query("SELECT sourceKey, source, white, black, owner, analyzedAt FROM games WHERE analysis IS NOT NULL ORDER BY analyzedAt DESC")
+    suspend fun analyzedHeads(): List<AnalyzedHead>
+
+    @Query("SELECT pgn, analysis FROM games WHERE sourceKey = :key AND analysis IS NOT NULL")
+    suspend fun pgnAndAnalysis(key: String): PgnAnalysis?
 
     @Query("SELECT analysis FROM games WHERE sourceKey = :key")
     suspend fun analysisFor(key: String): String?

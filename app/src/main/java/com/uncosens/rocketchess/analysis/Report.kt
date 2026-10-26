@@ -16,6 +16,8 @@ enum class Axis { Tactics, Positional, Opening, Endgame, Defense }
 object ReportPolicy {
     /** No report below this many usable games. */
     const val MIN_GAMES = 25
+    /** The report uses the user's most recently analyzed games, up to this many. */
+    const val RECENT_GAMES = 100
     /** Runs shallower than this mix badly with the rest, so they are left out. */
     const val MIN_DEPTH = 12
     /** Share of positions that must have an eval. */
