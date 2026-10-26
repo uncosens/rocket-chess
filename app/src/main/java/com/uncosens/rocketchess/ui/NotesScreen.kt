@@ -63,7 +63,8 @@ fun NotesScreen(vm: NotesViewModel, onAnalyze: (pgn: String, userWhite: Boolean)
         if (drill == null) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 bar()
-                if (drills == null) LinearProgressIndicator(Modifier.fillMaxWidth()) else Hint(stringResource(R.string.notes_empty))
+                if (drills == null) LinearProgressIndicator(Modifier.fillMaxWidth()) else if (vm.checking == 0) Hint(stringResource(R.string.notes_empty))
+                if (vm.checking > 0) Hint(stringResource(R.string.notes_checking, vm.checking))
                 if (vm.noIds) Hint(stringResource(R.string.notes_no_ids))
             }
         } else if (maxWidth > maxHeight) {

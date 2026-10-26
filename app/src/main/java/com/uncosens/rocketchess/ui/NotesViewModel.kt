@@ -7,25 +7,34 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.uncosens.rocketchess.analysis.EngineOptionsStore
 import com.uncosens.rocketchess.analysis.Mistake
 import com.uncosens.rocketchess.analysis.Mistakes
 import com.uncosens.rocketchess.analysis.Puzzle
+import com.uncosens.rocketchess.analysis.PuzzleChecker
 import com.uncosens.rocketchess.analysis.Puzzles
 import com.uncosens.rocketchess.analysis.SavedAnalysis
 import com.uncosens.rocketchess.chess.GameLine
 import com.uncosens.rocketchess.chess.Pgn
 import com.uncosens.rocketchess.data.AppDatabase
 import com.uncosens.rocketchess.data.KnownUsers
+import com.uncosens.rocketchess.data.PuzzleLines
 import com.uncosens.rocketchess.data.Sources
 import com.uncosens.rocketchess.data.userSide
+import com.uncosens.rocketchess.engine.StockfishSession
 import kotlin.random.Random
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** A mistake with the game it came from; [ply] is the mistake's index in [line]. */
-data class MistakeNote(val mistake: Mistake, val userWhite: Boolean, val white: String, val black: String, val date: String, val line: GameLine, val ply: Int)
+/**
+ * A mistake with the game it came from; [ply] is the mistake's index in [line].
+ * [solution] is the engine-checked puzzle line, user move first.
+ */
+data class MistakeNote(val mistake: Mistake, val userWhite: Boolean, val white: String, val black: String, val date: String, val line: GameLine, val ply: Int, val solution: List<String> = emptyList())
 
 /**
  * One puzzle to solve: a mistake of the user's or a Lichess puzzle. [solution] is the user's move,
@@ -102,6 +111,10 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
     /** A position of a My Game drill's game shown while stepping back; null shows the puzzle. */
     var historyPly by mutableStateOf<Int?>(null)
         private set
+    /** Mistakes still to be checked by the engine, or 0. Checked ones join the list as they pass. */
+    var checking by mutableStateOf(0)
+        private set
+    private var checker: Job? = null
 
     val drill: Drill? get() = drills?.getOrNull(index)
 
@@ -120,7 +133,7 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
             val all = puzzles ?: Puzzles.parse(c.assets.open("puzzles/puzzles.tsv").bufferedReader().use { it.readText() }).also { puzzles = it }
             // Ratings from the newest games first.
             val ratings = mutableListOf<Int>()
-            val notes = rows.flatMap { g ->
+            val found = rows.flatMap { g ->
                 // Games against the engine have "You" as owner.
                 val owner = if (g.source == Sources.ENGINE) g.owner else ids.firstOrNull { it.equals(g.owner, ignoreCase = true) }
                 val white = userSide(g.white, g.black, owner) ?: return@flatMap emptyList()
@@ -134,6 +147,10 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
                     MistakeNote(m, white, g.white, g.black, g.date, line, line.positions.indexOfFirst { it.fen == m.fen })
                 }
             }.distinctBy { it.mistake.key }
+            // Mistakes become puzzles once the engine has checked them; checked ones are cached.
+            val lines = PuzzleLines.load(c)
+            val notes = found.mapNotNull { n -> lines[n.mistake.key]?.takeIf { it.isNotEmpty() }?.let { n.copy(solution = it) } }
+            unchecked = found.filter { it.mistake.key !in lines }
             val auto = ratings.take(RATING_GAMES).sorted().let { if (it.isEmpty()) DEFAULT_RATING else it[it.size / 2] }
             val r = if (chosenRating > 0) Puzzles.toLichess(chosenRating) else auto
             withContext(Dispatchers.Main) { rating = r }
@@ -141,16 +158,53 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
             val random = Random(System.currentTimeMillis())
             val used = solved.filter { it.startsWith(PUZZLE) }.map { it.removePrefix(PUZZLE) }.toMutableSet()
             fun next(themes: List<String>) = Puzzles.pick(all, r, themes.randomOrNull(random), used, random)?.also { used += it.id }?.let(::drillOf)
+            nextPuzzle = ::next
             when {
                 only != null -> List(ALONE) { next(only.toList()) }.filterNotNull()
                 mix == Mix.Mine -> notes.map(::drillOf).shuffled(random)
-                notes.isEmpty() -> List(ALONE) { next(emptyList()) }.filterNotNull()
-                mix == Mix.Puzzles -> notes.mapNotNull { next(it.mistake.themes) }.shuffled(random)
+                notes.isEmpty() && mix == Mix.Both -> List(ALONE) { next(emptyList()) }.filterNotNull()
+                mix == Mix.Puzzles -> found.mapNotNull { next(it.mistake.themes) }.shuffled(random)
                 else -> (notes.map(::drillOf) + notes.mapNotNull { next(it.mistake.themes) }).shuffled(random)
             }
         }
         index = 0
         reset()
+        if (only == null && mix != Mix.Puzzles) check(c)
+    }
+
+    private var unchecked: List<MistakeNote> = emptyList()
+    private var nextPuzzle: (List<String>) -> Drill? = { null }
+
+    /** Checks the [unchecked] mistakes one by one; each that passes joins the list after the shown puzzle. */
+    private fun check(c: Application) {
+        checker?.cancel()
+        val todo = unchecked.takeIf { it.isNotEmpty() } ?: return
+        checking = todo.size
+        checker = viewModelScope.launch(Dispatchers.IO) {
+            // One thread, so a game analysis started meanwhile still has the CPU.
+            val engine = runCatching { PuzzleChecker(StockfishSession.binary(c), EngineOptionsStore.load(c).copy(threads = 1)) }.getOrNull()
+            try {
+                for (n in todo) {
+                    val line = (engine ?: break).line(n.mistake.fen)
+                    PuzzleLines.save(c, n.mistake.key, line)
+                    withContext(Dispatchers.Main) {
+                        checking--
+                        val list = drills ?: return@withContext
+                        if (line == null) return@withContext
+                        val fresh = listOfNotNull(drillOf(n.copy(solution = line)), nextPuzzle(n.mistake.themes).takeIf { mix == Mix.Both })
+                        val at = index
+                        drills = list.toMutableList().apply { for (d in fresh) add(if (isEmpty()) 0 else (at + 1..size).random(), d) }
+                        // Nothing was shown yet: show the first one.
+                        if (list.isEmpty()) reset()
+                    }
+                }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+            } finally {
+                engine?.close()
+                withContext(Dispatchers.Main) { checking = 0 }
+            }
+        }
     }
 
     /** Checks the user's move. A right move that is not the last brings the opponent's reply. */
@@ -260,7 +314,7 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
         historyPly = null
     }
 
-    private fun drillOf(n: MistakeNote) = Drill(n.mistake.key, n.mistake.fen, n.mistake.lastMove, n.userWhite, listOf(n.mistake.answers.first()), n.mistake.answers, note = n)
+    private fun drillOf(n: MistakeNote) = Drill(n.mistake.key, n.mistake.fen, n.mistake.lastMove, n.userWhite, n.solution, n.solution.take(1), note = n)
 
     /** The puzzle starts after the opponent's first move. */
     private fun drillOf(p: Puzzle): Drill? {
