@@ -18,10 +18,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -39,7 +37,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -129,24 +126,26 @@ private fun Panel(vm: NotesViewModel, drill: Drill, onAnalyze: (pgn: String, use
     }
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         val done = vm.attempt == Attempt.Solved || vm.attempt == Attempt.Shown
-        OutlinedButton(onClick = vm::showAnswer, enabled = !done && !vm.replying, modifier = Modifier.weight(1f).height(48.dp)) { Text(stringResource(R.string.notes_show)) }
+        val report = LocalAccents.current.report
+        Button(
+            onClick = vm::showAnswer,
+            enabled = !done && !vm.replying,
+            modifier = Modifier.weight(1f).height(48.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = report.color, contentColor = report.on),
+        ) { Text(stringResource(R.string.notes_show)) }
         // Both open just before the opponent's move that set the puzzle, then the solution.
         val pgn = drill.puzzle?.let { Setup.pgn(it.fen, it.moves) } ?: drill.note!!.let { n ->
             if (n.ply > 0) Setup.pgn(n.line.positions[n.ply - 1].fen, listOf(n.line.plies[n.ply - 1].uci) + n.solution) else Setup.pgn(drill.fen, n.solution)
         }
         Button(onClick = { onAnalyze(pgn, drill.userWhite) }, enabled = !vm.replying, modifier = Modifier.weight(1f).height(48.dp)) { Text(stringResource(R.string.analyze)) }
     }
-    // Two rows so the labels fit on a phone.
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        OutlinedButton(onClick = vm::previous, enabled = vm.index > 0, modifier = Modifier.weight(1f).height(48.dp)) { Icon(painterResource(R.drawable.ic_skip_first), stringResource(R.string.notes_previous)) }
-        Button(onClick = vm::next, modifier = Modifier.weight(1f).height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = LocalAccents.current.notes.color, contentColor = LocalAccents.current.notes.on)) { Icon(painterResource(R.drawable.ic_skip_last), stringResource(R.string.notes_next)) }
-    }
-    // My Game: step through the game that led to the mistake.
-    drill.note?.let { n ->
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)) {
-            SquareIconButton(R.drawable.ic_back, stringResource(R.string.nav_prev), vm::historyBack, size = 48.dp, enabled = (vm.historyPly ?: n.ply) > 0)
-            SquareIconButton(R.drawable.ic_next, stringResource(R.string.nav_next), vm::historyForward, size = 48.dp, enabled = vm.historyPly != null)
-        }
+    // Previous puzzle, then a move back and forward in a My Game drill's game, then next puzzle.
+    val n = drill.note
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)) {
+        SquareIconButton(R.drawable.ic_skip_first, stringResource(R.string.notes_previous), vm::previous, size = 48.dp, enabled = vm.index > 0)
+        SquareIconButton(R.drawable.ic_back, stringResource(R.string.nav_prev), vm::historyBack, size = 48.dp, enabled = n != null && (vm.historyPly ?: n.ply) > 0)
+        SquareIconButton(R.drawable.ic_next, stringResource(R.string.nav_next), vm::historyForward, size = 48.dp, enabled = vm.historyPly != null)
+        SquareIconButton(R.drawable.ic_skip_last, stringResource(R.string.notes_next), vm::next, size = 48.dp)
     }
 }
 
