@@ -169,19 +169,19 @@
     <string name="notes_answer">Answer: %1$s</string>
     <string name="notes_show">Answer</string>
     <string name="notes_next">Next</string>
+    <string name="notes_previous">Previous</string>
     <string name="notes_find_white">Find the best move for White.</string>
     <string name="notes_find_black">Find the best move for Black.</string>
     <string name="notes_going">Good move. Keep going.</string>
     <string name="notes_mine">My Game</string>
     <string name="notes_puzzle_rating">Puzzle · %1$d</string>
     <string name="notes_settings">Puzzle Settings</string>
-    <string name="notes_difficulty">Difficulty (Lichess rating)</string>
+    <string name="notes_difficulty">Difficulty</string>
     <string name="notes_auto">My Rating</string>
     <string name="notes_custom">Choose</string>
     <string name="notes_rating">Rating %1$d</string>
     <string name="notes_include">Include</string>
-    <string name="notes_include_mine">My Mistakes</string>
+    <string name="notes_include_mine">Mine</string>
     <string name="notes_include_puzzles">Puzzles</string>
     <string name="notes_include_both">Both</string>
-    <string name="notes_checking">Checking %1$d of your mistakes with the engine. Good puzzles join as they pass.</string>
 </resources>

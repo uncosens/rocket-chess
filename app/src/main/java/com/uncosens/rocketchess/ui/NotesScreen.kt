@@ -62,8 +62,7 @@ fun NotesScreen(vm: NotesViewModel, onAnalyze: (pgn: String, userWhite: Boolean)
         if (drill == null) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 bar()
-                if (drills == null) LinearProgressIndicator(Modifier.fillMaxWidth()) else if (vm.checking == 0) Hint(stringResource(R.string.notes_empty))
-                if (vm.checking > 0) Hint(stringResource(R.string.notes_checking, vm.checking))
+                if (drills == null || vm.checking > 0) LinearProgressIndicator(Modifier.fillMaxWidth()) else Hint(stringResource(R.string.notes_empty))
                 if (vm.noIds) Hint(stringResource(R.string.notes_no_ids))
             }
         } else if (maxWidth > maxHeight) {
@@ -129,9 +128,15 @@ private fun Panel(vm: NotesViewModel, drill: Drill, onAnalyze: (pgn: String, use
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         val done = vm.attempt == Attempt.Solved || vm.attempt == Attempt.Shown
         OutlinedButton(onClick = vm::showAnswer, enabled = !done && !vm.replying, modifier = Modifier.weight(1f).height(48.dp)) { Text(stringResource(R.string.notes_show)) }
-        // A Lichess puzzle opens from its start with its moves; a mistake at the shown position.
-        val pgn = drill.puzzle?.let { Setup.pgn(it.fen, it.moves) } ?: Setup.pgn(vm.fen)
+        // Both open just before the opponent's move that set the puzzle, then the solution.
+        val pgn = drill.puzzle?.let { Setup.pgn(it.fen, it.moves) } ?: drill.note!!.let { n ->
+            if (n.ply > 0) Setup.pgn(n.line.positions[n.ply - 1].fen, listOf(n.line.plies[n.ply - 1].uci) + n.solution) else Setup.pgn(drill.fen, n.solution)
+        }
         Button(onClick = { onAnalyze(pgn, drill.userWhite) }, enabled = !vm.replying, modifier = Modifier.weight(1f).height(48.dp)) { Text(stringResource(R.string.analyze)) }
+    }
+    // Two rows so the labels fit on a phone.
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        OutlinedButton(onClick = vm::previous, enabled = vm.index > 0, modifier = Modifier.weight(1f).height(48.dp)) { Text(stringResource(R.string.notes_previous)) }
         Button(onClick = vm::next, modifier = Modifier.weight(1f).height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = LocalAccents.current.notes.color, contentColor = LocalAccents.current.notes.on)) { Text(stringResource(R.string.notes_next)) }
     }
     // My Game: step through the game that led to the mistake.
@@ -176,7 +181,7 @@ private fun SettingsDialog(vm: NotesViewModel, onDismiss: () -> Unit) {
 private fun Choices(labels: List<Int>, selected: Int, onPick: (Int) -> Unit) {
     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
         labels.forEachIndexed { i, label ->
-            SegmentedButton(selected = i == selected, onClick = { onPick(i) }, shape = SegmentedButtonDefaults.itemShape(i, labels.size)) {
+            SegmentedButton(selected = i == selected, onClick = { onPick(i) }, shape = SegmentedButtonDefaults.itemShape(i, labels.size), icon = {}) {
                 Text(stringResource(label), maxLines = 1)
             }
         }

@@ -294,6 +294,12 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
         reset()
     }
 
+    fun previous() {
+        if (index == 0) return
+        index--
+        reset()
+    }
+
     private fun show(uci: String, next: String, inCheck: String?) {
         fen = next
         lastMove = uci.substring(0, 2) to uci.substring(2, 4)
