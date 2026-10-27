@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -38,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -136,8 +138,8 @@ private fun Panel(vm: NotesViewModel, drill: Drill, onAnalyze: (pgn: String, use
     }
     // Two rows so the labels fit on a phone.
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        OutlinedButton(onClick = vm::previous, enabled = vm.index > 0, modifier = Modifier.weight(1f).height(48.dp)) { Text(stringResource(R.string.notes_previous)) }
-        Button(onClick = vm::next, modifier = Modifier.weight(1f).height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = LocalAccents.current.notes.color, contentColor = LocalAccents.current.notes.on)) { Text(stringResource(R.string.notes_next)) }
+        OutlinedButton(onClick = vm::previous, enabled = vm.index > 0, modifier = Modifier.weight(1f).height(48.dp)) { Icon(painterResource(R.drawable.ic_skip_first), stringResource(R.string.notes_previous)) }
+        Button(onClick = vm::next, modifier = Modifier.weight(1f).height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = LocalAccents.current.notes.color, contentColor = LocalAccents.current.notes.on)) { Icon(painterResource(R.drawable.ic_skip_last), stringResource(R.string.notes_next)) }
     }
     // My Game: step through the game that led to the mistake.
     drill.note?.let { n ->
