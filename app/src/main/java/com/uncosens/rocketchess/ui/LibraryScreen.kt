@@ -5,42 +5,37 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Surface
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -52,11 +47,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.uncosens.rocketchess.R
 import com.uncosens.rocketchess.data.KnownUsers
@@ -88,20 +87,30 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: OpenGame, onOnline: () -> Unit, 
             Spacer(Modifier.width(10.dp))
             Text(stringResource(R.string.import_online), style = MaterialTheme.typography.titleMedium)
         }
-        // Two per row so the labels fit on a phone.
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            // Paste and Open file share one dialog.
-            ImportButton(R.drawable.ic_paste, stringResource(R.string.paste_open), Modifier.weight(1f)) { pasting = true }
-            ImportButton(R.drawable.ic_board, stringResource(R.string.setup_board), Modifier.weight(1f), onClick = onSetup)
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        // Two per row, all six labels at one size.
+        val labels = listOf(R.string.paste_open, R.string.setup_board, R.string.explorer_title, R.string.play_engine, R.string.report_title, R.string.notes_menu).map { stringResource(it) }
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            // Padding 12dp a side, plus the 18dp icon and its 8dp gap. On a narrow screen the icons go before the labels are cut.
+            val slot = (maxWidth - 10.dp) / 2
+            val withIcons = fitLabelsOrNull(labels, slot, 50.dp)
+            val style = withIcons ?: fitLabels(labels, slot, 24.dp)
+            val icon = { id: Int -> id.takeIf { withIcons != null } }
             val accents = LocalAccents.current
-            ImportButton(R.drawable.ic_book, stringResource(R.string.explorer_title), Modifier.weight(1f), accents.explorer.color, accents.explorer.on, onExplorer)
-            ImportButton(R.drawable.ic_engine, stringResource(R.string.play_engine), Modifier.weight(1f), accents.play.color, accents.play.on, onPlay)
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            ImportButton(R.drawable.ic_radar, stringResource(R.string.report_title), Modifier.weight(1f), LocalAccents.current.report.color, LocalAccents.current.report.on, onReport)
-            ImportButton(R.drawable.ic_notes, stringResource(R.string.notes_title), Modifier.weight(1f), LocalAccents.current.notes.color, LocalAccents.current.notes.on, onNotes)
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    // Paste and Open file share one dialog.
+                    ImportButton(icon(R.drawable.ic_paste), labels[0], style, Modifier.weight(1f)) { pasting = true }
+                    ImportButton(icon(R.drawable.ic_board), labels[1], style, Modifier.weight(1f), onClick = onSetup)
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    ImportButton(icon(R.drawable.ic_book), labels[2], style, Modifier.weight(1f), accents.explorer.color, accents.explorer.on, onExplorer)
+                    ImportButton(icon(R.drawable.ic_engine), labels[3], style, Modifier.weight(1f), accents.play.color, accents.play.on, onPlay)
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    ImportButton(icon(R.drawable.ic_radar), labels[4], style, Modifier.weight(1f), accents.report.color, accents.report.on, onReport)
+                    ImportButton(icon(R.drawable.ic_notes), labels[5], style, Modifier.weight(1f), accents.notes.color, accents.notes.on, onNotes)
+                }
+            }
         }
         vm.error?.let { ErrorText(it) }
 
@@ -132,7 +141,8 @@ fun LibraryScreen(vm: LibraryViewModel, onOpen: OpenGame, onOnline: () -> Unit, 
                                 Modifier.weight(1f, fill = false),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
+                                // Two lines on a narrow phone rather than a cut date.
+                                maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
                             )
                             AccuracyText(g.white, g.black, g.whiteAccuracy, g.blackAccuracy, g.owner)
@@ -206,8 +216,9 @@ private fun sourceIcon(source: String) = when (source) {
 
 @Composable
 private fun ImportButton(
-    icon: Int,
+    icon: Int?,
     text: String,
+    style: TextStyle,
     modifier: Modifier,
     container: Color = MaterialTheme.colorScheme.surfaceContainer,
     content: Color = MaterialTheme.colorScheme.onSurface,
@@ -220,9 +231,11 @@ private fun ImportButton(
         colors = ButtonDefaults.filledTonalButtonColors(containerColor = container, contentColor = content),
         contentPadding = PaddingValues(horizontal = 12.dp),
     ) {
-        Icon(painterResource(icon), null, Modifier.size(18.dp))
-        Spacer(Modifier.width(8.dp))
-        Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (icon != null) {
+            Icon(painterResource(icon), null, Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+        }
+        Text(text, style = style, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -242,15 +255,8 @@ fun OnlineScreen(vm: LibraryViewModel, onOpen: OpenGame, onBack: () -> Unit) {
 
     Column(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         TopBar(stringResource(R.string.import_online), onBack = { vm.clearOnline(); onBack() })
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            listOf(Sources.CHESS_COM, Sources.LICHESS).forEachIndexed { i, s ->
-                SegmentedButton(
-                    selected = source == s,
-                    onClick = { source = s; vm.clearOnline() },
-                    shape = SegmentedButtonDefaults.itemShape(i, 2),
-                ) { Text(sourceLabel(s)) }
-            }
-        }
+        val sources = listOf(Sources.CHESS_COM, Sources.LICHESS)
+        Choices(sources.map { sourceLabel(it) }, sources.indexOf(source)) { source = sources[it]; vm.clearOnline() }
         val search = { if (name.isNotBlank()) vm.fetch(source, name) }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(

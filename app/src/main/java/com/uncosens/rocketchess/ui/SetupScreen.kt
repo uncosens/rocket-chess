@@ -9,21 +9,20 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -104,11 +103,13 @@ fun SetupScreen(onAnalyze: (pgn: String) -> Unit, onPlay: (fen: String) -> Unit,
                 }
             }
         } else {
+            // Room for the palette, the side to move and the buttons.
+            val side = boardSide(380.dp)
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 TopBar(stringResource(R.string.setup_board), onBack) {
                     SquareIconButton(R.drawable.ic_flip, stringResource(R.string.flip_board), { flipped = !flipped })
                 }
-                board(Modifier.fillMaxWidth())
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) { board(Modifier.size(side)) }
                 controls()
             }
         }
@@ -133,23 +134,15 @@ private fun Controls(
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             for (p in row) {
                 // Tapping the picked piece again unpicks it, which switches to removing.
-                ToolButton(selected = tool == p, description = p.toString(), onClick = { onTool(if (tool == p) ' ' else p) }) {
-                    Canvas(Modifier.size(40.dp)) {
+                ToolButton(tool == p, p.toString(), { onTool(if (tool == p) ' ' else p) }, Modifier.weight(1f)) {
+                    Canvas(Modifier.fillMaxSize(0.77f)) {
                         drawIntoCanvas { images[p]?.renderToCanvas(it.nativeCanvas, RectF(0f, 0f, size.width, size.height)) }
                     }
                 }
             }
         }
     }
-    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-        listOf(true to R.string.white_to_move, false to R.string.black_to_move).forEachIndexed { i, (white, label) ->
-            SegmentedButton(
-                selected = whiteToMove == white,
-                onClick = { onSide(white) },
-                shape = SegmentedButtonDefaults.itemShape(i, 2),
-            ) { Text(stringResource(label)) }
-        }
-    }
+    Choices(listOf(stringResource(R.string.white_to_move), stringResource(R.string.black_to_move)), if (whiteToMove) 0 else 1) { onSide(it == 0) }
     Row(verticalAlignment = Alignment.CenterVertically) {
         TextButton(onClick = onStart) { Text(stringResource(R.string.start_position)) }
         TextButton(onClick = onClear) { Text(stringResource(R.string.clear_board)) }
@@ -164,9 +157,10 @@ private fun Controls(
         }
         Text(stringResource(text), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
     }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    val labels = listOf(stringResource(R.string.analyze), stringResource(R.string.play_engine))
+    EvenRow(labels) { style ->
         Button(onClick = onAnalyze, enabled = error == null, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(16.dp)) {
-            Text(stringResource(R.string.analyze))
+            Text(labels[0], style = style, maxLines = 1)
         }
         // Plays the engine from this position; lime like the other Play buttons.
         Button(
@@ -176,21 +170,22 @@ private fun Controls(
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = LocalAccents.current.play.color, contentColor = LocalAccents.current.play.on),
         ) {
-            Text(stringResource(R.string.play_engine))
+            Text(labels[1], style = style, maxLines = 1)
         }
     }
 }
 
 /** A square palette button with an outline when selected. Light-square color so both piece colors show. */
 @Composable
-private fun ToolButton(selected: Boolean, description: String, onClick: () -> Unit, content: @Composable () -> Unit) {
+private fun ToolButton(selected: Boolean, description: String, onClick: () -> Unit, modifier: Modifier, content: @Composable () -> Unit) {
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(10.dp),
         color = LocalBoardColors.current.light,
         contentColor = Color(0xFF14161B),
         border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
-        modifier = Modifier.size(52.dp).semantics { contentDescription = description; this.selected = selected },
+        // Up to 52dp, smaller when six do not fit the width.
+        modifier = modifier.widthIn(max = 52.dp).aspectRatio(1f).semantics { contentDescription = description; this.selected = selected },
     ) {
         Box(contentAlignment = Alignment.Center) { content() }
     }

@@ -43,7 +43,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -93,9 +92,9 @@ fun GameScreen(vm: GameViewModel, onBack: () -> Unit, onExplorer: (GameLine, Int
                 }
             }
         } else {
-            // The board is 90% of the screen width on every phone and tablet; the details below
-            // take what is left and scroll if it is not enough.
-            val side = minOf(maxWidth, LocalConfiguration.current.screenWidthDp.dp * 0.9f)
+            // 90% of the screen width, smaller on a short screen so the details keep some room;
+            // they take what is left and scroll if it is not enough.
+            val side = boardSide(360.dp)
             Column {
                 Header(vm, onBack)
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) { BoardBlock(vm, side) }

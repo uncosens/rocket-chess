@@ -26,7 +26,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -56,7 +55,8 @@ fun ExplorerScreen(vm: ExplorerViewModel, onAnalyze: (pgn: String) -> Unit, onPl
                 }
             }
         } else {
-            val side = minOf(maxWidth, LocalConfiguration.current.screenWidthDp.dp * 0.9f)
+            // Header, the book moves (at least a few) and the buttons below.
+            val side = boardSide(290.dp)
             Column {
                 Header(vm, leave)
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) { ExplorerBoard(vm, Modifier.size(side)) }
@@ -123,9 +123,10 @@ private fun Stats(vm: ExplorerViewModel, modifier: Modifier) {
 /** Analyze or play the shown position, and step through the line. */
 @Composable
 private fun Actions(vm: ExplorerViewModel, onAnalyze: (String) -> Unit, onPlay: (String) -> Unit) {
-    Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    val labels = listOf(stringResource(R.string.analyze), stringResource(R.string.explorer_play))
+    EvenRow(labels, Modifier.padding(top = 8.dp), columns = 2, fixed = 52.dp * 2 + 8.dp * 2) { style ->
         Button(onClick = { onAnalyze(vm.pgn()) }, modifier = Modifier.weight(1f).height(52.dp), shape = RoundedCornerShape(16.dp)) {
-            Text(stringResource(R.string.analyze), maxLines = 1)
+            Text(labels[0], style = style, maxLines = 1)
         }
         FilledTonalButton(
             onClick = { onPlay(vm.fen) },
@@ -133,7 +134,7 @@ private fun Actions(vm: ExplorerViewModel, onAnalyze: (String) -> Unit, onPlay: 
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.filledTonalButtonColors(containerColor = LocalAccents.current.play.color, contentColor = LocalAccents.current.play.on),
         ) {
-            Text(stringResource(R.string.explorer_play), maxLines = 1)
+            Text(labels[1], style = style, maxLines = 1)
         }
         SquareIconButton(R.drawable.ic_back, stringResource(R.string.nav_prev), { vm.goTo(vm.ply - 1) }, size = 52.dp, enabled = vm.ply > 0)
         SquareIconButton(R.drawable.ic_next, stringResource(R.string.nav_next), { vm.goTo(vm.ply + 1) }, size = 52.dp, enabled = vm.ply < vm.line.plies.size)

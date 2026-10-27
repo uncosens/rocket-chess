@@ -162,6 +162,7 @@
     <string name="axis_endgame_note">Using the king, pushing passed pawns and turning a small edge into a win.</string>
     <string name="axis_defense_note">Finding the saving move and keeping your king safe under attack.</string>
     <string name="notes_title">Mistake Notes</string>
+    <string name="notes_menu">Mistakes &amp; Puzzles</string>
     <string name="notes_empty">No puzzles found.</string>
     <string name="notes_no_ids">Only games against the engine are used. Set your Chess.com or Lichess user name in Settings (My Accounts) to add your online games.</string>
     <string name="notes_wrong">Wrong answer. Try again.</string>
@@ -181,7 +182,7 @@
     <string name="notes_custom">Choose</string>
     <string name="notes_rating">Rating %1$d</string>
     <string name="notes_include">Include</string>
-    <string name="notes_include_mine">Mine</string>
+    <string name="notes_include_mine">Mistakes</string>
     <string name="notes_include_puzzles">Puzzles</string>
     <string name="notes_include_both">Both</string>
 </resources>

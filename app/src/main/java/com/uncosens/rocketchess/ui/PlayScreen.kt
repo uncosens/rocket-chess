@@ -18,9 +18,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,7 +30,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -110,8 +106,8 @@ fun PlayScreen(vm: PlayViewModel, onAnalyze: (pgn: String) -> Unit, onBack: () -
                 }
             }
         } else {
-            // Same board size rule as the analysis screen: 90% of the screen width.
-            val side = minOf(maxWidth, LocalConfiguration.current.screenWidthDp.dp * 0.9f)
+            // Room for the player rows and the panel: the start panel is the taller one.
+            val side = boardSide(if (vm.line == null) 390.dp else 330.dp)
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 TopBar(stringResource(R.string.play_engine), leave)
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) { board(Modifier.size(side)) }
@@ -128,13 +124,7 @@ private fun StartPanel(startElo: Int, onStart: (white: Boolean, elo: Int) -> Uni
     var side by rememberSaveable { mutableIntStateOf(0) }
     var elo by rememberSaveable { mutableIntStateOf(startElo) }
     Text(stringResource(R.string.play_side), style = MaterialTheme.typography.titleMedium)
-    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-        listOf(R.string.side_white, R.string.side_black, R.string.side_random).forEachIndexed { i, label ->
-            SegmentedButton(selected = side == i, onClick = { side = i }, shape = SegmentedButtonDefaults.itemShape(i, 3)) {
-                Text(stringResource(label))
-            }
-        }
-    }
+    Choices(listOf(R.string.side_white, R.string.side_black, R.string.side_random).map { stringResource(it) }, side) { side = it }
     val range = PlayViewModel.ELO_RANGE
     Text(stringResource(R.string.play_strength, elo), style = MaterialTheme.typography.titleMedium)
     Slider(
@@ -174,20 +164,22 @@ private fun GamePanel(vm: PlayViewModel, onAnalyze: (String) -> Unit) {
     }
     Text(stringResource(R.string.play_vs, engine, stringResource(if (vm.userWhite) R.string.side_white else R.string.side_black)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     Text(status, style = MaterialTheme.typography.titleMedium)
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    // One size for both pairs, so it does not change when the game ends.
+    val labels = listOf(R.string.play_undo, R.string.play_resign, R.string.play_new, R.string.analyze).map { stringResource(it) }
+    EvenRow(labels, columns = 2) { style ->
         if (r == null) {
             OutlinedButton(onClick = vm::undo, enabled = vm.canUndo, modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(16.dp)) {
-                Text(stringResource(R.string.play_undo))
+                Text(labels[0], style = style, maxLines = 1)
             }
             OutlinedButton(onClick = vm::resign, modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(16.dp)) {
-                Text(stringResource(R.string.play_resign))
+                Text(labels[1], style = style, maxLines = 1)
             }
         } else {
             OutlinedButton(onClick = vm::reset, modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(16.dp)) {
-                Text(stringResource(R.string.play_new))
+                Text(labels[2], style = style, maxLines = 1)
             }
             Button(onClick = { onAnalyze(vm.pgn(you, engine)) }, modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(16.dp)) {
-                Text(stringResource(R.string.analyze))
+                Text(labels[3], style = style, maxLines = 1)
             }
         }
     }

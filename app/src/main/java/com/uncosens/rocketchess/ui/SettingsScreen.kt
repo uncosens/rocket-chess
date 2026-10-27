@@ -72,15 +72,7 @@ fun SettingsScreen(onBack: () -> Unit, onLicenses: () -> Unit) {
 
         Text(stringResource(R.string.settings_theme), style = MaterialTheme.typography.titleMedium)
         val themes = listOf(ThemeMode.SYSTEM to R.string.theme_system, ThemeMode.LIGHT to R.string.theme_light, ThemeMode.DARK to R.string.theme_dark)
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            themes.forEachIndexed { i, (m, label) ->
-                SegmentedButton(
-                    selected = ThemeStore.mode == m,
-                    onClick = { ThemeStore.save(context, m) },
-                    shape = SegmentedButtonDefaults.itemShape(i, themes.size),
-                ) { Text(stringResource(label)) }
-            }
-        }
+        Choices(themes.map { stringResource(it.second) }, themes.indexOfFirst { it.first == ThemeStore.mode }) { ThemeStore.save(context, themes[it].first) }
 
         Text(stringResource(R.string.settings_pieces), style = MaterialTheme.typography.titleMedium)
         // Always two rows of equal chips, with small text so every name fits.

@@ -20,9 +20,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -36,7 +33,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -74,8 +70,8 @@ fun NotesScreen(vm: NotesViewModel, onAnalyze: (pgn: String, userWhite: Boolean)
                 }
             }
         } else {
-            // Same board size rule as the analysis screen: 90% of the screen width.
-            val side = minOf(maxWidth, LocalConfiguration.current.screenWidthDp.dp * 0.9f)
+            // Room for the task and both rows of buttons.
+            val side = boardSide(300.dp)
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 bar()
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) { Board(vm, drill, Modifier.size(side)) }
@@ -124,7 +120,8 @@ private fun Panel(vm: NotesViewModel, drill: Drill, onAnalyze: (pgn: String, use
             Text(stringResource(R.string.notes_answer, moves.joinToString(" / ") { GameLine.san(vm.fen, it) }), fontWeight = FontWeight.Medium)
         }
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    val labels = listOf(stringResource(R.string.notes_show), stringResource(R.string.analyze))
+    EvenRow(labels, spacing = 10.dp) { style ->
         val done = vm.attempt == Attempt.Solved || vm.attempt == Attempt.Shown
         val report = LocalAccents.current.report
         Button(
@@ -132,12 +129,12 @@ private fun Panel(vm: NotesViewModel, drill: Drill, onAnalyze: (pgn: String, use
             enabled = !done && !vm.replying,
             modifier = Modifier.weight(1f).height(48.dp),
             colors = ButtonDefaults.buttonColors(containerColor = report.color, contentColor = report.on),
-        ) { Text(stringResource(R.string.notes_show)) }
+        ) { Text(labels[0], style = style, maxLines = 1) }
         // Both open just before the opponent's move that set the puzzle, then the solution.
         val pgn = drill.puzzle?.let { Setup.pgn(it.fen, it.moves) } ?: drill.note!!.let { n ->
             if (n.ply > 0) Setup.pgn(n.line.positions[n.ply - 1].fen, listOf(n.line.plies[n.ply - 1].uci) + n.solution) else Setup.pgn(drill.fen, n.solution)
         }
-        Button(onClick = { onAnalyze(pgn, drill.userWhite) }, enabled = !vm.replying, modifier = Modifier.weight(1f).height(48.dp)) { Text(stringResource(R.string.analyze)) }
+        Button(onClick = { onAnalyze(pgn, drill.userWhite) }, enabled = !vm.replying, modifier = Modifier.weight(1f).height(48.dp)) { Text(labels[1], style = style, maxLines = 1) }
     }
     // Previous puzzle, then a move back and forward in a My Game drill's game, then next puzzle.
     val n = drill.note
@@ -161,7 +158,7 @@ private fun SettingsDialog(vm: NotesViewModel, onDismiss: () -> Unit) {
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(stringResource(R.string.notes_difficulty), style = MaterialTheme.typography.titleSmall)
-                Choices(listOf(R.string.notes_auto, R.string.notes_custom), if (custom) 1 else 0) { custom = it == 1 }
+                Choices(listOf(R.string.notes_auto, R.string.notes_custom).map { stringResource(it) }, if (custom) 1 else 0) { custom = it == 1 }
                 if (custom) {
                     Text(stringResource(R.string.notes_rating, rating), fontFamily = Mono)
                     Slider(rating.toFloat(), { rating = (it / 50).toInt() * 50 }, valueRange = 400f..2500f)
@@ -169,7 +166,7 @@ private fun SettingsDialog(vm: NotesViewModel, onDismiss: () -> Unit) {
                 // Report puzzles are always Lichess puzzles.
                 if (vm.only == null) {
                     Text(stringResource(R.string.notes_include), style = MaterialTheme.typography.titleSmall)
-                    Choices(listOf(R.string.notes_include_mine, R.string.notes_include_puzzles, R.string.notes_include_both), mix.ordinal) { mix = Mix.entries[it] }
+                    Choices(listOf(R.string.notes_include_mine, R.string.notes_include_puzzles, R.string.notes_include_both).map { stringResource(it) }, mix.ordinal) { mix = Mix.entries[it] }
                 }
             }
         },
@@ -178,16 +175,6 @@ private fun SettingsDialog(vm: NotesViewModel, onDismiss: () -> Unit) {
     )
 }
 
-@Composable
-private fun Choices(labels: List<Int>, selected: Int, onPick: (Int) -> Unit) {
-    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-        labels.forEachIndexed { i, label ->
-            SegmentedButton(selected = i == selected, onClick = { onPick(i) }, shape = SegmentedButtonDefaults.itemShape(i, labels.size), icon = {}) {
-                Text(stringResource(label), maxLines = 1)
-            }
-        }
-    }
-}
 
 @Composable
 private fun Hint(text: String) {
