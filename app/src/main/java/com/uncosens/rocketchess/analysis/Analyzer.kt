@@ -35,11 +35,14 @@ class Analyzer(private val sf: StockfishSession) {
         return s
     }
 
-    /** Searches [fen] to [depth]. [onDepth], if given, gets a result each time a deeper depth is done. */
-    fun analyze(fen: String, depth: Int, onDepth: ((PositionEval) -> Unit)? = null): PositionEval {
+    /**
+     * Searches [fen] to [depth], or until [maxMs] passes; then the deepest finished result counts.
+     * [onDepth], if given, gets a result each time a deeper depth is done.
+     */
+    fun analyze(fen: String, depth: Int, maxMs: Long = AnalysisPolicy.SEARCH_MS, onDepth: ((PositionEval) -> Unit)? = null): PositionEval {
         val whiteToMove = fen.split(' ').getOrNull(1) != "b"
         sf.send("position fen $fen")
-        sf.send("go depth $depth")
+        sf.send("go depth $depth movetime $maxMs")
         var shown = 0
         var second: Eval? = null
         var secondBest: String? = null

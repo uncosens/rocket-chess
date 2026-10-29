@@ -18,6 +18,8 @@ object PuzzlePolicy {
     const val COMEBACK_BELOW = 30.0
     /** Search depth for checking a puzzle line, deeper than the game analysis. */
     const val DEPTH = 18
+    /** Time limit per search; longer than the game analysis's, as the check runs in the background. */
+    const val SEARCH_MS = 10_000L
 }
 
 /** Turns a mistake position into a 1–3 move puzzle line, or rejects it. */

@@ -23,6 +23,11 @@ enum class MoveClass { Brilliant, Great, Best, Book, Good, Fine, Weak, Mistake, 
 /** All analysis numbers live here so UI code never repeats them. Not the official Lichess grading. */
 object AnalysisPolicy {
     const val DEPTH = 14
+    /**
+     * Each position stops here even before [DEPTH]: a few sharp positions take minutes with two lines.
+     * On a Galaxy S23+ 99% of positions reach depth 15 within it, the rest depth 14 (2026-10).
+     */
+    const val SEARCH_MS = 2_000L
     const val MULTI_PV = 2
     // Defaults for the user settings in EngineOptions.
     // CPU cores: engines run at once for a full analysis, one thread each.
