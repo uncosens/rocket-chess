@@ -92,6 +92,8 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
     /** The answer to draw as an arrow once shown. */
     var arrow by mutableStateOf<String?>(null)
         private set
+    /** An answer was shown in this drill, so finishing it does not count as solved. */
+    private var helped = false
     /** True when no My ID is set, so only games against the engine count. */
     var noIds by mutableStateOf(false)
         private set
@@ -240,10 +242,14 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
         right = true
         step++
         tried = null
+        // A shown answer is for this move only; the next one is the user's to find.
+        arrow = null
         if (step >= d.solution.size || after.mate) {
             attempt = Attempt.Solved
-            solved = solved + d.key
-            prefs.edit().putStringSet(SOLVED, solved).apply()
+            if (!helped) {
+                solved = solved + d.key
+                prefs.edit().putStringSet(SOLVED, solved).apply()
+            }
             return
         }
         attempt = Attempt.Going
@@ -279,10 +285,12 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
         historyPly = historyPly?.let { it + 1 }?.takeIf { it < n.ply }
     }
 
+    /** Shows the answer for the current move only; the user still plays it and the moves after it. */
     fun showAnswer() {
         val d = drill ?: return
         attempt = Attempt.Shown
         arrow = d.solution.getOrNull(step)
+        helped = true
     }
 
     fun next() {
@@ -317,6 +325,7 @@ class NotesViewModel(app: Application) : AndroidViewModel(app) {
         replying = false
         tried = null
         arrow = null
+        helped = false
         historyPly = null
     }
 

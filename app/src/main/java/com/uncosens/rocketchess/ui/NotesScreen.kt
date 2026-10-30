@@ -85,7 +85,7 @@ fun NotesScreen(vm: NotesViewModel, onAnalyze: (pgn: String, userWhite: Boolean)
 private fun Board(vm: NotesViewModel, drill: Drill, modifier: Modifier) {
     // A position of the game, while stepping back through it.
     val past = vm.historyPly?.let { h -> drill.note?.line?.let { it.positions[h] to it.plies.getOrNull(h - 1) } }
-    val open = (vm.attempt == Attempt.Solving || vm.attempt == Attempt.Wrong || vm.attempt == Attempt.Going) && !vm.replying && past == null
+    val open = vm.attempt != Attempt.Solved && !vm.replying && past == null
     // A new input after each wrong try clears the selected piece.
     val input = key(vm.misses) { rememberMoveInput(vm.fen, enabled = open) { vm.play(it) } }
     ChessBoard(
