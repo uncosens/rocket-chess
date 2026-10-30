@@ -1,6 +1,7 @@
 package com.uncosens.rocketchess.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -159,7 +160,7 @@ fun Summary(vm: GameViewModel, line: GameLine) {
     }
 }
 
-/** Card with White's win% over the game and the side counts. Tap to jump to a position. */
+/** Card with White's win% over the game and the side counts. Tap or drag on the graph to go to a position. */
 @Composable
 fun EvalCard(vm: GameViewModel, line: GameLine) {
     if (vm.evals.isEmpty()) return
@@ -187,7 +188,13 @@ private fun EvalGraph(evals: List<PositionEval?>, marks: List<MoveClass?>, ply: 
         Modifier.fillMaxWidth().height(32.dp).clip(RoundedCornerShape(10.dp))
             .semantics { contentDescription = desc }
             .pointerInput(evals.size) {
-                detectTapGestures { onSelect((it.x / size.width * (evals.size - 1)).roundToInt()) }
+                fun at(x: Float) = onSelect((x / size.width * (evals.size - 1)).roundToInt().coerceIn(0, evals.size - 1))
+                detectTapGestures { at(it.x) }
+            }
+            // Dragging along the graph walks through the positions under the finger.
+            .pointerInput(evals.size) {
+                fun at(x: Float) = onSelect((x / size.width * (evals.size - 1)).roundToInt().coerceIn(0, evals.size - 1))
+                detectHorizontalDragGestures(onDragStart = { at(it.x) }) { change, _ -> at(change.position.x) }
             },
     ) {
         // A set-up position has no moves: draw its one eval flat across the graph.

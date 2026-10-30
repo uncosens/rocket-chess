@@ -38,7 +38,7 @@
     <string name="count_weak">Weak %d</string>
     <string name="count_mistake">Mistake %d</string>
     <string name="count_blunder">Blunder %d</string>
-    <string name="graph_description">Evaluation graph. Tap to go to a position.</string>
+    <string name="graph_description">Evaluation graph. Tap or drag to go to a position.</string>
     <string name="move_with_class">%1$s, %2$s</string>
     <string name="import_online">Lichess / Chess.com</string>
     <string name="saved_games">Saved games (%1$d)</string>
