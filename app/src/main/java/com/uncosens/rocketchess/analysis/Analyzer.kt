@@ -90,7 +90,7 @@ class Analyzer(private val sf: StockfishSession) {
             val recapture = prev != null && 'x' in prev.san && 'x' in p.san && prev.to == p.to
             val moveNumber = line.positions[ply].fen.split(' ').getOrNull(5)?.toIntOrNull() ?: 1
             val cls = when {
-                isBrilliant(p.uci, before.best, p.sacrifice, loss, moverWin) -> MoveClass.Brilliant
+                isBrilliant(p.uci, before.best, p.sacrifice, loss, moverWin, second, GameLine.legalMoves(line.positions[ply].fen).size == 1) -> MoveClass.Brilliant
                 isGreat(p.uci, before.best, moverWin, second, recapture, moveNumber) -> MoveClass.Great
                 else -> classify(p.uci, before.best, loss)
             }

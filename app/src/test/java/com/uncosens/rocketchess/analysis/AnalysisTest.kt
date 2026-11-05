@@ -222,6 +222,24 @@ class AnalysisTest {
     }
 
     @Test
+    fun forcedSacrificeIsNeverBrilliant() {
+        // White blocks the check with the knight on c3, where the queen takes it for free.
+        val fen = "4k3/8/8/q7/8/8/8/1N2K3 w - - 0 30"
+        val line = GameLine.from(Pgn.parse("[FEN \"$fen\"]\n\n30. Nc3 *"))
+        assertTrue(line.plies[0].sacrifice)
+        fun grade(second: Int?): MoveClass {
+            val evals = listOf(PositionEval(Eval.Cp(0), line.plies[0].uci, second?.let { Eval.Cp(it) }, 14), PositionEval(Eval.Cp(0), null, null, 14))
+            return Analyzer.grade(line, evals, 0)!!.cls
+        }
+        // Another move holds too: a real choice.
+        assertEquals(MoveClass.Brilliant, grade(-50))
+        // Every other move loses: forced, so the only-move grade Great instead.
+        assertEquals(MoveClass.Great, grade(-600))
+        // The only legal move.
+        assertFalse(isBrilliant("a1a2", "a1a2", true, 0.0, 50.0, 50.0, onlyMove = true))
+    }
+
+    @Test
     fun noGreatInTheFirstFiveMoves() {
         // Black's 5th move, then White's 6th, both PV1 with PV2 at about 25%.
         val line = GameLine.from(Pgn.parse("[FEN \"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 5\"]\n\n5... e5 6. e4 *"))
