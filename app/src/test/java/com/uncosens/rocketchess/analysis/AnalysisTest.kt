@@ -236,7 +236,9 @@ class AnalysisTest {
         // Every other move loses: forced, so the only-move grade Great instead.
         assertEquals(MoveClass.Great, grade(-600))
         // The only legal move.
-        assertFalse(isBrilliant("a1a2", "a1a2", true, 0.0, 50.0, 50.0, onlyMove = true))
+        assertFalse(isBrilliant("a1a2", "a1a2", true, 0.0, 50.0, 50.0, onlyMove = true, recapture = false))
+        // Taking back on the square the opponent just took on.
+        assertFalse(isBrilliant("a1a2", "a1a2", true, 0.0, 50.0, 50.0, onlyMove = false, recapture = true))
     }
 
     @Test

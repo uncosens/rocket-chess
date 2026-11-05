@@ -82,14 +82,14 @@ fun winLoss(before: Eval, after: Eval, whiteMoved: Boolean, slope: Double = Anal
 /**
  * Our Brilliant rule: a piece sacrifice that is the engine's first choice, loses less than Good's line,
  * was played when the mover was not already winning, and leaves the mover at least even.
- * A forced move is never Brilliant: the only legal move, or one where every other move loses
- * ([moverWinSecond], the mover's win% after PV2, below [AnalysisPolicy.EVEN_FROM]).
+ * A forced move is never Brilliant: the only legal move, a plain recapture, or one where every other
+ * move loses ([moverWinSecond], the mover's win% after PV2, below [AnalysisPolicy.EVEN_FROM]).
  * [moverWinBefore] is the mover's win% before the move; minus [loss] it is the win% after.
  */
-fun isBrilliant(playedUci: String, bestUci: String?, sacrifice: Boolean, loss: Double, moverWinBefore: Double, moverWinSecond: Double?, onlyMove: Boolean): Boolean =
+fun isBrilliant(playedUci: String, bestUci: String?, sacrifice: Boolean, loss: Double, moverWinBefore: Double, moverWinSecond: Double?, onlyMove: Boolean, recapture: Boolean): Boolean =
     sacrifice && playedUci == bestUci && loss < AnalysisPolicy.GOOD_BELOW &&
         moverWinBefore < AnalysisPolicy.WINNING_FROM && moverWinBefore - loss >= AnalysisPolicy.SOUND_FROM &&
-        !onlyMove && (moverWinSecond == null || moverWinSecond >= AnalysisPolicy.EVEN_FROM)
+        !onlyMove && !recapture && (moverWinSecond == null || moverWinSecond >= AnalysisPolicy.EVEN_FROM)
 
 /** 0 losing, 1 about even, 2 winning, from the mover's win%. */
 internal fun outcome(moverWin: Double): Int = when {
