@@ -19,7 +19,7 @@ data class PgnGame(val tags: Map<String, String>, val moves: List<SanToken>, val
         val t = tags["Termination"] ?: return null
         return when {
             t.contains("on time", ignoreCase = true) || t.equals("Time forfeit", ignoreCase = true) -> Finish.TIME
-            t.contains("resignation", ignoreCase = true) || t == "Normal" -> Finish.RESIGNED
+            t.contains("resignation", ignoreCase = true) || t.contains("abandon", ignoreCase = true) || t == "Normal" -> Finish.RESIGNED
             else -> null
         }
     }

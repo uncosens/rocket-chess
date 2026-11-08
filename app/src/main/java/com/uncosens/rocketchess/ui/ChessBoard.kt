@@ -263,7 +263,8 @@ fun ChessBoard(
                 else -> LOST to when (ending.finish) {
                     Finish.MATE -> "#"
                     Finish.RESIGNED -> "\u2691\uFE0E"
-                    Finish.TIME, Finish.DRAW -> null
+                    Finish.TIME -> "\u23F1\uFE0E"
+                    Finish.DRAW -> null
                 }
             }
         }

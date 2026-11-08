@@ -242,6 +242,18 @@ class AnalysisTest {
     }
 
     @Test
+    fun soundSacrificeThatShortensForcedMateIsBrilliant() {
+        val fen = "r4r1k/pB4pp/qp2Q2n/5p2/8/P5P1/2P2P1P/3R1RK1 w - - 0 31"
+        val line = GameLine.from(Pgn.parse("[FEN \"$fen\"]\n\n31. Qg8+ *"))
+        assertTrue(line.plies[0].sacrifice)
+        val evals = listOf(
+            PositionEval(Eval.Mate(true, 2), line.plies[0].uci, Eval.Mate(true, 3), 14),
+            PositionEval(Eval.Mate(true, 1), null, null, 14),
+        )
+        assertEquals(MoveClass.Brilliant, Analyzer.grade(line, evals, 0)?.cls)
+    }
+
+    @Test
     fun noGreatInTheFirstFiveMoves() {
         // Black's 5th move, then White's 6th, both PV1 with PV2 at about 25%.
         val line = GameLine.from(Pgn.parse("[FEN \"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 5\"]\n\n5... e5 6. e4 *"))

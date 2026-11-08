@@ -85,12 +85,15 @@ class Analyzer(private val sf: StockfishSession) {
             val white = whiteWinPercent(before.eval)
             val moverWin = if (whiteMoved) white else 100 - white
             val second = before.second?.let { whiteWinPercent(it) }?.let { if (whiteMoved) it else 100 - it }
+            val shortensMate = (before.eval as? Eval.Mate)?.let { old ->
+                (after.eval as? Eval.Mate)?.let { new -> old.whiteWins == whiteMoved && new.whiteWins == old.whiteWins && new.moves < old.moves }
+            } == true
             // Recapture: the last move took something and this move takes back on the same square.
             val prev = line.plies.getOrNull(ply - 1)
             val recapture = prev != null && 'x' in prev.san && 'x' in p.san && prev.to == p.to
             val moveNumber = line.positions[ply].fen.split(' ').getOrNull(5)?.toIntOrNull() ?: 1
             val cls = when {
-                isBrilliant(p.uci, before.best, p.sacrifice, loss, moverWin, second, GameLine.legalMoves(line.positions[ply].fen).size == 1, recapture) -> MoveClass.Brilliant
+                isBrilliant(p.uci, before.best, p.sacrifice, loss, moverWin, second, GameLine.legalMoves(line.positions[ply].fen).size == 1, recapture, shortensMate) -> MoveClass.Brilliant
                 isGreat(p.uci, before.best, moverWin, second, recapture, moveNumber) -> MoveClass.Great
                 else -> classify(p.uci, before.best, loss)
             }

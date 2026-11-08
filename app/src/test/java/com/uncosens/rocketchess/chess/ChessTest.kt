@@ -150,6 +150,7 @@ class ChessTest {
         fun game(termination: String?, result: String) =
             Pgn.parse((termination?.let { "[Termination \"$it\"]\n" } ?: "") + "[Result \"$result\"]\n\n1. e4 e5 $result")
         assertEquals(Finish.RESIGNED, game("thibault won by resignation", "0-1").finish())
+        assertEquals(Finish.RESIGNED, game("abandoned", "1-0").finish())
         assertEquals(Finish.RESIGNED, game("Normal", "1-0").finish()) // Lichess: mate is ruled out by the board
         assertEquals(Finish.TIME, game("Grum000 won on time", "0-1").finish())
         assertEquals(Finish.TIME, game("Time forfeit", "0-1").finish())
