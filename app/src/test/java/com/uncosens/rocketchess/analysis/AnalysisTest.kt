@@ -152,6 +152,10 @@ class AnalysisTest {
         // Nd5 hangs the knight to cxd5, unless Ba4 pins that pawn to its king.
         assertTrue(sacrifice("[FEN \"4k3/8/2p5/8/8/4N3/8/4K3 w - - 0 1\"]\n\n1. Nd5 *"))
         assertFalse(sacrifice("[FEN \"4k3/8/2p5/8/B7/4N3/8/4K3 w - - 0 1\"]\n\n1. Nd5 *"))
+        // Moving the bishop exposes the knight behind it to the rook.
+        assertTrue(sacrifice("[FEN \"r3k3/8/8/8/8/B7/N7/4K3 w - - 0 1\"]\n\n1. Bb4 *"))
+        // A move does not count when the knight was already hanging.
+        assertFalse(sacrifice("[FEN \"r3k3/8/8/8/8/1B6/N7/4K3 w - - 0 1\"]\n\n1. Bc4 *"))
         // Exchange sacrifice: Rxc6 bxc6 gives a rook for a knight.
         assertTrue(sacrifice("[FEN \"4k3/1p6/2n5/8/8/8/8/2R1K3 w - - 0 1\"]\n\n1. Rxc6 *"))
         // A defended pawn taken by a pawn is a fair trade.

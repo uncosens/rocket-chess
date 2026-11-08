@@ -7,8 +7,8 @@ import com.github.bhlangonijr.chesslib.Square
 import com.github.bhlangonijr.chesslib.move.Move
 
 /**
- * A move is a piece sacrifice when the opponent can win the moved piece back for a net gain of at
- * least [MIN_LOSS]: a static exchange on its landing square, minus what the move itself took.
+ * A move is a piece sacrifice when it newly lets the opponent win one of the mover's pieces for a
+ * net gain of at least [MIN_LOSS], after what the move itself took is counted.
  */
 object Sacrifice {
     /** A minor piece for a pawn, or the exchange. Losing only a pawn does not count. */
@@ -17,10 +17,27 @@ object Sacrifice {
     /** True if [move], legal on [board], is a sacrifice. [board] is left as it was. */
     fun of(board: Board, move: Move): Boolean {
         val taken = takenBy(board, move)
+        val before = board.clone()
+        val mover = board.sideToMove
         board.doMove(move)
-        val lost = exchange(board, move.to)
+        val sacrifice = Square.values().any { square ->
+            val piece = board.getPiece(square)
+            piece != Piece.NONE && piece.pieceSide == mover && value(piece.pieceType) >= MIN_LOSS &&
+                loss(board, square) - lossBefore(before, square, piece) - taken >= MIN_LOSS
+        }
         board.undoMove()
-        return lost - taken >= MIN_LOSS
+        return sacrifice
+    }
+
+    private fun lossBefore(board: Board, square: Square, piece: Piece): Int =
+        if (board.getPiece(square) == piece) loss(board, square, piece.pieceSide.flip()) else 0
+
+    private fun loss(board: Board, square: Square, attacker: com.github.bhlangonijr.chesslib.Side = board.sideToMove): Int {
+        val turn = board.sideToMove
+        board.sideToMove = attacker
+        val loss = exchange(board, square)
+        board.sideToMove = turn
+        return loss
     }
 
     private fun value(type: PieceType?) = when (type) {
