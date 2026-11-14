@@ -64,7 +64,7 @@ data class AxisScore(
     val found: Int,
 )
 
-data class Report(val axes: List<AxisScore>, val kingErrors: Int, val movesBeforeEndgame: Int, val moveCounts: Map<MoveClass, Int>)
+data class Report(val axes: List<AxisScore>, val kingErrors: Int, val movesBeforeEndgame: Int, val moveCounts: Map<MoveClass, Int>, val games: Int)
 
 object PlayerReport {
     /** The user's graded moves in one game, each in one axis. */
@@ -195,7 +195,7 @@ object PlayerReport {
         }
         val beforeEnd = all.count { it.axis != Axis.Endgame }
         val moveCounts = MoveClass.entries.associateWith { cls -> entries.sumOf { it.moveCounts[cls] ?: 0 } }
-        return Report(axes, all.count { it.kingError }, beforeEnd, moveCounts)
+        return Report(axes, all.count { it.kingError }, beforeEnd, moveCounts, games.size)
     }
 
     /** Weighted mean score, each game capped at [ReportPolicy.GAME_CAP] moves, pulled toward [overall]. */

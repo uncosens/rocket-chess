@@ -144,7 +144,7 @@
     <string name="band_range">%1$d–%2$d</string>
     <string name="band_over">%1$d+</string>
     <string name="report_title">My Report</string>
-    <string name="report_total_moves">Total moves: %1$,d</string>
+    <string name="report_total_moves">Total %1$,d moves in the last %2$d games</string>
     <string name="report_no_ids">Set your Chess.com or Lichess user name in Settings (My Accounts). The report uses the analyzed games of those names.</string>
     <string name="report_not_enough">The report needs %2$d fully analyzed games of yours. You have %1$d.</string>
     <string name="report_puzzles">Puzzles</string>
