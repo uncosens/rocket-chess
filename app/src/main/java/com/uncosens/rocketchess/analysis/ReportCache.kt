@@ -5,12 +5,19 @@ package com.uncosens.rocketchess.analysis
  * Made again when the game's analysis ([analyzedAt]) or its [owner] changes.
  * [usable] is false for a game the report leaves out; [sameGame] spots one game saved twice.
  */
-data class ReportEntry(val analyzedAt: Long, val owner: String, val usable: Boolean, val sameGame: String, val moves: List<ReportMove>)
+data class ReportEntry(
+    val analyzedAt: Long,
+    val owner: String,
+    val usable: Boolean,
+    val sameGame: String,
+    val moves: List<ReportMove>,
+    val moveCounts: Map<MoveClass, Int>,
+)
 
 /** Text form of the per-game entries: a version line, then one tab-separated line per game. */
 object ReportCache {
     /** Raise when [PlayerReport.moves] or [ReportPolicy] changes, so old entries are made again. */
-    const val VERSION = 1
+    const val VERSION = 2
 
     fun encode(entries: Map<String, ReportEntry>): String = buildString {
         append("v$VERSION\n")
@@ -19,7 +26,8 @@ object ReportCache {
                 val flags = (if (m.chance) 1 else 0) + (if (m.found) 2 else 0) + (if (m.kingError) 4 else 0)
                 "${m.axis.ordinal},${m.score},${m.weight},$flags"
             }
-            append(listOf(key, e.analyzedAt, e.owner, if (e.usable) 1 else 0, e.sameGame, moves).joinToString("\t")).append('\n')
+            val counts = e.moveCounts.entries.joinToString(",") { (cls, count) -> "${cls.name}:$count" }
+            append(listOf(key, e.analyzedAt, e.owner, if (e.usable) 1 else 0, e.sameGame, moves, counts).joinToString("\t")).append('\n')
         }
     }
 
@@ -35,7 +43,10 @@ object ReportCache {
                     val flags = p[3].toInt()
                     ReportMove(Axis.entries[p[0].toInt()], p[1].toDouble(), p[2].toDouble(), flags and 1 != 0, flags and 2 != 0, flags and 4 != 0)
                 }
-                f[0] to ReportEntry(f[1].toLong(), f[2], f[3] == "1", f[4], moves)
+                val counts = if (f[6].isEmpty()) emptyMap() else f[6].split(',').associate {
+                    MoveClass.valueOf(it.substringBefore(':')) to it.substringAfter(':').toInt()
+                }
+                f[0] to ReportEntry(f[1].toLong(), f[2], f[3] == "1", f[4], moves, counts)
             }.getOrNull()
         }.toMap()
     }

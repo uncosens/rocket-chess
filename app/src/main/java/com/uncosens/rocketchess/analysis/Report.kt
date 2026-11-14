@@ -64,11 +64,11 @@ data class AxisScore(
     val found: Int,
 )
 
-data class Report(val axes: List<AxisScore>, val kingErrors: Int, val movesBeforeEndgame: Int)
+data class Report(val axes: List<AxisScore>, val kingErrors: Int, val movesBeforeEndgame: Int, val moveCounts: Map<MoveClass, Int>)
 
 object PlayerReport {
     /** The user's graded moves in one game, each in one axis. */
-    fun moves(line: GameLine, evals: List<PositionEval?>, userWhite: Boolean): List<ReportMove> {
+    fun moves(line: GameLine, evals: List<PositionEval?>, userWhite: Boolean, onMove: (Int) -> Unit = {}): List<ReportMove> {
         val out = mutableListOf<ReportMove>()
         val middle = middlegameStart(line)
         for (i in line.plies.indices) {
@@ -77,6 +77,7 @@ object PlayerReport {
             if ((fields[1] == "w") != userWhite) continue
             val before = evals.getOrNull(i) ?: continue
             val after = evals.getOrNull(i + 1) ?: continue
+            onMove(i)
             fun win(e: Eval) = whiteWinPercent(e).let { if (userWhite) it else 100 - it }
             val loss = maxOf(0.0, win(before.eval) - win(after.eval))
             val score = moveScore(winLoss(before.eval, after.eval, userWhite, AnalysisPolicy.ACCURACY_SLOPE))
@@ -174,7 +175,8 @@ object PlayerReport {
     }
 
     /** The report from each usable game's moves. Null below [ReportPolicy.MIN_GAMES]. */
-    fun build(games: List<List<ReportMove>>): Report? {
+    fun build(entries: List<ReportEntry>): Report? {
+        val games = entries.map { it.moves }
         if (games.size < ReportPolicy.MIN_GAMES) return null
         val all = games.flatten()
         val overall = all.map { it.score }.average().takeIf { !it.isNaN() } ?: return null
@@ -192,7 +194,8 @@ object PlayerReport {
             AxisScore(axis, score(per, overall), runs[cut], runs[runs.size - 1 - cut], samples, needed, per.size, chances, found)
         }
         val beforeEnd = all.count { it.axis != Axis.Endgame }
-        return Report(axes, all.count { it.kingError }, beforeEnd)
+        val moveCounts = MoveClass.entries.associateWith { cls -> entries.sumOf { it.moveCounts[cls] ?: 0 } }
+        return Report(axes, all.count { it.kingError }, beforeEnd, moveCounts)
     }
 
     /** Weighted mean score, each game capped at [ReportPolicy.GAME_CAP] moves, pulled toward [overall]. */

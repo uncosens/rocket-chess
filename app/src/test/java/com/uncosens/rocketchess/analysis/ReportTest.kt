@@ -78,10 +78,13 @@ class ReportTest {
     @Test
     fun reportNeedsEnoughGamesAndSamples() {
         val game = List(10) { ReportMove(Axis.Opening, 80.0, 1.0, chance = false, found = false, kingError = false) }
-        assertNull(PlayerReport.build(List(ReportPolicy.MIN_GAMES - 1) { game }))
-        val r = PlayerReport.build(List(ReportPolicy.MIN_GAMES) { game })
+        val entry = ReportEntry(0, "me", true, "", game, mapOf(MoveClass.Best to 8, MoveClass.Brilliant to 2))
+        assertNull(PlayerReport.build(List(ReportPolicy.MIN_GAMES - 1) { entry }))
+        val r = PlayerReport.build(List(ReportPolicy.MIN_GAMES) { entry })
         assertNotNull(r)
-        val opening = r!!.axes.first { it.axis == Axis.Opening }
+        assertEquals(ReportPolicy.MIN_GAMES * 10, r!!.moveCounts.values.sum())
+        assertEquals(ReportPolicy.MIN_GAMES * 2, r.moveCounts.getValue(MoveClass.Brilliant))
+        val opening = r.axes.first { it.axis == Axis.Opening }
         assertEquals(80.0, opening.score!!, 0.01)
         assertTrue(opening.low!! <= opening.score!! && opening.score!! <= opening.high!!)
         // No tactics moves at all: not scored, not zero.
@@ -95,9 +98,9 @@ class ReportTest {
             ReportMove(Axis.Defense, -12.25, 1.0, chance = false, found = true, kingError = true),
         )
         val entries = mapOf(
-            "chesscom:1" to ReportEntry(1700000000000, "unCoSens", true, "a|b|e2e4 e7e5", moves),
+            "chesscom:1" to ReportEntry(1700000000000, "unCoSens", true, "a|b|e2e4 e7e5", moves, mapOf(MoveClass.Best to 2)),
             // A game the report leaves out keeps no moves.
-            "pgn:ab12" to ReportEntry(5, "unCoSens", false, "", emptyList()),
+            "pgn:ab12" to ReportEntry(5, "unCoSens", false, "", emptyList(), emptyMap()),
         )
         assertEquals(entries, ReportCache.decode(ReportCache.encode(entries)))
         // Text from another version is dropped, so every game is worked out again.

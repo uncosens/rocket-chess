@@ -6,13 +6,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.uncosens.rocketchess.analysis.Analyzer
+import com.uncosens.rocketchess.analysis.MoveClass
 import com.uncosens.rocketchess.analysis.PlayerReport
 import com.uncosens.rocketchess.analysis.Report
 import com.uncosens.rocketchess.analysis.ReportCache
 import com.uncosens.rocketchess.analysis.ReportEntry
-import com.uncosens.rocketchess.analysis.ReportMove
 import com.uncosens.rocketchess.analysis.ReportPolicy
 import com.uncosens.rocketchess.analysis.SavedAnalysis
+import com.uncosens.rocketchess.analysis.bookGrade
 import com.uncosens.rocketchess.chess.GameLine
 import com.uncosens.rocketchess.chess.Pgn
 import com.uncosens.rocketchess.data.AnalyzedHead
@@ -20,6 +22,7 @@ import com.uncosens.rocketchess.data.AppDatabase
 import com.uncosens.rocketchess.data.KnownUsers
 import com.uncosens.rocketchess.data.Sources
 import com.uncosens.rocketchess.data.userSide
+import com.uncosens.rocketchess.opening.OpeningData
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -49,12 +52,13 @@ class ReportViewModel(app: Application) : AndroidViewModel(app) {
             state = ReportState.NoIds
             return@launch
         }
+        OpeningData.load(c)
         state = withContext(Dispatchers.Default) {
             val heads = dao.analyzedHeads()
             val cache = (memory ?: runCatching { ReportCache.decode(file.readText()) }.getOrDefault(emptyMap())).toMutableMap()
             var changed = false
             val seen = mutableSetOf<String>()
-            val games = mutableListOf<List<ReportMove>>()
+            val games = mutableListOf<ReportEntry>()
             // Newest analysis first, until the report has its games.
             for (h in heads) {
                 if (games.size >= ReportPolicy.RECENT_GAMES) break
@@ -67,7 +71,7 @@ class ReportViewModel(app: Application) : AndroidViewModel(app) {
                 if (!entry.usable) continue
                 // The same game saved twice (say pasted and searched) counts once.
                 if (!seen.add(entry.sameGame)) continue
-                games += entry.moves
+                games += entry
             }
             // Deleted games leave the cache.
             val keys = heads.mapTo(HashSet()) { it.sourceKey }
@@ -81,14 +85,21 @@ class ReportViewModel(app: Application) : AndroidViewModel(app) {
     /** Works out one game's part of the report from its saved analysis. Null if the row is gone. */
     private suspend fun entry(h: AnalyzedHead, owner: String, at: Long): ReportEntry? {
         val row = dao.pgnAndAnalysis(h.sourceKey) ?: return null
-        val skip = ReportEntry(at, owner, false, "", emptyList())
+        val skip = ReportEntry(at, owner, false, "", emptyList(), emptyMap())
         val white = userSide(h.white, h.black, owner) ?: return skip
         val (settings, evals) = SavedAnalysis.decode(row.analysis) ?: return skip
         if (settings.depth < ReportPolicy.MIN_DEPTH) return skip
         val line = runCatching { GameLine.from(Pgn.parse(row.pgn)) }.getOrNull() ?: return skip
         if (evals.size != line.positions.size || evals.count { it != null } < ReportPolicy.MIN_COVERAGE * evals.size) return skip
         val same = "${h.white.lowercase()}|${h.black.lowercase()}|${line.plies.joinToString(" ") { it.uci }}"
-        return ReportEntry(at, owner, true, same, PlayerReport.moves(line, evals, white))
+        val bookPlies = OpeningData.book?.bookPlies(line) ?: 0
+        val counts = mutableMapOf<MoveClass, Int>()
+        val moves = PlayerReport.moves(line, evals, white) { i ->
+            val grade = Analyzer.grade(line, evals, i) ?: return@moves
+            val cls = bookGrade(grade.cls, i < bookPlies)
+            counts[cls] = counts.getOrDefault(cls, 0) + 1
+        }
+        return ReportEntry(at, owner, true, same, moves, counts)
     }
 
     private companion object {

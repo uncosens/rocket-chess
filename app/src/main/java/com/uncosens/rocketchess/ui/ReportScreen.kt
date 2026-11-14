@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import com.uncosens.rocketchess.R
 import com.uncosens.rocketchess.analysis.Axis
 import com.uncosens.rocketchess.analysis.AxisScore
+import com.uncosens.rocketchess.analysis.MoveClass
 import com.uncosens.rocketchess.analysis.Report
 import com.uncosens.rocketchess.analysis.ReportPolicy
 import kotlin.math.PI
@@ -78,6 +79,17 @@ private fun Note(text: String) {
 @Composable
 private fun Ready(r: Report, onPuzzles: (Axis) -> Unit) {
     Radar(r.axes, Modifier.widthIn(max = 420.dp).fillMaxWidth().aspectRatio(1f))
+    Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(14.dp)) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(stringResource(R.string.report_total_moves, r.moveCounts.values.sum()), style = MaterialTheme.typography.titleSmall)
+            for (cls in MoveClass.entries) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(cls.label(), style = MaterialTheme.typography.bodySmall)
+                    Text("%,d".format(r.moveCounts.getValue(cls)), style = MaterialTheme.typography.bodySmall, fontFamily = Mono)
+                }
+            }
+        }
+    }
     for (a in r.axes) AxisRow(a) { onPuzzles(a.axis) }
 }
 
