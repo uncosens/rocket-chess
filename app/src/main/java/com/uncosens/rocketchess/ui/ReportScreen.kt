@@ -2,16 +2,21 @@ package com.uncosens.rocketchess.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -24,10 +29,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
@@ -82,10 +91,25 @@ private fun Ready(r: Report, onPuzzles: (Axis) -> Unit) {
     Surface(color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(14.dp)) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(stringResource(R.string.report_total_moves, r.moveCounts.values.sum()), style = MaterialTheme.typography.titleSmall)
-            for (cls in MoveClass.entries) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(cls.label(), style = MaterialTheme.typography.bodySmall)
-                    Text("%,d".format(r.moveCounts.getValue(cls)), style = MaterialTheme.typography.bodySmall, fontFamily = Mono)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                for (cls in MoveClass.entries) {
+                    val label = cls.label()
+                    val count = "%,d".format(r.moveCounts.getValue(cls))
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            Modifier.size(20.dp).background(cls.color(), CircleShape).semantics { contentDescription = label },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (cls == MoveClass.Book) {
+                                Canvas(Modifier.matchParentSize()) { drawBook(center, size.minDimension * 2.5f) }
+                            } else {
+                                val mark = cls.badge() ?: if (cls == MoveClass.Good) "✓" else "–"
+                                Text(mark, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.clearAndSetSemantics {})
+                            }
+                        }
+                        Text(count, style = MaterialTheme.typography.bodySmall, fontFamily = Mono, maxLines = 1)
+                    }
                 }
             }
         }

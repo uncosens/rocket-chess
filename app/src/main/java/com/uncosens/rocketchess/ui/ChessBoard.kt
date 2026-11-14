@@ -279,7 +279,7 @@ fun ChessBoard(
 }
 
 /** An open book in white, centered on [c], for the Book badge. */
-private fun DrawScope.drawBook(c: Offset, sq: Float) {
+internal fun DrawScope.drawBook(c: Offset, sq: Float) {
     val w = sq * 0.1f
     val h = sq * 0.08f
     val path = Path().apply {
