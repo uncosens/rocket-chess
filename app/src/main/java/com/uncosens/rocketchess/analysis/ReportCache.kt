@@ -17,7 +17,7 @@ data class ReportEntry(
 /** Text form of the per-game entries: a version line, then one tab-separated line per game. */
 object ReportCache {
     /** Raise when [PlayerReport.moves] or [ReportPolicy] changes, so old entries are made again. */
-    const val VERSION = 2
+    const val VERSION = 3
 
     fun encode(entries: Map<String, ReportEntry>): String = buildString {
         append("v$VERSION\n")

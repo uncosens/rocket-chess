@@ -92,7 +92,8 @@ class ReportViewModel(app: Application) : AndroidViewModel(app) {
         val line = runCatching { GameLine.from(Pgn.parse(row.pgn)) }.getOrNull() ?: return skip
         if (evals.size != line.positions.size || evals.count { it != null } < ReportPolicy.MIN_COVERAGE * evals.size) return skip
         val same = "${h.white.lowercase()}|${h.black.lowercase()}|${line.plies.joinToString(" ") { it.uci }}"
-        val bookPlies = OpeningData.book?.bookPlies(line) ?: 0
+        val openingPlies = OpeningData.book?.bookPlies(line) ?: 0
+        val bookPlies = Analyzer.bookPlies(line, evals, openingPlies)
         val counts = mutableMapOf<MoveClass, Int>()
         val moves = PlayerReport.moves(line, evals, white) { i ->
             val grade = Analyzer.grade(line, evals, i) ?: return@moves

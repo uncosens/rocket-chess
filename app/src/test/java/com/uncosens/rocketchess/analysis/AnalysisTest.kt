@@ -83,6 +83,17 @@ class AnalysisTest {
     }
 
     @Test
+    fun bookStopsAtTheFirstNonBookGrade() {
+        val line = GameLine.from(Pgn.parse("1. e4 e5 2. Nf3 *"))
+        val evals = listOf(0, 0, 200, 200).map { PositionEval(Eval.Cp(it), null, null, 14) }
+        val bookPlies = Analyzer.bookPlies(line, evals, openingPlies = 3)
+        val labels = line.plies.indices.map { i ->
+            bookGrade(Analyzer.grade(line, evals, i)!!.cls, i < bookPlies)
+        }
+        assertEquals(listOf(MoveClass.Book, MoveClass.Mistake, MoveClass.Good), labels)
+    }
+
+    @Test
     fun gradeUsesPositionsBeforeAndAfter() {
         val line = GameLine.from(Pgn.parse("1. e4 e5 2. Qh5 *"))
         val evals = listOf(

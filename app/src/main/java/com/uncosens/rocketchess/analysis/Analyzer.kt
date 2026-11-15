@@ -100,6 +100,12 @@ class Analyzer(private val sf: StockfishSession) {
             return MoveResult(cls, loss)
         }
 
+        /** End the book run at the first graded move that loses its Book label. */
+        fun bookPlies(line: GameLine, evals: List<PositionEval?>, openingPlies: Int): Int =
+            (0 until openingPlies).firstOrNull { i ->
+                grade(line, evals, i)?.let { bookGrade(it.cls, inBook = true) != MoveClass.Book } == true
+            } ?: openingPlies
+
         /** One side's accuracy: the mean move score of its graded moves, 0 to 100; null if none are graded. */
         fun accuracy(line: GameLine, evals: List<PositionEval?>, white: Boolean): Double? =
             line.plies.indices.filter { (line.positions[it].fen.split(' ')[1] == "w") == white }

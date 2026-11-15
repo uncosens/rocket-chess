@@ -273,10 +273,14 @@ class GameViewModel : ViewModel() {
     }
 
     /** Plies of [line], from its start, that follow the opening book. */
-    private val bookPlies: Int by derivedStateOf {
+    private val openingBookPlies: Int by derivedStateOf {
         val l = line
         val book = OpeningData.book
         if (l == null || book == null) 0 else book.bookPlies(l)
+    }
+
+    private val bookPlies: Int by derivedStateOf {
+        line?.let { Analyzer.bookPlies(it, evals, openingBookPlies) } ?: 0
     }
 
     fun grade(plyIndex: Int) = line?.let { Analyzer.grade(it, evals, plyIndex) }?.let { it.copy(cls = bookGrade(it.cls, plyIndex < bookPlies)) }
