@@ -97,6 +97,7 @@ class GameViewModel : ViewModel() {
     var liveError by mutableStateOf<String?>(null)
         private set
     private var job: Job? = null
+    private var moveJob: Job? = null
     /** Settings of the run that made [mainEvals], and whether those have new results not yet saved. */
     private var runSettings: AnalysisSettings? = null
     /** Engines of the running full analysis. */
@@ -191,6 +192,7 @@ class GameViewModel : ViewModel() {
 
     /** Stops a running analysis and keeps the results so far. Also called when the app goes to the background. */
     fun stopAnalysis() {
+        moveJob?.cancel()
         job?.cancel()
         job = null
         // Quit the engines now instead of waiting for their searches, so their memory is freed at once.
@@ -205,13 +207,21 @@ class GameViewModel : ViewModel() {
     /** Plays [uci] from the shown position. Back on the game's own moves, the variation ends. */
     fun play(uci: String) {
         val main = mainLine ?: return
-        val next = line?.play(ply, uci) ?: return
-        variation = Variation.of(main, next)
-        ply++
+        val current = line ?: return
+        val at = ply
+        moveJob?.cancel()
+        moveJob = viewModelScope.launch {
+            // Legal moves and sacrifice exchanges must not block board animation.
+            val next = withContext(Dispatchers.Default) { current.play(at, uci) } ?: return@launch
+            if (mainLine !== main || line !== current || ply != at) return@launch
+            variation = Variation.of(main, next)
+            ply = at + 1
+        }
     }
 
     /** Goes back to the game, at the position where the variation left it. */
     fun leaveVariation() {
+        moveJob?.cancel()
         val v = variation ?: return
         ply = minOf(ply, v.branch)
         variation = null
@@ -300,6 +310,7 @@ class GameViewModel : ViewModel() {
     fun accuracy(white: Boolean) = mainLine?.let { Analyzer.accuracy(it, mainEvals, white) }
 
     fun goTo(index: Int) {
+        moveJob?.cancel()
         val last = line?.plies?.size ?: return
         ply = index.coerceIn(0, last)
     }

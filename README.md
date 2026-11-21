@@ -215,3 +215,11 @@ Play blocks updates without 16 KB support from 2027-02-01 (see the Android page-
 ## Open checks
 
 See [docs/API_TERMS_CHECKLIST.md](docs/API_TERMS_CHECKLIST.md).
+
+## Variation animation check (2026-11-21)
+
+- Own moves prepare legal moves and sacrifice exchanges off the UI thread. Navigating cancels pending moves.
+- Board pieces are rasterized once at the square size and reused during animation. A resize rebuilds the images.
+- Live analysis starts after the 184 ms piece slide, so engine startup does not overlap it.
+- Galaxy Tab S7, debug build, first own `1. e4` in the saved louisukiri1 game: frame median 34 ms before drawing/startup fixes, 10 ms after. Android deadline misses fell from 20/20 to 5/27 in these short captures; this is not a sustained benchmark or a phone result.
+- 88 JVM tests passed. `VariationDeviceTest` checks asynchronous moves, pending-move cancellation and returning to the game on the tablet.

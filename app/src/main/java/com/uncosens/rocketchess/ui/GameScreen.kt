@@ -60,6 +60,7 @@ import com.uncosens.rocketchess.analysis.MoveClass
 import com.uncosens.rocketchess.chess.Finish
 import com.uncosens.rocketchess.chess.GameLine
 import com.uncosens.rocketchess.engine.StockfishSession
+import kotlinx.coroutines.delay
 
 @Composable
 fun GameScreen(vm: GameViewModel, onBack: () -> Unit, onExplorer: (GameLine, Int) -> Unit) {
@@ -78,7 +79,11 @@ fun GameScreen(vm: GameViewModel, onBack: () -> Unit, onExplorer: (GameLine, Int
     // game after a stop gives an equal game but resets the state to Idle.
     LaunchedEffect(vm.game, vm.analysis) { if (vm.game != null && vm.analysis == AnalysisState.Idle) onAnalyze() }
     // Positions the user reaches on the board are analyzed right away.
-    LaunchedEffect(vm.variation, vm.ply) { vm.analyzeLive(exe, EngineOptionsStore.load(context)) }
+    LaunchedEffect(vm.variation, vm.ply) {
+        // Let the piece finish sliding before engine startup and live results compete for frames.
+        if (vm.variation != null) delay(MOVE_MS.toLong())
+        vm.analyzeLive(exe, EngineOptionsStore.load(context))
+    }
 
     BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 16.dp, vertical = 8.dp)) {
         if (maxWidth > maxHeight) {

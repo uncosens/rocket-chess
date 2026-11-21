@@ -1,5 +1,6 @@
 package com.uncosens.rocketchess.ui
 
+import android.graphics.Bitmap
 import android.graphics.RectF
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -19,6 +20,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.lerp
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
@@ -29,6 +31,7 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.lerp as lerpColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -36,9 +39,11 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.IntOffset
 import com.uncosens.rocketchess.analysis.MoveClass
 import com.uncosens.rocketchess.chess.Finish
 import kotlin.math.abs
+import kotlin.math.ceil
 import kotlin.math.hypot
 import kotlin.math.roundToInt
 
@@ -51,7 +56,7 @@ private val LOST = Color(0xFFD9363E)
 private val WON = Color(0xFF2EA043)
 private val DRAWN = Color(0xFF8C96AB)
 // 80% of the speed at 147 ms.
-private const val MOVE_MS = 184
+internal const val MOVE_MS = 184
 
 /** Square name like "e4" to 0..63, a1 = 0. */
 private fun index(square: String) = (square[0] - 'a') + (square[1] - '1') * 8
@@ -146,6 +151,15 @@ fun ChessBoard(
     // No set given: use the saved choice.
     val set = pieceSet ?: remember { PieceSetStore.load(context) }
     val images = remember(set) { PieceSetStore.images(context, set) }
+    var piecePixels by remember { mutableStateOf(0) }
+    // Rasterize at the board's size once, so animation only moves cached images.
+    val bitmaps = remember(images, piecePixels) {
+        if (piecePixels == 0) emptyMap() else images.mapValues { (_, svg) ->
+            Bitmap.createBitmap(piecePixels, piecePixels, Bitmap.Config.ARGB_8888).also {
+                svg.renderToCanvas(android.graphics.Canvas(it), RectF(0f, 0f, piecePixels.toFloat(), piecePixels.toFloat()))
+            }.asImageBitmap()
+        }
+    }
     val style = boardStyle ?: remember { BoardStyleStore.load(context) }
     val texture = remember(style) { BoardStyleStore.texture(context, style) }
 
@@ -171,7 +185,8 @@ fun ChessBoard(
         }
     }
 
-    Canvas(modifier.aspectRatio(1f).semantics { contentDescription = description }.then(input)) {
+    Canvas(modifier.aspectRatio(1f).onSizeChanged { piecePixels = ceil(it.width / 8.0).toInt().coerceAtLeast(1) }
+        .semantics { contentDescription = description }.then(input)) {
         val sq = size.minDimension / 8
         // Top-left corner of a square on screen.
         fun at(i: Int) = if (flipped) Offset((7 - i % 8) * sq, (i / 8) * sq) else Offset((i % 8) * sq, (7 - i / 8) * sq)
@@ -226,7 +241,9 @@ fun ChessBoard(
             for ((i, c) in now.entries.sortedBy { it.key in moves }) {
                 val o = moves[i]?.let { lerp(at(it), at(i), p) } ?: at(i)
                 val piece = if (p < 1f) moves[i]?.let { before[it] } ?: c else c
-                images[piece]?.renderToCanvas(canvas.nativeCanvas, RectF(o.x, o.y, o.x + sq, o.y + sq))
+                val bitmap = bitmaps[piece]
+                if (bitmap != null) drawImage(bitmap, dstOffset = IntOffset(o.x.roundToInt(), o.y.roundToInt()), dstSize = IntSize(sq.roundToInt(), sq.roundToInt()))
+                else images[piece]?.renderToCanvas(canvas.nativeCanvas, RectF(o.x, o.y, o.x + sq, o.y + sq))
             }
         }
         if (p < 1f) return@Canvas
